@@ -37,9 +37,8 @@ import org.apache.log4j.Logger;
 public class BaselineComputeUtil {
 
   private static final Integer NUM_JOBS_FOR_BASELINE_DEFAULT = 30;
-  private final Logger logger = Logger.getLogger(getClass());
   private static final String BASELINE_EXECUTION_COUNT = "baseline.execution.count";
-
+  private final Logger logger = Logger.getLogger(getClass());
   private Integer _numJobsForBaseline = null;
 
   public BaselineComputeUtil() {
