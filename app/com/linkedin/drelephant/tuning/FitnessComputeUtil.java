@@ -57,17 +57,21 @@ public class FitnessComputeUtil {
   private static final Logger logger = Logger.getLogger(FitnessComputeUtil.class);
   private static final String FITNESS_COMPUTE_WAIT_INTERVAL = "fitness.compute.wait_interval.ms";
   private static final String IGNORE_EXECUTION_WAIT_INTERVAL = "ignore.execution.wait.interval.ms";
+  private static final String AUTOTUNING_IPSO_ENABLED = " autotuning.ipso.enabled ";
   private static final int MAX_TUNING_EXECUTIONS = 39;
   private static final int MIN_TUNING_EXECUTIONS = 18;
   private Long fitnessComputeWaitInterval;
   private Long ignoreExecutionWaitInterval;
+  private boolean isIPSOEnabled;
 
-  public FitnessComputeUtil() {
+
+  public FitnessComputeUtil(Boolean isIPSOEnabled) {
     Configuration configuration = ElephantContext.instance().getAutoTuningConf();
     fitnessComputeWaitInterval =
         Utils.getNonNegativeLong(configuration, FITNESS_COMPUTE_WAIT_INTERVAL, 5 * AutoTuner.ONE_MIN);
     ignoreExecutionWaitInterval =
         Utils.getNonNegativeLong(configuration, IGNORE_EXECUTION_WAIT_INTERVAL, 2 * 60 * AutoTuner.ONE_MIN);
+    this.isIPSOEnabled=isIPSOEnabled;
   }
 
   private boolean isTuningEnabled(Integer jobDefinitionId) {
@@ -370,10 +374,13 @@ public class FitnessComputeUtil {
           Double totalResourceUsed = 0D;
           Double totalInputBytesInBytes = 0D;
 
+
           for (AppResult appResult : results) {
             totalResourceUsed += appResult.resourceUsed;
             totalInputBytesInBytes += getTotalInputBytes(appResult);
           }
+
+
 
           Long totalRunTime = Utils.getTotalRuntime(results);
           Long totalDelay = Utils.getTotalWaittime(results);
@@ -402,6 +409,13 @@ public class FitnessComputeUtil {
             if (jobExecution.executionState.equals(JobExecution.ExecutionState.SUCCEEDED)) {
               logger.info("Execution id: " + jobExecution.id + " succeeded");
               updateJobSuggestedParamSetSucceededExecution(jobExecution, jobSuggestedParamSet, tuningJobDefinition);
+              if(isIPSOEnabled) {
+                logger.info(" IPSO Enabled ");
+                AutoTuningOptimizeManager ipsoManager = new IPSOManager();
+                ipsoManager.extractParameterInformation(results);
+                ipsoManager.parameterOptimizer(jobExecution.job.id);
+              }
+
             } else {
               // Resetting param set to created state because in case captures the scenarios when
               // either the job failed for reasons other than auto tuning or was killed/cancelled/skipped etc.

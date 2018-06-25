@@ -20,6 +20,7 @@ import com.avaje.ebean.Expr;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.linkedin.drelephant.ElephantContext;
 import controllers.AutoTuningMetricsController;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -33,9 +34,11 @@ import models.JobSuggestedParamValue;
 import models.TuningAlgorithm;
 import models.TuningJobDefinition;
 import models.TuningParameter;
+import models.TuningParameterConstraint;
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
 import play.libs.Json;
+import org.apache.hadoop.conf.Configuration;
 
 
 /**
@@ -45,6 +48,7 @@ public abstract class ParamGenerator {
 
   private static final String JSON_CURRENT_POPULATION_KEY = "current_population";
   private final Logger logger = Logger.getLogger(getClass());
+  private AutoTuningOptimizeManager ipsoManager = null;
 
   /**
    * Generates the parameters using tuningJobInfo and returns it in updated JobTuningInfo
@@ -201,6 +205,11 @@ public abstract class ParamGenerator {
         }
       } catch (NullPointerException e) {
         logger.error("Error extracting default value of params for job " + tuningJobDefinition.job.jobDefId, e);
+      }
+
+      // updating boundary constraints for the job
+      if (ipsoManager != null) {
+        ipsoManager.applyIntelligenceOnParameter(tuningParameterList, job);
       }
 
       JobTuningInfo jobTuningInfo = new JobTuningInfo();
@@ -445,34 +454,37 @@ public abstract class ParamGenerator {
     Integer violations = 0;
 
     if (jobType.equals(TuningAlgorithm.JobType.PIG)) {
-      Double mrSortMemory = null;
-      Double mrMapMemory = null;
-      Double pigMaxCombinedSplitSize = null;
+      if (ipsoManager != null) {
+        violations = ipsoManager.numberOfConstraintsViolated(jobSuggestedParamValueList);
+      } else {
+        Double mrSortMemory = null;
+        Double mrMapMemory = null;
+        Double pigMaxCombinedSplitSize = null;
 
-      for (JobSuggestedParamValue jobSuggestedParamValue : jobSuggestedParamValueList) {
-        if (jobSuggestedParamValue.tuningParameter.paramName.equals("mapreduce.task.io.sort.mb")) {
-          mrSortMemory = jobSuggestedParamValue.paramValue;
-        } else if (jobSuggestedParamValue.tuningParameter.paramName.equals("mapreduce.map.memory.mb")) {
-          mrMapMemory = jobSuggestedParamValue.paramValue;
-        } else if (jobSuggestedParamValue.tuningParameter.paramName.equals("pig.maxCombinedSplitSize")) {
-          pigMaxCombinedSplitSize = jobSuggestedParamValue.paramValue / FileUtils.ONE_MB;
+        for (JobSuggestedParamValue jobSuggestedParamValue : jobSuggestedParamValueList) {
+          if (jobSuggestedParamValue.tuningParameter.paramName.equals("mapreduce.task.io.sort.mb")) {
+            mrSortMemory = jobSuggestedParamValue.paramValue;
+          } else if (jobSuggestedParamValue.tuningParameter.paramName.equals("mapreduce.map.memory.mb")) {
+            mrMapMemory = jobSuggestedParamValue.paramValue;
+          } else if (jobSuggestedParamValue.tuningParameter.paramName.equals("pig.maxCombinedSplitSize")) {
+            pigMaxCombinedSplitSize = jobSuggestedParamValue.paramValue / FileUtils.ONE_MB;
+          }
         }
-      }
+        if (mrSortMemory != null && mrMapMemory != null) {
+          if (mrSortMemory > 0.6 * mrMapMemory) {
+            logger.info("Constraint violated: Sort memory > 60% of map memory");
+            violations++;
+          }
+          if (mrMapMemory - mrSortMemory < 768) {
+            logger.info("Constraint violated: Map memory - sort memory < 768 mb");
+            violations++;
+          }
+        }
 
-      if (mrSortMemory != null && mrMapMemory != null) {
-        if (mrSortMemory > 0.6 * mrMapMemory) {
-          logger.info("Constraint violated: Sort memory > 60% of map memory");
+        if (pigMaxCombinedSplitSize != null && mrMapMemory != null && (pigMaxCombinedSplitSize > 1.8 * mrMapMemory)) {
+          logger.info("Constraint violated: Pig max combined split size > 1.8 * map memory");
           violations++;
         }
-        if (mrMapMemory - mrSortMemory < 768) {
-          logger.info("Constraint violated: Map memory - sort memory < 768 mb");
-          violations++;
-        }
-      }
-
-      if (pigMaxCombinedSplitSize != null && mrMapMemory != null && (pigMaxCombinedSplitSize > 1.8 * mrMapMemory)) {
-        logger.info("Constraint violated: Pig max combined split size > 1.8 * map memory");
-        violations++;
       }
     }
     if (violations == 0) {
@@ -525,7 +537,10 @@ public abstract class ParamGenerator {
   /**
    * Fetches job which need parameters, generates parameters and stores it in the database
    */
-  public void getParams() {
+  public void getParams(boolean isIPSOEnabled) {
+    if (isIPSOEnabled) {
+      this.ipsoManager = new IPSOManager();
+    }
     List<TuningJobDefinition> jobsForSwarmSuggestion = getJobsForParamSuggestion();
     List<JobTuningInfo> jobTuningInfoList = getJobsTuningInfo(jobsForSwarmSuggestion);
     List<JobTuningInfo> updatedJobTuningInfoList = new ArrayList<JobTuningInfo>();

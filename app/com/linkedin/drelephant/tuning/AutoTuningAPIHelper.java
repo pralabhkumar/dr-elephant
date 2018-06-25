@@ -36,6 +36,7 @@ import models.TuningAlgorithm;
 import models.TuningJobDefinition;
 import models.TuningJobExecutionParamSet;
 import models.TuningParameter;
+import models.TuningParameterConstraint;
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.log4j.Logger;
@@ -51,7 +52,8 @@ public class AutoTuningAPIHelper {
   private static final String ALLOWED_MAX_EXECUTION_TIME_PERCENT_DEFAULT =
       "autotuning.default.allowed_max_execution_time_percent";
   private static final Logger logger = Logger.getLogger(AutoTuningAPIHelper.class);
-
+  private static final String AUTOTUNING_IPSO_ENABLED = " autotuning.ipso.enabled ";
+  private Boolean isIPSOEnabled = null;
   /**
    * For a job, returns the best parameter set of the given job if it exists else  the default parameter set
    * @param jobDefId Sting JobDefId of the job
@@ -109,6 +111,15 @@ public class AutoTuningAPIHelper {
           new Double(Utils.getNonNegativeInt(configuration, ALLOWED_MAX_RESOURCE_USAGE_PERCENT_DEFAULT, 150));
       tuningInput.setAllowedMaxResourceUsagePercent(allowedMaxResourceUsagePercent);
     }
+  }
+
+  /*
+    Get IPSO parameter
+   */
+
+  private void setIsIPSOEnabled(){
+    Configuration configuration = ElephantContext.instance().getAutoTuningConf();
+    isIPSOEnabled = configuration.getBoolean(AUTOTUNING_IPSO_ENABLED,true);
   }
 
   /**
@@ -325,6 +336,10 @@ public class AutoTuningAPIHelper {
         || tuningInput.getAllowedMaxResourceUsagePercent() == null) {
       setMaxAllowedMetricIncreasePercentage(tuningInput);
     }
+
+    if(isIPSOEnabled==null){
+      setIsIPSOEnabled();
+    }
     setTuningAlgorithm(tuningInput);
 
     JobSuggestedParamSet jobSuggestedParamSet;
@@ -453,9 +468,15 @@ public class AutoTuningAPIHelper {
       for (Map.Entry<String, Double> paramValue : paramValueMap.entrySet()) {
         insertParameterValue(jobSuggestedParamSet, paramValue.getKey(), paramValue.getValue());
       }
+      if(isIPSOEnabled) {
+        logger.info("IPSO is enabled in AutoTuningAPIHelper");
+        AutoTuningOptimizeManager ipsoManager = new IPSOManager();
+        ipsoManager.intializePrerequisite(jobSuggestedParamSet);
+      }
     } else {
       logger.warn("ParamValueMap is null ");
     }
+
   }
 
   /**

@@ -40,9 +40,13 @@ public class PSOParamGenerator extends ParamGenerator {
   private final Logger logger = Logger.getLogger(PSOParamGenerator.class);
   private String PYTHON_PATH = null;
   private String TUNING_SCRIPT_PATH = null;
+  private Boolean isIPSOTuningEnabled = null;
+  private static final String AUTOTUNING_IPSO_ENABLED = "autotuning.ipso.enabled";
 
   public PSOParamGenerator() {
     Configuration configuration = ElephantContext.instance().getAutoTuningConf();
+    isIPSOTuningEnabled = configuration.getBoolean(AUTOTUNING_IPSO_ENABLED,true);
+
     PYTHON_PATH = configuration.get(PYTHON_PATH_CONF);
     if (PYTHON_PATH == null) {
       PYTHON_PATH = System.getenv(PYTHON_PATH_ENV_VARIABLE);
@@ -58,6 +62,7 @@ public class PSOParamGenerator extends ParamGenerator {
     TUNING_SCRIPT_PATH = PSO_DIR_PATH + "/pso_param_generation.py";
     logger.info("Tuning script path: " + TUNING_SCRIPT_PATH);
     logger.info("Python path: " + PYTHON_PATH);
+    logger.info("Is PSO Enabled " + isIPSOTuningEnabled);
   }
 
   /**
@@ -67,7 +72,7 @@ public class PSOParamGenerator extends ParamGenerator {
    */
   public JobTuningInfo generateParamSet(JobTuningInfo jobTuningInfo) {
     logger.info("Generating param set for job: " + jobTuningInfo.getTuningJob().jobName);
-
+    logger.info("PSOParamGenerator IPSO "+ isIPSOTuningEnabled);
     JobTuningInfo newJobTuningInfo = new JobTuningInfo();
     newJobTuningInfo.setTuningJob(jobTuningInfo.getTuningJob());
     newJobTuningInfo.setParametersToTune(jobTuningInfo.getParametersToTune());
@@ -80,11 +85,12 @@ public class PSOParamGenerator extends ParamGenerator {
     String jobType = jobTuningInfo.getJobType().toString();
 
     List<String> error = new ArrayList<String>();
-
+    logger.info("String State "+ stringTunerState);
     try {
+
       Process p = Runtime.getRuntime()
           .exec(
-              PYTHON_PATH + " " + TUNING_SCRIPT_PATH + " " + stringTunerState + " " + parametersToTune + " " + jobType);
+              PYTHON_PATH + " " + TUNING_SCRIPT_PATH + " " + stringTunerState + " " + parametersToTune + " " + jobType+" "+isIPSOTuningEnabled);
       BufferedReader inputStream = new BufferedReader(new InputStreamReader(p.getInputStream()));
       BufferedReader errorStream = new BufferedReader(new InputStreamReader(p.getErrorStream()));
       String updatedStringTunerState = inputStream.readLine();

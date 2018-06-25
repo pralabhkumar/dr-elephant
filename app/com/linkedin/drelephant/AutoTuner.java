@@ -45,12 +45,14 @@ public class AutoTuner implements Runnable {
   private static final long DEFAULT_METRICS_COMPUTATION_INTERVAL = ONE_MIN / 5;
 
   public static final String AUTO_TUNING_DAEMON_WAIT_INTERVAL = "autotuning.daemon.wait.interval.ms";
+  private static final String AUTOTUNING_IPSO_ENABLED = " autotuning.ipso.enabled ";
 
   public void run() {
 
     logger.info("Starting Auto Tuning thread");
     HDFSContext.load();
     Configuration configuration = ElephantContext.instance().getAutoTuningConf();
+    Boolean isIPSOEnabled = configuration.getBoolean(AUTOTUNING_IPSO_ENABLED, true);
 
     Long interval =
         Utils.getNonNegativeLong(configuration, AUTO_TUNING_DAEMON_WAIT_INTERVAL, DEFAULT_METRICS_COMPUTATION_INTERVAL);
@@ -58,7 +60,7 @@ public class AutoTuner implements Runnable {
     try {
       AutoTuningMetricsController.init();
       BaselineComputeUtil baselineComputeUtil = new BaselineComputeUtil();
-      FitnessComputeUtil fitnessComputeUtil = new FitnessComputeUtil();
+      FitnessComputeUtil fitnessComputeUtil = new FitnessComputeUtil(isIPSOEnabled);
       ParamGenerator paramGenerator = new PSOParamGenerator();
       JobCompleteDetector jobCompleteDetector = new AzkabanJobCompleteDetector();
       while (!Thread.currentThread().isInterrupted()) {
@@ -66,7 +68,7 @@ public class AutoTuner implements Runnable {
           baselineComputeUtil.computeBaseline();
           jobCompleteDetector.updateCompletedExecutions();
           fitnessComputeUtil.updateFitness();
-          paramGenerator.getParams();
+          paramGenerator.getParams(isIPSOEnabled);
         } catch (Exception e) {
           logger.error("Error in auto tuner thread ", e);
         }
