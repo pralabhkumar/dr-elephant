@@ -932,6 +932,7 @@ public class Application extends Controller {
       String optimizationAlgo = paramValueMap.get("optimizationAlgo")==null ? TuningAlgorithm.OptimizationAlgo.PSO.name() : paramValueMap.get("optimizationAlgo") ;
       String optimizationAlgoVersion = paramValueMap.get("optimizationAlgoVersion");
       String optimizationMetric = paramValueMap.get("optimizationMetric");
+
       Double allowedMaxExecutionTimePercent = null;
       Double allowedMaxResourceUsagePercent = null;
       if (paramValueMap.containsKey("allowedMaxResourceUsagePercent")) {

@@ -24,7 +24,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import models.AppResult;
 import models.FlowDefinition;
 import models.FlowExecution;
 import models.JobDefinition;
@@ -37,7 +36,6 @@ import models.TuningAlgorithm;
 import models.TuningJobDefinition;
 import models.TuningJobExecutionParamSet;
 import models.TuningParameter;
-import models.TuningParameterConstraint;
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.log4j.Logger;
@@ -329,7 +327,6 @@ public class AutoTuningAPIHelper {
         || tuningInput.getAllowedMaxResourceUsagePercent() == null) {
       setMaxAllowedMetricIncreasePercentage(tuningInput);
     }
-
     setTuningAlgorithm(tuningInput);
 
     JobSuggestedParamSet jobSuggestedParamSet;

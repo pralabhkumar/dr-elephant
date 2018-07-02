@@ -46,13 +46,11 @@ public class AutoTuner implements Runnable {
 
   public static final String AUTO_TUNING_DAEMON_WAIT_INTERVAL = "autotuning.daemon.wait.interval.ms";
 
-
   public void run() {
 
     logger.info("Starting Auto Tuning thread");
     HDFSContext.load();
     Configuration configuration = ElephantContext.instance().getAutoTuningConf();
-
 
     Long interval =
         Utils.getNonNegativeLong(configuration, AUTO_TUNING_DAEMON_WAIT_INTERVAL, DEFAULT_METRICS_COMPUTATION_INTERVAL);
