@@ -207,6 +207,11 @@ public abstract class ParamGenerator {
       }
 
       // updating boundary constraints for the job
+      AutoTuningOptimizeManager optimizeManager = OptimizationAlgoFactory.getOptimizationAlogrithm(tuningJobDefinition.tuningAlgorithm);
+      if (optimizeManager != null) {
+        optimizeManager.applyIntelligenceOnParameter(tuningParameterList,job);
+      }
+
       JobTuningInfo jobTuningInfo = new JobTuningInfo();
       jobTuningInfo.setTuningJob(job);
       jobTuningInfo.setJobType(tuningJobDefinition.tuningAlgorithm.jobType);

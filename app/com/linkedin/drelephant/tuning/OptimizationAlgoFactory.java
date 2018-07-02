@@ -10,8 +10,7 @@ public class OptimizationAlgoFactory {
   public static AutoTuningOptimizeManager getOptimizationAlogrithm(TuningAlgorithm tuningAlgorithm) {
     if (tuningAlgorithm.optimizationAlgo.name().equals(TuningAlgorithm.OptimizationAlgo.PSO_IPSO.name())) {
       logger.info("OPTIMIZATION ALGORITHM PSO_IPSO");
-      AutoTuningOptimizeManager ipsoManager = new IPSOManager();
-      return ipsoManager;
+      return new IPSOManager();
     }
     logger.info("OPTIMIZATION ALGORITHM PSO");
     return null;
