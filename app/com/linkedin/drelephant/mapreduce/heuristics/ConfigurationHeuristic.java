@@ -44,55 +44,25 @@ import org.apache.log4j.Logger;
 /*
 Heuristics to collect memory data/counter values  about application previous exeution.
  */
-public class AutoTuningIPSOHeuristics implements Heuristic<MapReduceApplicationData> {
-  private static final Logger logger = Logger.getLogger(AutoTuningIPSOHeuristics.class);
+public class ConfigurationHeuristic implements Heuristic<MapReduceApplicationData> {
+  private static final Logger logger = Logger.getLogger(ConfigurationHeuristic.class);
 
   // Severity parameters.
-  private static final String DISK_SPEED_SEVERITY = "disk_speed_severity";
-  private static final String RUNTIME_SEVERITY = "runtime_severity_in_min";
+  private static final String MAPPER_MEMORY = "mapreduce.map.memory.mb";
+  private static final String MAPPER_HEAP = "mapreduce.map.java.opts";
+  private static final String SORT_BUFFER = "mapreduce.task.io.sort.mb";
+  private static final String SORT_FACTOR = "mapreduce.task.io.sort.factor";
+  private static final String SORT_SPILL = "mapreduce.map.sort.spill.percent";
+  private static final String REDUCER_MEMORY = "mapreduce.reduce.memory.mb";
+  private static final String REDUCER_HEAP = "mapreduce.reduce.java.opts";
+  private static final String SPLIT_SIZE = "mapreduce.input.fileinputformat.split.maxsize";
+  private static final String CHILD_HEAP_SIZE = "mapred.child.java.opts";
 
   private Map<String, String> assignedParameterValues = null;
-
-  // Default value of parameters
-  private double[] diskSpeedLimits = {1d / 2, 1d / 4, 1d / 8, 1d / 32};  // Fraction of HDFS block size
-  private double[] runtimeLimits = {5, 10, 15, 30};              // The Map task runtime in milli sec
-
-  private List<CounterName> _counterNames =
-      Arrays.asList(MapReduceCounterData.CounterName.HDFS_BYTES_READ, MapReduceCounterData.CounterName.S3_BYTES_READ,
-          MapReduceCounterData.CounterName.S3A_BYTES_READ, MapReduceCounterData.CounterName.S3N_BYTES_READ);
-
   private HeuristicConfigurationData _heuristicConfData;
 
-  private void loadParameters() {
-
-    Map<String, String> paramMap = _heuristicConfData.getParamMap();
-    String heuristicName = _heuristicConfData.getHeuristicName();
-
-    double[] confDiskSpeedThreshold = Utils.getParam(paramMap.get(DISK_SPEED_SEVERITY), diskSpeedLimits.length);
-    if (confDiskSpeedThreshold != null) {
-      diskSpeedLimits = confDiskSpeedThreshold;
-    }
-    logger.info(heuristicName + " will use " + DISK_SPEED_SEVERITY + " with the following threshold settings: " + Arrays
-        .toString(diskSpeedLimits));
-    for (int i = 0; i < diskSpeedLimits.length; i++) {
-      diskSpeedLimits[i] = diskSpeedLimits[i] * HDFSContext.DISK_READ_SPEED;
-    }
-
-    double[] confRuntimeThreshold = Utils.getParam(paramMap.get(RUNTIME_SEVERITY), runtimeLimits.length);
-    if (confRuntimeThreshold != null) {
-      runtimeLimits = confRuntimeThreshold;
-    }
-    logger.info(
-        heuristicName + " will use " + RUNTIME_SEVERITY + " with the following threshold settings: " + Arrays.toString(
-            runtimeLimits));
-    for (int i = 0; i < runtimeLimits.length; i++) {
-      runtimeLimits[i] = runtimeLimits[i] * Statistics.MINUTE_IN_MS;
-    }
-  }
-
-  public AutoTuningIPSOHeuristics(HeuristicConfigurationData heuristicConfData) {
+  public ConfigurationHeuristic(HeuristicConfigurationData heuristicConfData) {
     this._heuristicConfData = heuristicConfData;
-    //loadParameters();
   }
 
   @Override
@@ -105,7 +75,36 @@ public class AutoTuningIPSOHeuristics implements Heuristic<MapReduceApplicationD
     if (!data.getSucceeded()) {
       return null;
     }
-    setAssignedParameterValues(data);
+    String mapperMemory = data.getConf().getProperty(MAPPER_MEMORY);
+    String mapperHeap = data.getConf().getProperty(MAPPER_HEAP);
+    if (mapperHeap == null) {
+      mapperHeap = data.getConf().getProperty(CHILD_HEAP_SIZE);
+    }
+    String sortBuffer = data.getConf().getProperty(SORT_BUFFER);
+    String sortFactor = data.getConf().getProperty(SORT_FACTOR);
+    String sortSplill = data.getConf().getProperty(SORT_SPILL);
+    String reducerMemory = data.getConf().getProperty(REDUCER_MEMORY);
+    String reducerHeap = data.getConf().getProperty(REDUCER_HEAP);
+    if (reducerHeap == null) {
+      reducerHeap = data.getConf().getProperty(CHILD_HEAP_SIZE);
+    }
+    // String splitSize = data.getConf().getProperty(SPLIT_SIZE);
+    HeuristicResult result =
+        new HeuristicResult(_heuristicConfData.getClassName(), _heuristicConfData.getHeuristicName(), Severity.LOW, 0);
+
+    result.addResultDetail(" Mapper Memory ", mapperMemory);
+    result.addResultDetail(" Mapper Heap ", mapperHeap.replaceAll("\\s+", "\n"));
+    result.addResultDetail(" Reducer Memory ", reducerMemory);
+    result.addResultDetail(" Reducer heap ", reducerHeap.replaceAll("\\s+", "\n"));
+    result.addResultDetail(" Sort Buffer ", sortBuffer);
+    result.addResultDetail(" Sort Factor ", sortFactor);
+    result.addResultDetail(" Sort Splill ", sortSplill);
+    //   result.addResultDetail(" split Size ", splitSize);
+
+    return result;
+    //     .replaceAll("\\s+", "\n")
+
+  /*  setAssignedParameterValues(data);
     MapReduceTaskData[] mapTasks = data.getMapperData();
     MapReduceTaskData[] reduceTasks = data.getReducerData();
     logger.info("Number of map tasks " + mapTasks.length);
@@ -114,11 +113,11 @@ public class AutoTuningIPSOHeuristics implements Heuristic<MapReduceApplicationD
     AutoTuningIPSOMemoryData memoryUsageDataForReduce = collectMemoryUsageData(reduceTasks, "reduce");
     logger.info(" Memory Usage Data For Map " + memoryUsageDataForMap);
     logger.info(" Memory Usage Data For Reduce " + memoryUsageDataForReduce);
-    return createHeuristicWithMemoryData(memoryUsageDataForMap, memoryUsageDataForReduce);
+    return createHeuristicWithMemoryData(memoryUsageDataForMap, memoryUsageDataForReduce);*/
   }
 
-  private void setAssignedParameterValues(MapReduceApplicationData data) {
-    assignedParameterValues = new HashMap<String, String>();
+  /*private void setAssignedParameterValues(MapReduceApplicationData data) {
+    assignedParameterValues = new HashMap<>();
     assignedParameterValues.put(ASSIGNED_PARAMETER_KEYS.MAPPER_MEMORY.getValue(),
         data.getConf().getProperty(ASSIGNED_PARAMETER_KEYS.MAPPER_MEMORY.getValue()));
     assignedParameterValues.put(ASSIGNED_PARAMETER_KEYS.REDUCER_MEMORY.getValue(),
@@ -135,9 +134,9 @@ public class AutoTuningIPSOHeuristics implements Heuristic<MapReduceApplicationD
         heapMemoryMapper.replaceAll("\\s+", "\n"));
     assignedParameterValues.put(ASSIGNED_PARAMETER_KEYS.REDUCER_HEAP_MEMORY.getValue(),
         heapMemoryReducer.replaceAll("\\s+", "\n"));
-  }
+  }*/
 
-  private AutoTuningIPSOMemoryData collectMemoryUsageData(MapReduceTaskData[] tasks, String funtionType) {
+ /* private AutoTuningIPSOMemoryData collectMemoryUsageData(MapReduceTaskData[] tasks, String funtionType) {
     AutoTuningIPSOMemoryData memoryUsageData = new AutoTuningIPSOMemoryData(funtionType);
     MapReduceCounterData counters = null;
     for (MapReduceTaskData task : tasks) {
@@ -150,9 +149,9 @@ public class AutoTuningIPSOHeuristics implements Heuristic<MapReduceApplicationD
       }
     }
     return memoryUsageData;
-  }
+  }*/
 
-  private HeuristicResult createHeuristicWithMemoryData(AutoTuningIPSOMemoryData mapData,
+ /* private HeuristicResult createHeuristicWithMemoryData(AutoTuningIPSOMemoryData mapData,
       AutoTuningIPSOMemoryData reduceData) {
     HeuristicResult result =
         new HeuristicResult(AUTO_TUNING_IPSO_HEURISTICS, AUTO_TUNING_IPSO_HEURISTICS, Severity.LOW, 0);
@@ -180,11 +179,12 @@ public class AutoTuningIPSOHeuristics implements Heuristic<MapReduceApplicationD
         assignedParameterValues.get(ASSIGNED_PARAMETER_KEYS.REDUCER_HEAP_MEMORY.getValue()));
     return result;
   }
-
-  private void addResultDetail(HeuristicResult result, List<Long> values, String name) {
+*/
+ /* private void addResultDetail(HeuristicResult result, List<Long> values, String name) {
     if (values.size() > 0) {
       Long maxValue = Collections.max(values);
       result.addResultDetail(name, maxValue + "");
     }
   }
+  */
 }

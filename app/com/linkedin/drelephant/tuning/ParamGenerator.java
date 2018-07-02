@@ -48,7 +48,6 @@ public abstract class ParamGenerator {
 
   private static final String JSON_CURRENT_POPULATION_KEY = "current_population";
   private final Logger logger = Logger.getLogger(getClass());
-  private AutoTuningOptimizeManager ipsoManager = null;
 
   /**
    * Generates the parameters using tuningJobInfo and returns it in updated JobTuningInfo
@@ -208,10 +207,6 @@ public abstract class ParamGenerator {
       }
 
       // updating boundary constraints for the job
-      if (ipsoManager != null) {
-        ipsoManager.applyIntelligenceOnParameter(tuningParameterList, job);
-      }
-
       JobTuningInfo jobTuningInfo = new JobTuningInfo();
       jobTuningInfo.setTuningJob(job);
       jobTuningInfo.setJobType(tuningJobDefinition.tuningAlgorithm.jobType);
@@ -403,7 +398,7 @@ public abstract class ParamGenerator {
         jobSuggestedParamSet.tuningAlgorithm = tuningJobDefinition.tuningAlgorithm;
         jobSuggestedParamSet.isParamSetDefault = false;
         jobSuggestedParamSet.isParamSetBest = false;
-        if (isParamConstraintViolated(jobSuggestedParamValueList, jobSuggestedParamSet.tuningAlgorithm.jobType)) {
+        if (isParamConstraintViolated(jobSuggestedParamValueList, jobSuggestedParamSet.tuningAlgorithm)) {
           logger.info("Parameter constraint violated. Applying penalty.");
           int penaltyConstant = 3;
           Double averageResourceUsagePerGBInput =
@@ -448,14 +443,15 @@ public abstract class ParamGenerator {
    * @return true if the constraint is violated, false otherwise
    */
   private boolean isParamConstraintViolated(List<JobSuggestedParamValue> jobSuggestedParamValueList,
-      TuningAlgorithm.JobType jobType) {
+      TuningAlgorithm tuningAlgorithm) {
 
     logger.info("Checking whether parameter values are within constraints");
     Integer violations = 0;
 
-    if (jobType.equals(TuningAlgorithm.JobType.PIG)) {
-      if (ipsoManager != null) {
-        violations = ipsoManager.numberOfConstraintsViolated(jobSuggestedParamValueList);
+    if (tuningAlgorithm.jobType.equals(TuningAlgorithm.JobType.PIG)) {
+      AutoTuningOptimizeManager optimizeManager = OptimizationAlgoFactory.getOptimizationAlogrithm(tuningAlgorithm);
+      if (optimizeManager != null) {
+        violations = optimizeManager.numberOfConstraintsViolated(jobSuggestedParamValueList);
       } else {
         Double mrSortMemory = null;
         Double mrMapMemory = null;
@@ -537,10 +533,7 @@ public abstract class ParamGenerator {
   /**
    * Fetches job which need parameters, generates parameters and stores it in the database
    */
-  public void getParams(boolean isIPSOEnabled) {
-    if (isIPSOEnabled) {
-      this.ipsoManager = new IPSOManager();
-    }
+  public void getParams() {
     List<TuningJobDefinition> jobsForSwarmSuggestion = getJobsForParamSuggestion();
     List<JobTuningInfo> jobTuningInfoList = getJobsTuningInfo(jobsForSwarmSuggestion);
     List<JobTuningInfo> updatedJobTuningInfoList = new ArrayList<JobTuningInfo>();

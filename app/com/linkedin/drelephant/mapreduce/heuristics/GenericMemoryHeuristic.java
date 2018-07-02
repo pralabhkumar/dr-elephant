@@ -32,7 +32,7 @@ import com.linkedin.drelephant.math.Statistics;
 import java.util.Map;
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
-
+import static com.linkedin.drelephant.mapreduce.heuristics.CommnConstantsMRAutoTuningIPSOHeuristics.*;
 
 /**
  * This heuristic deals with the efficiency of container size
@@ -146,26 +146,40 @@ public abstract class GenericMemoryHeuristic implements Heuristic<MapReduceAppli
     List<Long> taskPMems = new ArrayList<Long>();
     List<Long> taskVMems = new ArrayList<Long>();
     List<Long> runtimesMs = new ArrayList<Long>();
-    long taskPMin = Long.MAX_VALUE;
-    long taskPMax = 0;
+    List<Long> taskHeapUsages = new ArrayList<Long>();
+    long taskPMin = Long.MAX_VALUE,taskVMin = Long.MAX_VALUE, taskHUMin = Long.MAX_VALUE;
+    long taskPMax = 0 , taskVMax = 0, taskHUMax = 0;
     for (MapReduceTaskData task : tasks) {
       if (task.isTimeAndCounterDataPresent()) {
         runtimesMs.add(task.getTotalRunTimeMs());
         long taskPMem = task.getCounters().get(MapReduceCounterData.CounterName.PHYSICAL_MEMORY_BYTES);
         long taskVMem = task.getCounters().get(MapReduceCounterData.CounterName.VIRTUAL_MEMORY_BYTES);
-        taskPMems.add(taskPMem);
+        long taskHeapUsage = task.getCounters().get(MapReduceCounterData.CounterName.COMMITTED_HEAP_BYTES);
         taskPMin = Math.min(taskPMin, taskPMem);
         taskPMax = Math.max(taskPMax, taskPMem);
+        taskVMin = Math.min(taskVMin,taskVMem);
+        taskVMax = Math.max(taskVMax,taskVMem);
+        taskHUMin = Math.min(taskHUMin,taskHeapUsage);
+        taskHUMax = Math.max(taskHUMax,taskHeapUsage);
         taskVMems.add(taskVMem);
+        taskPMems.add(taskPMem);
+        taskHeapUsages.add(taskHeapUsage);
       }
     }
 
     if(taskPMin == Long.MAX_VALUE) {
       taskPMin = 0;
     }
+    if(taskVMin == Long.MAX_VALUE) {
+      taskVMin = 0;
+    }
+    if(taskHUMin == Long.MAX_VALUE) {
+      taskHUMin = 0;
+    }
 
     long taskPMemAvg = Statistics.average(taskPMems);
     long taskVMemAvg = Statistics.average(taskVMems);
+    long taskHeamUsageAvg = Statistics.average(taskHeapUsages);
     long averageTimeMs = Statistics.average(runtimesMs);
 
     Severity severity;
@@ -180,10 +194,15 @@ public abstract class GenericMemoryHeuristic implements Heuristic<MapReduceAppli
 
     result.addResultDetail("Number of tasks", Integer.toString(tasks.length));
     result.addResultDetail("Avg task runtime", Statistics.readableTimespan(averageTimeMs));
-    result.addResultDetail("Avg Physical Memory (MB)", Long.toString(taskPMemAvg / FileUtils.ONE_MB));
-    result.addResultDetail("Max Physical Memory (MB)", Long.toString(taskPMax / FileUtils.ONE_MB));
-    result.addResultDetail("Min Physical Memory (MB)", Long.toString(taskPMin / FileUtils.ONE_MB));
-    result.addResultDetail("Avg Virtual Memory (MB)", Long.toString(taskVMemAvg / FileUtils.ONE_MB));
+    result.addResultDetail(UTILIZED_PARAMETER_KEYS.AVG_PHYSICAL_MEMORY.getValue(), Long.toString(taskPMemAvg / FileUtils.ONE_MB));
+    result.addResultDetail(UTILIZED_PARAMETER_KEYS.MAX_PHYSICAL_MEMORY.getValue(), Long.toString(taskPMax / FileUtils.ONE_MB));
+    result.addResultDetail(UTILIZED_PARAMETER_KEYS.MIN_PHYSICAL_MEMORY.getValue(), Long.toString(taskPMin / FileUtils.ONE_MB));
+    result.addResultDetail(UTILIZED_PARAMETER_KEYS.AVG_VIRTUAL_MEMORY.getValue(), Long.toString(taskVMemAvg / FileUtils.ONE_MB));
+    result.addResultDetail(UTILIZED_PARAMETER_KEYS.MAX_VIRTUAL_MEMORY.getValue(), Long.toString(taskVMax / FileUtils.ONE_MB));
+    result.addResultDetail(UTILIZED_PARAMETER_KEYS.MIN_VIRTUAL_MEMORY.getValue(),Long.toString(taskVMin / FileUtils.ONE_MB));
+    result.addResultDetail(UTILIZED_PARAMETER_KEYS.AVG_TOTAL_COMMITTED_HEAP_USAGE_MEMORY.getValue(), Long.toString(taskHeamUsageAvg / FileUtils.ONE_MB));
+    result.addResultDetail(UTILIZED_PARAMETER_KEYS.MAX_TOTAL_COMMITTED_HEAP_USAGE_MEMORY.getValue(), Long.toString(taskHUMax / FileUtils.ONE_MB));
+    result.addResultDetail(UTILIZED_PARAMETER_KEYS.MIN_TOTAL_COMMITTED_HEAP_USAGE_MEMORY.getValue(),Long.toString(taskHUMin / FileUtils.ONE_MB));
     result.addResultDetail("Requested Container Memory", FileUtils.byteCountToDisplaySize(containerMem));
 
     return result;

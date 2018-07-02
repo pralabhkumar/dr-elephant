@@ -32,129 +32,156 @@ This Implements IPSO in AutoTuning Framework
  */
 public class IPSOManager implements AutoTuningOptimizeManager {
   private static final Logger logger = Logger.getLogger(IPSOManager.class);
-  Map<String, Double> usageDataGlobal = null;
+  private Map<String, Map<String, Double>> usageDataGlobal = null;
+  private String functionTypes[] = {"map", "reduce"};
 
   enum USAGE_COUNTER_SCHEMA {USED_PHYSICAL_MEMORY, USED_VIRTUAL_MEMORY, USED_HEAP_MEMORY}
 
   @Override
-  public void intializePrerequisite(JobSuggestedParamSet jobSuggestedParamSet) {
-    logger.info(" Intialize Prerequisite");
-    setDefaultParameterValues(jobSuggestedParamSet);
-    changeDerivedConstraint();
+  public void intializePrerequisite(TuningAlgorithm tuningAlgorithm, JobSuggestedParamSet jobSuggestedParamSet) {
+    logger.info(" Intialize Prerequisite ");
+    setDefaultParameterValues(tuningAlgorithm, jobSuggestedParamSet);
   }
 
-  private void setDefaultParameterValues(JobSuggestedParamSet jobSuggestedParamSet) {
-    for (PARAMTER_CONSTRAINT value : PARAMTER_CONSTRAINT.values()) {
-      TuningParameter tuningParameter =
-          TuningParameter.find.where().eq(TuningParameter.TABLE.paramName, value.getValue()).findUnique();
+  private void setDefaultParameterValues(TuningAlgorithm tuningAlgorithm, JobSuggestedParamSet jobSuggestedParamSet) {
+    List<TuningParameter> tuningParameters =
+        TuningParameter.find.where().eq(TuningParameter.TABLE.tuningAlgorithm, tuningAlgorithm).findList();
+    for (TuningParameter tuningParameter : tuningParameters) {
       TuningParameterConstraint tuningParameterConstraint = new TuningParameterConstraint();
       tuningParameterConstraint.jobDefinition = jobSuggestedParamSet.jobDefinition;
-      tuningParameterConstraint.constraintId = value.getConstraintID();
-      tuningParameterConstraint.lowerBound = value.getLowerBound();
-      tuningParameterConstraint.upperBound = value.getUpperBound();
-      tuningParameterConstraint.constraintType = TuningParameterConstraint.ConstraintType.BOUNDARY;
       tuningParameterConstraint.tuningParameter = tuningParameter;
+      tuningParameterConstraint.constraintId = tuningParameter.id;
+      tuningParameterConstraint.lowerBound = tuningParameter.minValue;
+      tuningParameterConstraint.upperBound = tuningParameter.maxValue;
+      tuningParameterConstraint.constraintType = TuningParameterConstraint.ConstraintType.BOUNDARY;
+      tuningParameterConstraint.paramName = tuningParameter.paramName;
       tuningParameterConstraint.save();
-    }
-  }
-
-  private void changeDerivedConstraint() {
-    for (NON_DERIVED_PARAMETER value : NON_DERIVED_PARAMETER.values()) {
-      TuningParameter tuningParameter =
-          TuningParameter.find.where().eq(TuningParameter.TABLE.paramName, value.getValue()).findUnique();
-      tuningParameter.isDerived = 0;
-      tuningParameter.update();
     }
   }
 
   @Override
   public void extractParameterInformation(List<AppResult> appResults) {
     logger.info(" Extract Parameter Information");
-    usageDataGlobal = new HashMap<String, Double>();
-    intialize(usageDataGlobal);
+    usageDataGlobal = new HashMap<String, Map<String, Double>>();
+    intialize();
     for (AppResult appResult : appResults) {
-      Map<String, Double> usageDataApplication = collectUsageDataPerApplication(appResult);
-      for (String keys : usageDataApplication.keySet()) {
-        usageDataGlobal.put(keys, max(usageDataGlobal.get(keys), usageDataApplication.get(keys)));
+      Map<String, Map<String, Double>> usageDataApplicationlocal = collectUsageDataPerApplication(appResult);
+      for (String functionType : usageDataApplicationlocal.keySet()) {
+        Map<String, Double> usageDataForFunctionGlobal = usageDataGlobal.get(functionType);
+        Map<String, Double> usageDataForFunctionlocal = usageDataApplicationlocal.get(functionType);
+        for (String usageName : usageDataForFunctionlocal.keySet()) {
+          usageDataForFunctionGlobal.put(usageName,
+              max(usageDataForFunctionGlobal.get(usageName), usageDataForFunctionlocal.get(usageName)));
+        }
       }
     }
-    logger.info("Usage Values maximum   ");
-    for (String keys : usageDataGlobal.keySet()) {
-      logger.info(keys + " " + usageDataGlobal.get(keys));
+    logger.info("Usage Values Global ");
+    printInformation(usageDataGlobal);
+  }
+
+  private void intialize() {
+    for (String function : functionTypes) {
+      Map<String, Double> usageData = new HashMap<String, Double>();
+      for (UTILIZED_PARAMETER_KEYS value : UTILIZED_PARAMETER_KEYS.values()) {
+        usageData.put(value.getValue(), 0.0);
+      }
+      usageDataGlobal.put(function, usageData);
     }
   }
 
-  private void intialize(Map<String, Double> usageDataGlobal) {
-    for (UTILIZED_PARAMETER_KEYS value : UTILIZED_PARAMETER_KEYS.values()) {
-      usageDataGlobal.put(value.getValue(), 0.0);
-    }
-  }
-
-  private Map<String, Double> collectUsageDataPerApplication(AppResult appResult) {
-    Map<String, Double> counterData = new HashMap<String, Double>();
+  private Map<String, Map<String, Double>> collectUsageDataPerApplication(AppResult appResult) {
+    Map<String, Map<String, Double>> usageData = new HashMap<String, Map<String, Double>>();
     if (appResult.yarnAppHeuristicResults != null) {
       for (AppHeuristicResult appHeuristicResult : appResult.yarnAppHeuristicResults) {
-        if (appHeuristicResult.heuristicName.equals(
-            CommnConstantsMRAutoTuningIPSOHeuristics.AUTO_TUNING_IPSO_HEURISTICS)) {
-          if (appHeuristicResult.yarnAppHeuristicResultDetails != null) {
-            for (AppHeuristicResultDetails appHeuristicResultDetails : appHeuristicResult.yarnAppHeuristicResultDetails) {
-              for (UTILIZED_PARAMETER_KEYS value : UTILIZED_PARAMETER_KEYS.values()) {
-                if (appHeuristicResultDetails.name.equals(value.getValue())) {
-                  counterData.put(value.getValue(), appHeuristicResultDetails.value == null ? 0
-                      : ((double) MemoryFormatUtils.stringToBytes(appHeuristicResultDetails.value)));
-                }
-              }
-            }
+        if (appHeuristicResult.heuristicName.equals("Mapper Memory")) {
+          Map<String, Double> counterData = new HashMap<String, Double>();
+          collectUsageDataPerApplicationForFunction(appHeuristicResult, counterData);
+          usageData.put("map", counterData);
+        }
+        if (appHeuristicResult.heuristicName.equals("Reducer Memory")) {
+          Map<String, Double> counterData = new HashMap<String, Double>();
+          collectUsageDataPerApplicationForFunction(appHeuristicResult, counterData);
+          usageData.put("reduce", counterData);
+        }
+      }
+    }
+    logger.info("Usage Values local   " + appResult.jobExecUrl);
+    printInformation(usageData);
+    return usageData;
+  }
+
+  private void printInformation(Map<String, Map<String, Double>> information) {
+    for (String functionType : information.keySet()) {
+      logger.info("function Type    " + functionType);
+      Map<String, Double> usage = information.get(functionType);
+      for (String data : usage.keySet()) {
+        logger.info(data + " " + usage.get(data));
+      }
+    }
+  }
+
+  private void collectUsageDataPerApplicationForFunction(AppHeuristicResult appHeuristicResult,
+      Map<String, Double> counterData) {
+    if (appHeuristicResult.yarnAppHeuristicResultDetails != null) {
+      for (AppHeuristicResultDetails appHeuristicResultDetails : appHeuristicResult.yarnAppHeuristicResultDetails) {
+        for (UTILIZED_PARAMETER_KEYS value : UTILIZED_PARAMETER_KEYS.values()) {
+          if (appHeuristicResultDetails.name.equals(value.getValue())) {
+            counterData.put(value.getValue(), appHeuristicResultDetails.value == null ? 0
+                : ((double) MemoryFormatUtils.stringToBytes(appHeuristicResultDetails.value)));
           }
         }
       }
     }
-    logger.info("Usage Values   " + appResult.jobExecUrl);
-    for (String counterNames : counterData.keySet()) {
-      logger.info(counterNames + " " + counterData.get(counterNames));
-    }
-    return counterData;
   }
 
   @Override
-  public void parameterOptimizer(Integer id) {
+  public void parameterOptimizer(Integer jobID) {
     logger.info(" IPSO Optimizer");
-    if (usageDataGlobal.get(UTILIZED_PARAMETER_KEYS.MAX_MAP_PHYSICAL_MEMORY_BYTES.getValue()) > 0.0) {
-      logger.info(" Optimizing Mapper Parameter Space ");
-      List<Double> usageStats = extractUsageParameter("map");
-      List<Integer> mapContraintIDs = new ArrayList<Integer>();
-      mapContraintIDs.add(PARAMTER_CONSTRAINT.MAPPER_MEMORY.getConstraintID());
-      mapContraintIDs.add(PARAMTER_CONSTRAINT.MAPPER_HEAP_MEMORY.getConstraintID());
-      memoryParameterIPSO("map", mapContraintIDs, usageStats, id);
-    }
-    if (usageDataGlobal.get(UTILIZED_PARAMETER_KEYS.MAX_REDUCE_PHYSICAL_MEMORY_BYTES.getValue()) > 0.0) {
-      logger.info(" Optimizing Reducer Parameter Space ");
-      List<Double> usageStats = extractUsageParameter("reduce");
-      List<Integer> reduceContraintIDs = new ArrayList<Integer>();
-      reduceContraintIDs.add(PARAMTER_CONSTRAINT.REDUCER_MEMORY.getConstraintID());
-      reduceContraintIDs.add(PARAMTER_CONSTRAINT.REDUCER_HEAP_MEMORY.getConstraintID());
-      memoryParameterIPSO("reduce", reduceContraintIDs, usageStats, id);
+    List<TuningParameterConstraint> parameterConstraints = TuningParameterConstraint.find.where().
+        eq("job_definition_id", jobID).findList();
+    for (String function : functionTypes) {
+      logger.info(" Optimizing Parameter Space  " + function);
+      if (usageDataGlobal.get(function).get(UTILIZED_PARAMETER_KEYS.MAX_PHYSICAL_MEMORY.getValue()) > 0.0) {
+        List<Double> usageStats = extractUsageParameter(function);
+        Map<String, TuningParameterConstraint> memoryConstraints =
+            filterMemoryConstraint(parameterConstraints, function);
+        memoryParameterIPSO(function, memoryConstraints, usageStats);
+      }
     }
   }
 
-  private List<Double> extractUsageParameter(String trigger) {
-    Double usedPhysicalMemoryMB = 0.0, usedVirtualMemoryMB = 0.0, usedHeapMemoryMB = 0.0;
-    if (trigger.equals("map")) {
-      usedPhysicalMemoryMB =
-          usageDataGlobal.get(UTILIZED_PARAMETER_KEYS.MAX_MAP_PHYSICAL_MEMORY_BYTES.getValue()) / FileUtils.ONE_MB;
-      usedVirtualMemoryMB =
-          usageDataGlobal.get(UTILIZED_PARAMETER_KEYS.MAX_MAP_VIRTUAL_MEMORY_BYTES.getValue()) / FileUtils.ONE_MB;
-      usedHeapMemoryMB = usageDataGlobal.get(UTILIZED_PARAMETER_KEYS.MAX_MAP_TOTAL_COMMITTED_MEMORY_BYTES.getValue())
-          / FileUtils.ONE_MB;
-    } else if (trigger.equals("reduce")) {
-      usedPhysicalMemoryMB =
-          usageDataGlobal.get(UTILIZED_PARAMETER_KEYS.MAX_REDUCE_PHYSICAL_MEMORY_BYTES.getValue()) / FileUtils.ONE_MB;
-      usedVirtualMemoryMB =
-          usageDataGlobal.get(UTILIZED_PARAMETER_KEYS.MAX_REDUCE_VIRTUAL_MEMORY_BYTES.getValue()) / FileUtils.ONE_MB;
-      usedHeapMemoryMB = usageDataGlobal.get(UTILIZED_PARAMETER_KEYS.MAX_REDUCE_TOTAL_COMMITTED_MEMORY_BYTES.getValue())
-          / FileUtils.ONE_MB;
+  private Map<String, TuningParameterConstraint> filterMemoryConstraint(
+      List<TuningParameterConstraint> parameterConstraints, String functionType) {
+    Map<String, TuningParameterConstraint> memoryConstraints = new HashMap<String, TuningParameterConstraint>();
+    for (TuningParameterConstraint parameterConstraint : parameterConstraints) {
+      if (functionType.equals("map")) {
+        if (parameterConstraint.paramName.equals(PARAMTER_CONSTRAINT.MAPPER_MEMORY.getValue())) {
+          memoryConstraints.put("CONTAINER_MEMORY", parameterConstraint);
+        }
+        if (parameterConstraint.paramName.equals(PARAMTER_CONSTRAINT.MAPPER_HEAP_MEMORY.getValue())) {
+          memoryConstraints.put("CONTAINER_HEAP", parameterConstraint);
+        }
+      }
+      if (functionType.equals("reduce")) {
+        if (parameterConstraint.paramName.equals(PARAMTER_CONSTRAINT.REDUCER_MEMORY.getValue())) {
+          memoryConstraints.put("CONTAINER_MEMORY", parameterConstraint);
+        }
+        if (parameterConstraint.paramName.equals(PARAMTER_CONSTRAINT.REDUCER_HEAP_MEMORY.getValue())) {
+          memoryConstraints.put("CONTAINER_HEAP", parameterConstraint);
+        }
+      }
     }
-    logger.info(" Usage Stats " + trigger);
+    return memoryConstraints;
+  }
+
+  private List<Double> extractUsageParameter(String functionType) {
+    Double usedPhysicalMemoryMB = 0.0, usedVirtualMemoryMB = 0.0, usedHeapMemoryMB = 0.0;
+    usedPhysicalMemoryMB =
+        usageDataGlobal.get(functionType).get(UTILIZED_PARAMETER_KEYS.MAX_PHYSICAL_MEMORY.getValue());
+    usedVirtualMemoryMB = usageDataGlobal.get(functionType).get(UTILIZED_PARAMETER_KEYS.MAX_VIRTUAL_MEMORY.getValue());
+    usedHeapMemoryMB =
+        usageDataGlobal.get(functionType).get(UTILIZED_PARAMETER_KEYS.MAX_TOTAL_COMMITTED_HEAP_USAGE_MEMORY.getValue());
+    logger.info(" Usage Stats " + functionType);
     logger.info(" Physical Memory Usage MB " + usedPhysicalMemoryMB);
     logger.info(" Virtual Memory Usage MB " + usedVirtualMemoryMB / 2.1);
     logger.info(" Heap Usage MB " + usedHeapMemoryMB);
@@ -165,22 +192,15 @@ public class IPSOManager implements AutoTuningOptimizeManager {
     return usageStats;
   }
 
-  private void memoryParameterIPSO(String trigger, List<Integer> constraintIDs, List<Double> usageStats,
-      Integer jobID) {
+  private void memoryParameterIPSO(String trigger, Map<String, TuningParameterConstraint> constraints,
+      List<Double> usageStats) {
     logger.info(" IPSO for " + trigger);
-    TuningParameterConstraint containerConstraint = TuningParameterConstraint.find.where().
-        eq(TuningParameterConstraint.TABLE.constraintId, constraintIDs.get(0)).
-        eq("job_definition_id", jobID).
-        findUnique();
-    TuningParameterConstraint containerHeapSizeConstraint = TuningParameterConstraint.find.where().
-        eq(TuningParameterConstraint.TABLE.constraintId, constraintIDs.get(1)).
-        eq("job_definition_id", jobID).
-        findUnique();
     Double usagePhysicalMemory = usageStats.get(USAGE_COUNTER_SCHEMA.USED_PHYSICAL_MEMORY.ordinal());
     Double usageVirtualMemory = usageStats.get(USAGE_COUNTER_SCHEMA.USED_VIRTUAL_MEMORY.ordinal());
     Double usageHeapMemory = usageStats.get(USAGE_COUNTER_SCHEMA.USED_HEAP_MEMORY.ordinal());
-    Double memoryMB = applyContainerSizeFormula(containerConstraint, usagePhysicalMemory, usageVirtualMemory);
-    applyHeapSizeFormula(containerHeapSizeConstraint, usageHeapMemory, memoryMB);
+    Double memoryMB =
+        applyContainerSizeFormula(constraints.get("CONTAINER_MEMORY"), usagePhysicalMemory, usageVirtualMemory);
+    applyHeapSizeFormula(constraints.get("CONTAINER_HEAP"), usageHeapMemory, memoryMB);
   }
 
   private Double applyContainerSizeFormula(TuningParameterConstraint containerConstraint, Double usagePhysicalMemory,
@@ -296,6 +316,11 @@ public class IPSOManager implements AutoTuningOptimizeManager {
       violations++;
     }
     return violations;
+  }
+
+  @Override
+  public int getSwarmSize() {
+    return 2;
   }
 }
 

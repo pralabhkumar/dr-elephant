@@ -4,15 +4,18 @@ package com.linkedin.drelephant.mapreduce.heuristics;
 Constants used in AutoTuningIPSO Heuristics
  */
 public class CommnConstantsMRAutoTuningIPSOHeuristics {
-  public static final String AUTO_TUNING_IPSO_HEURISTICS = "AutoTuningIPSOHeuristics";
+  public static final String AUTO_TUNING_IPSO_HEURISTICS = "MapReduceConfiguration";
 
   public enum UTILIZED_PARAMETER_KEYS {
-    MAX_MAP_PHYSICAL_MEMORY_BYTES("max Map Physical Memory Bytes"),
-    MAX_MAP_TOTAL_COMMITTED_MEMORY_BYTES("max Map Total Committed Memory Bytes"),
-    MAX_MAP_VIRTUAL_MEMORY_BYTES("max Map Virtual Memory Bytes"),
-    MAX_REDUCE_PHYSICAL_MEMORY_BYTES("max Reduce Physical Memory Bytes"),
-    MAX_REDUCE_TOTAL_COMMITTED_MEMORY_BYTES("max Reduce Total Committed Memory Bytes"),
-    MAX_REDUCE_VIRTUAL_MEMORY_BYTES("max Reduce Virtual Memory Bytes");
+    AVG_PHYSICAL_MEMORY("Avg Physical Memory (MB)"),
+    MAX_PHYSICAL_MEMORY("Max Physical Memory (MB)"),
+    MIN_PHYSICAL_MEMORY("Min Physical Memory (MB)"),
+    AVG_VIRTUAL_MEMORY("Avg Virtual Memory (MB)"),
+    MAX_VIRTUAL_MEMORY("Max Virtual Memory (MB)"),
+    MIN_VIRTUAL_MEMORY("Min Virtual Memory (MB)"),
+    AVG_TOTAL_COMMITTED_HEAP_USAGE_MEMORY("Avg Total Committed Heap Usage Memory (MB)"),
+    MAX_TOTAL_COMMITTED_HEAP_USAGE_MEMORY("Max Total Committed Heap Usage Memory (MB)"),
+    MIN_TOTAL_COMMITTED_HEAP_USAGE_MEMORY("Min Total Committed Heap Usage Memory (MB)");
     private String value;
 
     UTILIZED_PARAMETER_KEYS(String value) {

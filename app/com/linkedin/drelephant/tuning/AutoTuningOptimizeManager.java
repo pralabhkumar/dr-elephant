@@ -5,6 +5,7 @@ import models.AppResult;
 import models.JobDefinition;
 import models.JobSuggestedParamSet;
 import models.JobSuggestedParamValue;
+import models.TuningAlgorithm;
 import models.TuningParameter;
 
 /*
@@ -16,7 +17,7 @@ public interface AutoTuningOptimizeManager {
     Intialize any prequisite require for Optimizer
     Calls once in lifetime of the flow
    */
-  public void intializePrerequisite(JobSuggestedParamSet jobSuggestedParamSet);
+  public void intializePrerequisite(TuningAlgorithm tuningAlgorithm, JobSuggestedParamSet jobSuggestedParamSet);
 
   /*
     Extract parameter Information of previous executions
@@ -41,4 +42,10 @@ public interface AutoTuningOptimizeManager {
     calls after swarm size number of executions
    */
   public int numberOfConstraintsViolated(List<JobSuggestedParamValue> jobSuggestedParamValueList);
+
+  /*
+  Swarm size depends algorithm
+   */
+  public int getSwarmSize();
+
 }

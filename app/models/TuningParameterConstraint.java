@@ -35,8 +35,6 @@ import com.avaje.ebean.annotation.UpdatedTimestamp;
 
 import play.db.ebean.Model;
 
-
-
 //  job_definition_id int(10) unsigned NOT NULL COMMENT 'foreign key from job_definition table',
 //          constraint_type enum('BOUNDARY', 'INTERDEPENDENT') NOT NULL COMMENT 'Constraint type',
 //        tuning_parameter_id int(10) unsigned NULL COMMENT 'foreign key from tuning_parameter table',
@@ -69,8 +67,8 @@ public class TuningParameterConstraint extends Model {
     public static final String upperBound = "upperBound";
     public static final String createdTs = "createdTs";
     public static final String updatedTs = "updatedTs";
+    public static final String paramName = "paramName";
   }
-
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -103,6 +101,9 @@ public class TuningParameterConstraint extends Model {
   @Column(nullable = false)
   @UpdatedTimestamp
   public Timestamp updatedTs;
+
+  @Column(nullable = false)
+  public String paramName;
 
   public static Finder<Integer, TuningParameterConstraint> find =
       new Finder<Integer, TuningParameterConstraint>(Integer.class, TuningParameterConstraint.class);
