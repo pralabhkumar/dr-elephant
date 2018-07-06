@@ -35,16 +35,6 @@ import com.avaje.ebean.annotation.UpdatedTimestamp;
 
 import play.db.ebean.Model;
 
-//  job_definition_id int(10) unsigned NOT NULL COMMENT 'foreign key from job_definition table',
-//          constraint_type enum('BOUNDARY', 'INTERDEPENDENT') NOT NULL COMMENT 'Constraint type',
-//        tuning_parameter_id int(10) unsigned NULL COMMENT 'foreign key from tuning_parameter table',
-//        lower_bound int(10) unsigned NOT NULL,
-//        upper_bound int(10) unsigned NOT NULL,
-//        created_ts timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-//        updated_ts timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ,
-//        PRIMARY KEY(job_definition_id),
-//        CONSTRAINT param_constraints_f1 FOREIGN KEY (job_definition_id) REFERENCES job_definition (id),
-//        CONSTRAINT param_constraints_f2 FOREIGN KEY (tuning_parameter_id) REFERENCES tuning_parameter (id)
 
 @Entity
 @Table(name = "tuning_parameter_constraint")
@@ -61,7 +51,6 @@ public class TuningParameterConstraint extends Model {
     public static final String id = "id";
     public static final String jobDefinitionId = "jobDefinitionId";
     public static final String constraintType = "constraintType";
-    public static final String constraintId = "constraintId";
     public static final String tuningParameterId = "tuningParameterId";
     public static final String lowerBound = "lowerBound";
     public static final String upperBound = "upperBound";
@@ -81,9 +70,6 @@ public class TuningParameterConstraint extends Model {
   @Enumerated(EnumType.STRING)
   @Column(nullable = false)
   public ConstraintType constraintType;
-
-  @Column(nullable = false)
-  public Integer constraintId;
 
   @ManyToOne(cascade = CascadeType.ALL)
   @JoinTable(name = "tuning_parameter", joinColumns = {@JoinColumn(name = "tuning_parameter_id", referencedColumnName = "id")})
@@ -107,4 +93,16 @@ public class TuningParameterConstraint extends Model {
 
   public static Finder<Integer, TuningParameterConstraint> find =
       new Finder<Integer, TuningParameterConstraint>(Integer.class, TuningParameterConstraint.class);
+
+  @Override
+  public void save() {
+    this.updatedTs = new Timestamp(System.currentTimeMillis());
+    super.save();
+  }
+
+  @Override
+  public void update() {
+    this.updatedTs = new Timestamp(System.currentTimeMillis());
+    super.update();
+  }
 }

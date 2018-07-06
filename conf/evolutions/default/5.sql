@@ -23,7 +23,7 @@
 CREATE TABLE IF NOT EXISTS tuning_algorithm (
   id int(10) unsigned NOT NULL AUTO_INCREMENT COMMENT 'Auto increment unique id',
   job_type enum('PIG','HIVE','SPARK') NOT NULL COMMENT 'Job type e.g. pig, hive, spark',
-  optimization_algo enum('PSO') NOT NULL COMMENT 'optimization algorithm name e.g. PSO',
+  optimization_algo enum('PSO','PSO_IPSO') NOT NULL COMMENT 'optimization algorithm name e.g. PSO',
   optimization_algo_version int(11) NOT NULL COMMENT 'algo version',
   optimization_metric enum('RESOURCE','EXECUTION_TIME') DEFAULT NULL COMMENT 'metric to be optimized',
   created_ts timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -32,7 +32,7 @@ CREATE TABLE IF NOT EXISTS tuning_algorithm (
 ) ENGINE=InnoDB;
 
 INSERT INTO tuning_algorithm VALUES (1, 'PIG', 'PSO', '1', 'RESOURCE', current_timestamp(0), current_timestamp(0));
-
+INSERT INTO tuning_algorithm VALUES (3, 'PIG', 'PSO_IPSO', '3', 'RESOURCE', current_timestamp(0), current_timestamp(0));
 /**
  * This table represents hadoop parameters to be optimized for each algo in tuning_algorithm.
  * For example mapreduce.map.memory.mb, mapreduce.task.io.sort.mb etc.
@@ -62,7 +62,34 @@ INSERT INTO tuning_parameter VALUES (7,'mapreduce.reduce.java.opts',1,1536,1152,
 INSERT INTO tuning_parameter VALUES (8,'mapreduce.map.java.opts',1,1536,1152,6144,128, 1, current_timestamp(0), current_timestamp(0));
 INSERT INTO tuning_parameter VALUES (9,'mapreduce.input.fileinputformat.split.maxsize',1,536870912,536870912,536870912,128, 1, current_timestamp(0), current_timestamp(0));
 
+INSERT INTO tuning_parameter VALUES (10,'mapreduce.task.io.sort.mb',3,100,50,1920,50, 0, current_timestamp(0), current_timestamp(0));
+INSERT INTO tuning_parameter VALUES (11,'mapreduce.map.memory.mb',3,2048,1024,8192,1024, 0, current_timestamp(0), current_timestamp(0));
+INSERT INTO tuning_parameter VALUES (12,'mapreduce.task.io.sort.factor',3,10,10,150,10 ,0, current_timestamp(0), current_timestamp(0));
+INSERT INTO tuning_parameter VALUES (13,'mapreduce.map.sort.spill.percent',3,0.8,0.6,0.9,0.1, 0, current_timestamp(0), current_timestamp(0));
+INSERT INTO tuning_parameter VALUES (14,'mapreduce.reduce.memory.mb',3,2048,1024,8192,1024, 0, current_timestamp(0), current_timestamp(0));
+INSERT INTO tuning_parameter VALUES (15,'pig.maxCombinedSplitSize',3,536870912,536870912,536870912,128, 0, current_timestamp(0), current_timestamp(0));
+INSERT INTO tuning_parameter VALUES (16,'mapreduce.reduce.java.opts',3,1536,500,6144,64, 0, current_timestamp(0), current_timestamp(0));
+INSERT INTO tuning_parameter VALUES (17,'mapreduce.map.java.opts',3,1536,500,6144,64, 0, current_timestamp(0), current_timestamp(0));
+INSERT INTO tuning_parameter VALUES (18,'mapreduce.input.fileinputformat.split.maxsize',3,536870912,536870912,536870912,128, 1, current_timestamp(0), current_timestamp(0));
+
 create index index_tp_algo_id on tuning_parameter (tuning_algorithm_id);
+
+CREATE TABLE IF NOT EXISTS tuning_parameter_constraint (
+  id int(10) unsigned NOT NULL AUTO_INCREMENT COMMENT 'Auto increment unique id',
+  job_definition_id int(10) unsigned NOT NULL COMMENT 'Job Definition ID',
+  tuning_parameter_id int(100)  unsigned NOT NULL COMMENT 'tuning_parameter_id ',
+  constraint_type enum('BOUNDARY','INTERDEPENDENT') NOT NULL COMMENT 'Constraint ID',
+  lower_bound double COMMENT 'Lower bound of parameter',
+  upper_bound double COMMENT 'Upper bound of parameter',
+  param_name varchar(100) NOT NULL COMMENT 'name of the hadoop parameter e.g. mapreduce.task.io.sort.mb ',
+  created_ts timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_ts timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  CONSTRAINT tuning_parameter_constraint_ibfk_1 FOREIGN KEY (job_definition_id) REFERENCES tuning_job_definition (job_definition_id),
+  CONSTRAINT tuning_parameter_constraint_ibfk_2 FOREIGN KEY (tuning_parameter_id) REFERENCES tuning_parameter (id)
+) ENGINE=InnoDB;
+
+create index index_tuning_parameter_constraint on tuning_parameter_constraint (tuning_parameter_id);
 
 /**
  * This table represent flow of the job.
@@ -210,6 +237,7 @@ CREATE TABLE IF NOT EXISTS job_suggested_param_value (
 create index index_jspv_tuning_parameter_id on job_suggested_param_value (tuning_parameter_id);
 
 # --- !Downs
+drop table tuning_parameter_constraint;
 drop table job_suggested_param_value ;
 drop table job_saved_state;
 drop table tuning_job_execution;

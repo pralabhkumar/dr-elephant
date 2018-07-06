@@ -1,3 +1,19 @@
+/*
+ * Copyright 2016 LinkedIn Corp.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ */
+
 package com.linkedin.drelephant.tuning;
 
 import com.linkedin.drelephant.util.MemoryFormatUtils;
@@ -15,15 +31,13 @@ import org.apache.log4j.Logger;
 import models.AppHeuristicResult;
 import models.AppHeuristicResultDetails;
 import models.AppResult;
-import com.linkedin.drelephant.mapreduce.heuristics.*;
 import models.TuningParameterConstraint;
 import org.apache.commons.io.FileUtils;
 
-import static com.linkedin.drelephant.mapreduce.heuristics.CommnConstantsMRAutoTuningIPSOHeuristics.UTILIZED_PARAMETER_KEYS;
+import static com.linkedin.drelephant.mapreduce.heuristics.CommonConstantsHeuristic.*;
 import static java.lang.Double.*;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
-import static com.linkedin.drelephant.tuning.IPSOConstants.*;
 
 
 /*
@@ -50,7 +64,6 @@ public class IPSOManager implements AutoTuningOptimizeManager {
       TuningParameterConstraint tuningParameterConstraint = new TuningParameterConstraint();
       tuningParameterConstraint.jobDefinition = jobSuggestedParamSet.jobDefinition;
       tuningParameterConstraint.tuningParameter = tuningParameter;
-      tuningParameterConstraint.constraintId = tuningParameter.id;
       tuningParameterConstraint.lowerBound = tuningParameter.minValue;
       tuningParameterConstraint.upperBound = tuningParameter.maxValue;
       tuningParameterConstraint.constraintType = TuningParameterConstraint.ConstraintType.BOUNDARY;
@@ -155,18 +168,18 @@ public class IPSOManager implements AutoTuningOptimizeManager {
     Map<String, TuningParameterConstraint> memoryConstraints = new HashMap<String, TuningParameterConstraint>();
     for (TuningParameterConstraint parameterConstraint : parameterConstraints) {
       if (functionType.equals("map")) {
-        if (parameterConstraint.paramName.equals(PARAMTER_CONSTRAINT.MAPPER_MEMORY.getValue())) {
+        if (parameterConstraint.paramName.equals(ASSIGNED_PARAMETER_KEYS.MAPPER_MEMORY.getValue())) {
           memoryConstraints.put("CONTAINER_MEMORY", parameterConstraint);
         }
-        if (parameterConstraint.paramName.equals(PARAMTER_CONSTRAINT.MAPPER_HEAP_MEMORY.getValue())) {
+        if (parameterConstraint.paramName.equals(ASSIGNED_PARAMETER_KEYS.MAPPER_HEAP.getValue())) {
           memoryConstraints.put("CONTAINER_HEAP", parameterConstraint);
         }
       }
       if (functionType.equals("reduce")) {
-        if (parameterConstraint.paramName.equals(PARAMTER_CONSTRAINT.REDUCER_MEMORY.getValue())) {
+        if (parameterConstraint.paramName.equals(ASSIGNED_PARAMETER_KEYS.REDUCER_MEMORY.getValue())) {
           memoryConstraints.put("CONTAINER_MEMORY", parameterConstraint);
         }
-        if (parameterConstraint.paramName.equals(PARAMTER_CONSTRAINT.REDUCER_HEAP_MEMORY.getValue())) {
+        if (parameterConstraint.paramName.equals(ASSIGNED_PARAMETER_KEYS.REDUCER_HEAP.getValue())) {
           memoryConstraints.put("CONTAINER_HEAP", parameterConstraint);
         }
       }
@@ -276,39 +289,51 @@ public class IPSOManager implements AutoTuningOptimizeManager {
     Integer violations = 0;
 
     for (JobSuggestedParamValue jobSuggestedParamValue : jobSuggestedParamValueList) {
-
-      if (jobSuggestedParamValue.tuningParameter.paramName.equals("mapreduce.task.io.sort.mb")) {
+      if (jobSuggestedParamValue.tuningParameter.paramName.equals(ASSIGNED_PARAMETER_KEYS.SORT_BUFFER.getValue())) {
         mrSortMemory = jobSuggestedParamValue.paramValue;
-      } else if (jobSuggestedParamValue.tuningParameter.paramName.equals("mapreduce.map.memory.mb")) {
+      } else if (jobSuggestedParamValue.tuningParameter.paramName.equals(
+          ASSIGNED_PARAMETER_KEYS.MAPPER_MEMORY.getValue())) {
         mrMapMemory = jobSuggestedParamValue.paramValue;
-      } else if (jobSuggestedParamValue.tuningParameter.paramName.equals("mapreduce.reduce.memory.mb")) {
+      } else if (jobSuggestedParamValue.tuningParameter.paramName.equals(
+          ASSIGNED_PARAMETER_KEYS.REDUCER_MEMORY.getValue())) {
         mrReduceMemory = jobSuggestedParamValue.paramValue;
-      } else if (jobSuggestedParamValue.tuningParameter.paramName.equals("mapreduce.map.java.opts")) {
+      } else if (jobSuggestedParamValue.tuningParameter.paramName.equals(
+          ASSIGNED_PARAMETER_KEYS.MAPPER_HEAP.getValue())) {
         mrMapXMX = jobSuggestedParamValue.paramValue;
-      } else if (jobSuggestedParamValue.tuningParameter.paramName.equals("mapreduce.reduce.java.opts")) {
+      } else if (jobSuggestedParamValue.tuningParameter.paramName.equals(
+          ASSIGNED_PARAMETER_KEYS.REDUCER_HEAP.getValue())) {
         mrReduceXMX = jobSuggestedParamValue.paramValue;
-      } else if (jobSuggestedParamValue.tuningParameter.paramName.equals("pig.maxCombinedSplitSize")) {
+      } else if (jobSuggestedParamValue.tuningParameter.paramName.equals(
+          ASSIGNED_PARAMETER_KEYS.PIG_SPLIT_SIZE.getValue())) {
         pigMaxCombinedSplitSize = jobSuggestedParamValue.paramValue / FileUtils.ONE_MB;
       }
     }
 
     if (mrSortMemory != null && mrMapMemory != null) {
       if (mrSortMemory > 0.6 * mrMapMemory) {
+        logger.info("Sort Memory " + mrSortMemory);
+        logger.info("Mapper Memory " + mrMapMemory);
         logger.info("Constraint violated: Sort memory > 60% of map memory");
         violations++;
       }
       if (mrMapMemory - mrSortMemory < 768) {
+        logger.info("Sort Memory " + mrSortMemory);
+        logger.info("Mapper Memory " + mrMapMemory);
         logger.info("Constraint violated: Map memory - sort memory < 768 mb");
         violations++;
       }
-      if (mrMapXMX > 0.80 * mrMapMemory) {
-        logger.info("Constraint violated:  Mapper  XMX > 0.8*mrMapMemory");
-        violations++;
-      }
-      if (mrReduceXMX > 0.80 * mrReduceMemory) {
-        logger.info("Constraint violated:  Reducer  XMX > 0.8*mrReducerMemory");
-        violations++;
-      }
+    }
+    if (mrMapXMX != null && mrMapMemory != null && mrMapXMX > 0.80 * mrMapMemory) {
+      logger.info("Mapper Heap Max " + mrMapXMX);
+      logger.info("Mapper Memory " + mrMapMemory);
+      logger.info("Constraint violated:  Mapper  XMX > 0.8*mrMapMemory");
+      violations++;
+    }
+    if (mrReduceMemory != null && mrReduceXMX != null && mrReduceXMX > 0.80 * mrReduceMemory) {
+      logger.info("Reducer Heap Max " + mrMapXMX);
+      logger.info("Reducer Memory " + mrMapMemory);
+      logger.info("Constraint violated:  Reducer  XMX > 0.8*mrReducerMemory");
+      violations++;
     }
 
     if (pigMaxCombinedSplitSize != null && mrMapMemory != null && (pigMaxCombinedSplitSize > 1.8 * mrMapMemory)) {
@@ -319,6 +344,12 @@ public class IPSOManager implements AutoTuningOptimizeManager {
   }
 
   @Override
+  /*
+  Since IPSO collects information from previous iterations , it better to minimize the independendent iterations(as compare to PSO).
+  Swarm size of 2 makes two independendent iterations and next set of iterations will
+  depend on the constraints values set by previous set. This will help parameters to converge faster.
+   */
+
   public int getSwarmSize() {
     return 2;
   }
