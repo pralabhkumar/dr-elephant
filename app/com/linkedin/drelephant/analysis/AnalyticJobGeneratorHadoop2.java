@@ -140,7 +140,7 @@ public class AnalyticJobGeneratorHadoop2 implements AnalyticJobGenerator {
 
     // Fetch all succeeded apps
     URL succeededAppsURL = new URL(new URL("http://" + _resourceManagerAddress), String.format(
-            "/ws/v1/cluster/apps?user=pkumar2&finalStatus=SUCCEEDED&finishedTimeBegin=%s&finishedTimeEnd=%s",
+            "/ws/v1/cluster/apps?finalStatus=SUCCEEDED&finishedTimeBegin=%s&finishedTimeEnd=%s",
             String.valueOf(_lastTime + 1), String.valueOf(_currentTime)));
     logger.info("The succeeded apps URL is " + succeededAppsURL);
     List<AnalyticJob> succeededApps = readApps(succeededAppsURL);
@@ -150,7 +150,7 @@ public class AnalyticJobGeneratorHadoop2 implements AnalyticJobGenerator {
     // state: Application Master State
     // finalStatus: Status of the Application as reported by the Application Master
     URL failedAppsURL = new URL(new URL("http://" + _resourceManagerAddress), String.format(
-        "/ws/v1/cluster/apps?user=pkumar2&finalStatus=FAILED&state=FINISHED&finishedTimeBegin=%s&finishedTimeEnd=%s",
+        "/ws/v1/cluster/apps?finalStatus=FAILED&state=FINISHED&finishedTimeBegin=%s&finishedTimeEnd=%s",
         String.valueOf(_lastTime + 1), String.valueOf(_currentTime)));
     List<AnalyticJob> failedApps = readApps(failedAppsURL);
     logger.info("The failed apps URL is " + failedAppsURL);
