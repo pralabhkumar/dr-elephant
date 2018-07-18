@@ -33,7 +33,7 @@ import java.util.Map;
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
 
-import static com.linkedin.drelephant.mapreduce.heuristics.CommonConstantsHeuristic.*;
+import static com.linkedin.drelephant.mapreduce.heuristics.CommonConstantsHeuristic.UtilizedParameterKeys.*;
 
 
 /**
@@ -179,7 +179,7 @@ public abstract class GenericMemoryHeuristic implements Heuristic<MapReduceAppli
 
     long taskPMemAvg = Statistics.average(taskPMems);
     long taskVMemAvg = Statistics.average(taskVMems);
-    long taskHeamUsageAvg = Statistics.average(taskHeapUsages);
+    long taskHeapUsageAvg = Statistics.average(taskHeapUsages);
     long averageTimeMs = Statistics.average(runtimesMs);
 
     Severity severity;
@@ -195,23 +195,23 @@ public abstract class GenericMemoryHeuristic implements Heuristic<MapReduceAppli
 
     result.addResultDetail("Number of tasks", Integer.toString(tasks.length));
     result.addResultDetail("Avg task runtime", Statistics.readableTimespan(averageTimeMs));
-    result.addResultDetail(UTILIZED_PARAMETER_KEYS.AVG_PHYSICAL_MEMORY.getValue(),
+    result.addResultDetail(AVG_PHYSICAL_MEMORY.getValue(),
         Long.toString(taskPMemAvg / FileUtils.ONE_MB));
-    result.addResultDetail(UTILIZED_PARAMETER_KEYS.MAX_PHYSICAL_MEMORY.getValue(),
+    result.addResultDetail(MAX_PHYSICAL_MEMORY.getValue(),
         Long.toString(taskPMax / FileUtils.ONE_MB));
-    result.addResultDetail(UTILIZED_PARAMETER_KEYS.MIN_PHYSICAL_MEMORY.getValue(),
+    result.addResultDetail(MIN_PHYSICAL_MEMORY.getValue(),
         Long.toString(taskPMin / FileUtils.ONE_MB));
-    result.addResultDetail(UTILIZED_PARAMETER_KEYS.AVG_VIRTUAL_MEMORY.getValue(),
+    result.addResultDetail(AVG_VIRTUAL_MEMORY.getValue(),
         Long.toString(taskVMemAvg / FileUtils.ONE_MB));
-    result.addResultDetail(UTILIZED_PARAMETER_KEYS.MAX_VIRTUAL_MEMORY.getValue(),
+    result.addResultDetail(MAX_VIRTUAL_MEMORY.getValue(),
         Long.toString(taskVMax / FileUtils.ONE_MB));
-    result.addResultDetail(UTILIZED_PARAMETER_KEYS.MIN_VIRTUAL_MEMORY.getValue(),
+    result.addResultDetail(MIN_VIRTUAL_MEMORY.getValue(),
         Long.toString(taskVMin / FileUtils.ONE_MB));
-    result.addResultDetail(UTILIZED_PARAMETER_KEYS.AVG_TOTAL_COMMITTED_HEAP_USAGE_MEMORY.getValue(),
-        Long.toString(taskHeamUsageAvg / FileUtils.ONE_MB));
-    result.addResultDetail(UTILIZED_PARAMETER_KEYS.MAX_TOTAL_COMMITTED_HEAP_USAGE_MEMORY.getValue(),
+    result.addResultDetail(AVG_TOTAL_COMMITTED_HEAP_USAGE_MEMORY.getValue(),
+        Long.toString(taskHeapUsageAvg / FileUtils.ONE_MB));
+    result.addResultDetail(MAX_TOTAL_COMMITTED_HEAP_USAGE_MEMORY.getValue(),
         Long.toString(taskHUMax / FileUtils.ONE_MB));
-    result.addResultDetail(UTILIZED_PARAMETER_KEYS.MIN_TOTAL_COMMITTED_HEAP_USAGE_MEMORY.getValue(),
+    result.addResultDetail(MIN_TOTAL_COMMITTED_HEAP_USAGE_MEMORY.getValue(),
         Long.toString(taskHUMin / FileUtils.ONE_MB));
     result.addResultDetail("Requested Container Memory", FileUtils.byteCountToDisplaySize(containerMem));
 

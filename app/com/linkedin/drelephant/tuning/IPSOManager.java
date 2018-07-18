@@ -49,7 +49,7 @@ public class IPSOManager implements AutoTuningOptimizeManager {
   private Map<String, Map<String, Double>> usageDataGlobal = null;
   private String functionTypes[] = {"map", "reduce"};
 
-  enum USAGE_COUNTER_SCHEMA {USED_PHYSICAL_MEMORY, USED_VIRTUAL_MEMORY, USED_HEAP_MEMORY}
+  enum UsageCounterSchema {USED_PHYSICAL_MEMORY, USED_VIRTUAL_MEMORY, USED_HEAP_MEMORY}
 
   @Override
   public void intializePrerequisite(TuningAlgorithm tuningAlgorithm, JobSuggestedParamSet jobSuggestedParamSet) {
@@ -88,14 +88,14 @@ public class IPSOManager implements AutoTuningOptimizeManager {
         }
       }
     }
-    logger.info("Usage Values Global ");
+    logger.debug("Usage Values Global ");
     printInformation(usageDataGlobal);
   }
 
   private void intialize() {
     for (String function : functionTypes) {
       Map<String, Double> usageData = new HashMap<String, Double>();
-      for (UTILIZED_PARAMETER_KEYS value : UTILIZED_PARAMETER_KEYS.values()) {
+      for (UtilizedParameterKeys value : UtilizedParameterKeys.values()) {
         usageData.put(value.getValue(), 0.0);
       }
       usageDataGlobal.put(function, usageData);
@@ -106,6 +106,7 @@ public class IPSOManager implements AutoTuningOptimizeManager {
     Map<String, Map<String, Double>> usageData = new HashMap<String, Map<String, Double>>();
     if (appResult.yarnAppHeuristicResults != null) {
       for (AppHeuristicResult appHeuristicResult : appResult.yarnAppHeuristicResults) {
+
         if (appHeuristicResult.heuristicName.equals("Mapper Memory")) {
           Map<String, Double> counterData = new HashMap<String, Double>();
           collectUsageDataPerApplicationForFunction(appHeuristicResult, counterData);
@@ -118,17 +119,17 @@ public class IPSOManager implements AutoTuningOptimizeManager {
         }
       }
     }
-    logger.info("Usage Values local   " + appResult.jobExecUrl);
+    logger.debug("Usage Values local   " + appResult.jobExecUrl);
     printInformation(usageData);
     return usageData;
   }
 
   private void printInformation(Map<String, Map<String, Double>> information) {
     for (String functionType : information.keySet()) {
-      logger.info("function Type    " + functionType);
+      logger.debug("function Type    " + functionType);
       Map<String, Double> usage = information.get(functionType);
       for (String data : usage.keySet()) {
-        logger.info(data + " " + usage.get(data));
+        logger.debug(data + " " + usage.get(data));
       }
     }
   }
@@ -137,7 +138,7 @@ public class IPSOManager implements AutoTuningOptimizeManager {
       Map<String, Double> counterData) {
     if (appHeuristicResult.yarnAppHeuristicResultDetails != null) {
       for (AppHeuristicResultDetails appHeuristicResultDetails : appHeuristicResult.yarnAppHeuristicResultDetails) {
-        for (UTILIZED_PARAMETER_KEYS value : UTILIZED_PARAMETER_KEYS.values()) {
+        for (UtilizedParameterKeys value : UtilizedParameterKeys.values()) {
           if (appHeuristicResultDetails.name.equals(value.getValue())) {
             counterData.put(value.getValue(), appHeuristicResultDetails.value == null ? 0
                 : ((double) MemoryFormatUtils.stringToBytes(appHeuristicResultDetails.value)));
@@ -153,8 +154,8 @@ public class IPSOManager implements AutoTuningOptimizeManager {
     List<TuningParameterConstraint> parameterConstraints = TuningParameterConstraint.find.where().
         eq("job_definition_id", jobID).findList();
     for (String function : functionTypes) {
-      logger.info(" Optimizing Parameter Space  " + function);
-      if (usageDataGlobal.get(function).get(UTILIZED_PARAMETER_KEYS.MAX_PHYSICAL_MEMORY.getValue()) > 0.0) {
+      logger.debug(" Optimizing Parameter Space  " + function);
+      if (usageDataGlobal.get(function).get(UtilizedParameterKeys.MAX_PHYSICAL_MEMORY.getValue()) > 0.0) {
         List<Double> usageStats = extractUsageParameter(function);
         Map<String, TuningParameterConstraint> memoryConstraints =
             filterMemoryConstraint(parameterConstraints, function);
@@ -168,18 +169,18 @@ public class IPSOManager implements AutoTuningOptimizeManager {
     Map<String, TuningParameterConstraint> memoryConstraints = new HashMap<String, TuningParameterConstraint>();
     for (TuningParameterConstraint parameterConstraint : parameterConstraints) {
       if (functionType.equals("map")) {
-        if (parameterConstraint.paramName.equals(ASSIGNED_PARAMETER_KEYS.MAPPER_MEMORY.getValue())) {
+        if (parameterConstraint.paramName.equals(ParameterKeys.MAPPER_MEMORY_HADOOP_CONF.getValue())) {
           memoryConstraints.put("CONTAINER_MEMORY", parameterConstraint);
         }
-        if (parameterConstraint.paramName.equals(ASSIGNED_PARAMETER_KEYS.MAPPER_HEAP.getValue())) {
+        if (parameterConstraint.paramName.equals(ParameterKeys.MAPPER_HEAP_HADOOP_CONF.getValue())) {
           memoryConstraints.put("CONTAINER_HEAP", parameterConstraint);
         }
       }
       if (functionType.equals("reduce")) {
-        if (parameterConstraint.paramName.equals(ASSIGNED_PARAMETER_KEYS.REDUCER_MEMORY.getValue())) {
+        if (parameterConstraint.paramName.equals(ParameterKeys.REDUCER_MEMORY_HADOOP_CONF.getValue())) {
           memoryConstraints.put("CONTAINER_MEMORY", parameterConstraint);
         }
-        if (parameterConstraint.paramName.equals(ASSIGNED_PARAMETER_KEYS.REDUCER_HEAP.getValue())) {
+        if (parameterConstraint.paramName.equals(ParameterKeys.REDUCER_HEAP_HADOOP_CONF.getValue())) {
           memoryConstraints.put("CONTAINER_HEAP", parameterConstraint);
         }
       }
@@ -190,14 +191,14 @@ public class IPSOManager implements AutoTuningOptimizeManager {
   private List<Double> extractUsageParameter(String functionType) {
     Double usedPhysicalMemoryMB = 0.0, usedVirtualMemoryMB = 0.0, usedHeapMemoryMB = 0.0;
     usedPhysicalMemoryMB =
-        usageDataGlobal.get(functionType).get(UTILIZED_PARAMETER_KEYS.MAX_PHYSICAL_MEMORY.getValue());
-    usedVirtualMemoryMB = usageDataGlobal.get(functionType).get(UTILIZED_PARAMETER_KEYS.MAX_VIRTUAL_MEMORY.getValue());
+        usageDataGlobal.get(functionType).get(UtilizedParameterKeys.MAX_PHYSICAL_MEMORY.getValue());
+    usedVirtualMemoryMB = usageDataGlobal.get(functionType).get(UtilizedParameterKeys.MAX_VIRTUAL_MEMORY.getValue());
     usedHeapMemoryMB =
-        usageDataGlobal.get(functionType).get(UTILIZED_PARAMETER_KEYS.MAX_TOTAL_COMMITTED_HEAP_USAGE_MEMORY.getValue());
-    logger.info(" Usage Stats " + functionType);
-    logger.info(" Physical Memory Usage MB " + usedPhysicalMemoryMB);
-    logger.info(" Virtual Memory Usage MB " + usedVirtualMemoryMB / 2.1);
-    logger.info(" Heap Usage MB " + usedHeapMemoryMB);
+        usageDataGlobal.get(functionType).get(UtilizedParameterKeys.MAX_TOTAL_COMMITTED_HEAP_USAGE_MEMORY.getValue());
+    logger.debug(" Usage Stats " + functionType);
+    logger.debug(" Physical Memory Usage MB " + usedPhysicalMemoryMB);
+    logger.debug(" Virtual Memory Usage MB " + usedVirtualMemoryMB / 2.1);
+    logger.debug(" Heap Usage MB " + usedHeapMemoryMB);
     List<Double> usageStats = new ArrayList<Double>();
     usageStats.add(usedPhysicalMemoryMB);
     usageStats.add(usedVirtualMemoryMB);
@@ -208,9 +209,9 @@ public class IPSOManager implements AutoTuningOptimizeManager {
   private void memoryParameterIPSO(String trigger, Map<String, TuningParameterConstraint> constraints,
       List<Double> usageStats) {
     logger.info(" IPSO for " + trigger);
-    Double usagePhysicalMemory = usageStats.get(USAGE_COUNTER_SCHEMA.USED_PHYSICAL_MEMORY.ordinal());
-    Double usageVirtualMemory = usageStats.get(USAGE_COUNTER_SCHEMA.USED_VIRTUAL_MEMORY.ordinal());
-    Double usageHeapMemory = usageStats.get(USAGE_COUNTER_SCHEMA.USED_HEAP_MEMORY.ordinal());
+    Double usagePhysicalMemory = usageStats.get(UsageCounterSchema.USED_PHYSICAL_MEMORY.ordinal());
+    Double usageVirtualMemory = usageStats.get(UsageCounterSchema.USED_VIRTUAL_MEMORY.ordinal());
+    Double usageHeapMemory = usageStats.get(UsageCounterSchema.USED_HEAP_MEMORY.ordinal());
     Double memoryMB =
         applyContainerSizeFormula(constraints.get("CONTAINER_MEMORY"), usagePhysicalMemory, usageVirtualMemory);
     applyHeapSizeFormula(constraints.get("CONTAINER_HEAP"), usageHeapMemory, memoryMB);
@@ -221,10 +222,10 @@ public class IPSOManager implements AutoTuningOptimizeManager {
     Double memoryMB = max(usagePhysicalMemory, usageVirtualMemory / (2.1));
     Double containerSizeLower = getContainerSize(memoryMB);
     Double containerSizeUpper = getContainerSize(1.2 * memoryMB);
-    logger.info(" Previous Lower Bound  Memory  " + containerConstraint.lowerBound);
-    logger.info(" Previous Upper Bound  Memory " + containerConstraint.upperBound);
-    logger.info(" Current Lower Bound  Memory  " + containerSizeLower);
-    logger.info(" Current Upper Bound  Memory " + containerSizeUpper);
+    logger.debug(" Previous Lower Bound  Memory  " + containerConstraint.lowerBound);
+    logger.debug(" Previous Upper Bound  Memory " + containerConstraint.upperBound);
+    logger.debug(" Current Lower Bound  Memory  " + containerSizeLower);
+    logger.debug(" Current Upper Bound  Memory " + containerSizeUpper);
     containerConstraint.lowerBound = containerSizeLower;
     containerConstraint.upperBound = containerSizeUpper;
     containerConstraint.save();
@@ -235,10 +236,10 @@ public class IPSOManager implements AutoTuningOptimizeManager {
       Double memoryMB) {
     Double heapSizeLowerBound = min(0.75 * memoryMB, usageHeapMemory);
     Double heapSizeUpperBound = heapSizeLowerBound * 1.2;
-    logger.info(" Previous Lower Bound  XMX  " + containerHeapSizeConstraint.lowerBound);
-    logger.info(" Previous Upper Bound  XMX " + containerHeapSizeConstraint.upperBound);
-    logger.info(" Current Lower Bound  XMX  " + heapSizeLowerBound);
-    logger.info(" Current Upper Bound  XMX " + heapSizeUpperBound);
+    logger.debug(" Previous Lower Bound  XMX  " + containerHeapSizeConstraint.lowerBound);
+    logger.debug(" Previous Upper Bound  XMX " + containerHeapSizeConstraint.upperBound);
+    logger.debug(" Current Lower Bound  XMX  " + heapSizeLowerBound);
+    logger.debug(" Current Upper Bound  XMX " + heapSizeUpperBound);
     containerHeapSizeConstraint.lowerBound = heapSizeLowerBound;
     containerHeapSizeConstraint.upperBound = heapSizeUpperBound;
     containerHeapSizeConstraint.save();
@@ -289,55 +290,55 @@ public class IPSOManager implements AutoTuningOptimizeManager {
     Integer violations = 0;
 
     for (JobSuggestedParamValue jobSuggestedParamValue : jobSuggestedParamValueList) {
-      if (jobSuggestedParamValue.tuningParameter.paramName.equals(ASSIGNED_PARAMETER_KEYS.SORT_BUFFER.getValue())) {
+      if (jobSuggestedParamValue.tuningParameter.paramName.equals(ParameterKeys.SORT_BUFFER_HADOOP_CONF.getValue())) {
         mrSortMemory = jobSuggestedParamValue.paramValue;
       } else if (jobSuggestedParamValue.tuningParameter.paramName.equals(
-          ASSIGNED_PARAMETER_KEYS.MAPPER_MEMORY.getValue())) {
+          ParameterKeys.MAPPER_MEMORY_HADOOP_CONF.getValue())) {
         mrMapMemory = jobSuggestedParamValue.paramValue;
       } else if (jobSuggestedParamValue.tuningParameter.paramName.equals(
-          ASSIGNED_PARAMETER_KEYS.REDUCER_MEMORY.getValue())) {
+          ParameterKeys.REDUCER_MEMORY_HADOOP_CONF.getValue())) {
         mrReduceMemory = jobSuggestedParamValue.paramValue;
       } else if (jobSuggestedParamValue.tuningParameter.paramName.equals(
-          ASSIGNED_PARAMETER_KEYS.MAPPER_HEAP.getValue())) {
+          ParameterKeys.MAPPER_HEAP_HADOOP_CONF.getValue())) {
         mrMapXMX = jobSuggestedParamValue.paramValue;
       } else if (jobSuggestedParamValue.tuningParameter.paramName.equals(
-          ASSIGNED_PARAMETER_KEYS.REDUCER_HEAP.getValue())) {
+          ParameterKeys.REDUCER_HEAP_HADOOP_CONF.getValue())) {
         mrReduceXMX = jobSuggestedParamValue.paramValue;
       } else if (jobSuggestedParamValue.tuningParameter.paramName.equals(
-          ASSIGNED_PARAMETER_KEYS.PIG_SPLIT_SIZE.getValue())) {
+          ParameterKeys.PIG_SPLIT_SIZE_HADOOP_CONF.getValue())) {
         pigMaxCombinedSplitSize = jobSuggestedParamValue.paramValue / FileUtils.ONE_MB;
       }
     }
 
     if (mrSortMemory != null && mrMapMemory != null) {
       if (mrSortMemory > 0.6 * mrMapMemory) {
-        logger.info("Sort Memory " + mrSortMemory);
-        logger.info("Mapper Memory " + mrMapMemory);
-        logger.info("Constraint violated: Sort memory > 60% of map memory");
+        logger.debug("Sort Memory " + mrSortMemory);
+        logger.debug("Mapper Memory " + mrMapMemory);
+        logger.debug("Constraint violated: Sort memory > 60% of map memory");
         violations++;
       }
       if (mrMapMemory - mrSortMemory < 768) {
-        logger.info("Sort Memory " + mrSortMemory);
-        logger.info("Mapper Memory " + mrMapMemory);
-        logger.info("Constraint violated: Map memory - sort memory < 768 mb");
+        logger.debug("Sort Memory " + mrSortMemory);
+        logger.debug("Mapper Memory " + mrMapMemory);
+        logger.debug("Constraint violated: Map memory - sort memory < 768 mb");
         violations++;
       }
     }
     if (mrMapXMX != null && mrMapMemory != null && mrMapXMX > 0.80 * mrMapMemory) {
-      logger.info("Mapper Heap Max " + mrMapXMX);
-      logger.info("Mapper Memory " + mrMapMemory);
-      logger.info("Constraint violated:  Mapper  XMX > 0.8*mrMapMemory");
+      logger.debug("Mapper Heap Max " + mrMapXMX);
+      logger.debug("Mapper Memory " + mrMapMemory);
+      logger.debug("Constraint violated:  Mapper  XMX > 0.8*mrMapMemory");
       violations++;
     }
     if (mrReduceMemory != null && mrReduceXMX != null && mrReduceXMX > 0.80 * mrReduceMemory) {
-      logger.info("Reducer Heap Max " + mrMapXMX);
-      logger.info("Reducer Memory " + mrMapMemory);
-      logger.info("Constraint violated:  Reducer  XMX > 0.8*mrReducerMemory");
+      logger.debug("Reducer Heap Max " + mrMapXMX);
+      logger.debug("Reducer Memory " + mrMapMemory);
+      logger.debug("Constraint violated:  Reducer  XMX > 0.8*mrReducerMemory");
       violations++;
     }
 
     if (pigMaxCombinedSplitSize != null && mrMapMemory != null && (pigMaxCombinedSplitSize > 1.8 * mrMapMemory)) {
-      logger.info("Constraint violated: Pig max combined split size > 1.8 * map memory");
+      logger.debug("Constraint violated: Pig max combined split size > 1.8 * map memory");
       violations++;
     }
     return violations;
