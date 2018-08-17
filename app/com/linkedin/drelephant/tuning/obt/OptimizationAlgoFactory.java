@@ -1,4 +1,4 @@
-package com.linkedin.drelephant.tuning;
+package com.linkedin.drelephant.tuning.obt;
 
 import models.TuningAlgorithm;
 import org.apache.log4j.Logger;

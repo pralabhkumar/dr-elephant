@@ -21,6 +21,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.linkedin.drelephant.DrElephant;
 import com.linkedin.drelephant.ElephantContext;
+import com.linkedin.drelephant.tuning.Manager;
 import com.linkedin.drelephant.tuning.obt.BaselineManagerOBT;
 import com.linkedin.drelephant.tuning.obt.FitnessManagerOBT;
 import com.linkedin.drelephant.util.Utils;
@@ -166,7 +167,7 @@ public class RestAPITest {
         /*FitnessComputeUtil fitnessComputeUtil = new FitnessComputeUtil();
         fitnessComputeUtil.updateFitness();*/
 
-        com.linkedin.drelephant.tuning.foundation.Manager manager = new FitnessManagerOBT();
+        Manager manager = new FitnessManagerOBT();
         manager.execute();
 
         jobSuggestedParamSet = JobSuggestedParamSet.find.byId(jobSuggestedParamSet.id);
@@ -209,7 +210,7 @@ public class RestAPITest {
             tuningJobDefinition.job.jobName.equals("countByCountryFlowSmallNew_countByCountry"));
 
         //BaselineComputeUtil baselineComputeUtil = new BaselineComputeUtil();
-        com.linkedin.drelephant.tuning.foundation.Manager manager = new BaselineManagerOBT();
+        Manager manager = new BaselineManagerOBT();
         manager.execute();
         //baselineComputeUtil.computeBaseline();
 

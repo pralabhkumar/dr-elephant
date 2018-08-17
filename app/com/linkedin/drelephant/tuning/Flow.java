@@ -1,4 +1,4 @@
-package com.linkedin.drelephant.tuning.foundation;
+package com.linkedin.drelephant.tuning;
 
 import com.linkedin.drelephant.tuning.Schduler.AzkabanJobStatusManager;
 import com.linkedin.drelephant.tuning.engine.MRExecutionEngine;

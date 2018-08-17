@@ -1,8 +1,8 @@
 package com.linkedin.drelephant.tuning.engine;
 
-import com.linkedin.drelephant.tuning.AutoTuningOptimizeManager;
-import com.linkedin.drelephant.tuning.OptimizationAlgoFactory;
-import com.linkedin.drelephant.tuning.foundation.ExecutionEngine;
+import com.linkedin.drelephant.tuning.obt.AutoTuningOptimizeManager;
+import com.linkedin.drelephant.tuning.obt.OptimizationAlgoFactory;
+import com.linkedin.drelephant.tuning.ExecutionEngine;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;

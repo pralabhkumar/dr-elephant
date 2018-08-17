@@ -102,7 +102,8 @@ public class PSOParamGeneratorTest {
 
         LOGGER.info("PSOParamGeneratorTest parameter list: " + Json.toJson(tuningParameterList));
 
-        JobTuningInfo jobTuningInfo = new JobTuningInfo();
+        JobTuningInfo
+            jobTuningInfo = new JobTuningInfo();
         jobTuningInfo.setTuningJob(jobDefinition);
         jobTuningInfo.setParametersToTune(tuningParameterList);
         jobTuningInfo.setTunerState("{}");
@@ -206,7 +207,7 @@ public class PSOParamGeneratorTest {
        /* PSOParamGenerator psoParamGenerator = new PSOParamGenerator();
         psoParamGenerator.getParams();*/
 
-        com.linkedin.drelephant.tuning.foundation.Manager manager = new AlgorithmManagerOBT(new MRExecutionEngine());
+        Manager manager = new AlgorithmManagerOBT(new MRExecutionEngine());
         manager.execute();
 
         List<JobSuggestedParamSet> jobSuggestedParamSetList = JobSuggestedParamSet.find.where()

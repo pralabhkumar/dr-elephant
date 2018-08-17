@@ -1,4 +1,4 @@
-package com.linkedin.drelephant.tuning.foundation;
+package com.linkedin.drelephant.tuning;
 
 import java.util.List;
 import models.JobSuggestedParamValue;

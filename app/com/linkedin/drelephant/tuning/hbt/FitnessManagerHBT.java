@@ -1,6 +1,6 @@
 package com.linkedin.drelephant.tuning.hbt;
 
-import com.linkedin.drelephant.tuning.foundation.AbstractFitnessManager;
+import com.linkedin.drelephant.tuning.AbstractFitnessManager;
 import java.util.List;
 import models.TuningJobExecutionParamSet;
 

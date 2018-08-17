@@ -1,6 +1,6 @@
 package com.linkedin.drelephant.tuning.engine;
 
-import com.linkedin.drelephant.tuning.foundation.ExecutionEngine;
+import com.linkedin.drelephant.tuning.ExecutionEngine;
 import java.util.List;
 import models.JobSuggestedParamValue;
 import models.TuningAlgorithm;

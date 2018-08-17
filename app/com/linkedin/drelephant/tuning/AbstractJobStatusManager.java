@@ -1,4 +1,4 @@
-package com.linkedin.drelephant.tuning.foundation;
+package com.linkedin.drelephant.tuning;
 
 import controllers.AutoTuningMetricsController;
 import java.util.List;

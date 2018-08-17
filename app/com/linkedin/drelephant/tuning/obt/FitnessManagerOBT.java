@@ -3,7 +3,7 @@ package com.linkedin.drelephant.tuning.obt;
 import com.avaje.ebean.Expr;
 import com.linkedin.drelephant.AutoTuner;
 import com.linkedin.drelephant.ElephantContext;
-import com.linkedin.drelephant.tuning.foundation.AbstractFitnessManager;
+import com.linkedin.drelephant.tuning.AbstractFitnessManager;
 import com.linkedin.drelephant.util.Utils;
 import java.util.ArrayList;
 import java.util.List;

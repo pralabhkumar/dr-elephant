@@ -1,26 +1,8 @@
-package com.linkedin.drelephant.tuning.foundation;
+package com.linkedin.drelephant.tuning;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.linkedin.drelephant.tuning.AutoTuningOptimizeManager;
-import com.linkedin.drelephant.tuning.JobTuningInfo;
-import com.linkedin.drelephant.tuning.OptimizationAlgoFactory;
-import com.linkedin.drelephant.tuning.Particle;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import models.JobDefinition;
-import models.JobExecution;
-import models.JobSavedState;
-import models.JobSuggestedParamSet;
-import models.JobSuggestedParamValue;
-import models.TuningAlgorithm;
-import models.TuningJobDefinition;
-import models.TuningParameter;
 import org.apache.log4j.Logger;
-import play.libs.Json;
 
 
 public abstract class AbstractAlgorithmManager implements Manager {

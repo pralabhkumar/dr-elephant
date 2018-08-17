@@ -18,6 +18,8 @@ package com.linkedin.drelephant.tuning;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.linkedin.drelephant.ElephantContext;
+import com.linkedin.drelephant.tuning.obt.AutoTuningOptimizeManager;
+import com.linkedin.drelephant.tuning.obt.OptimizationAlgoFactory;
 import com.linkedin.drelephant.util.Utils;
 
 import controllers.AutoTuningMetricsController;

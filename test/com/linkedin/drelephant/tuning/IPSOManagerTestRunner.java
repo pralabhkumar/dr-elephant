@@ -1,6 +1,9 @@
 package com.linkedin.drelephant.tuning;
 
 import com.linkedin.drelephant.mapreduce.heuristics.CommonConstantsHeuristic;
+import com.linkedin.drelephant.tuning.obt.AutoTuningOptimizeManager;
+import com.linkedin.drelephant.tuning.obt.IPSOManager;
+import com.linkedin.drelephant.tuning.obt.OptimizationAlgoFactory;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -40,7 +43,7 @@ public class IPSOManagerTestRunner implements Runnable {
     JobSuggestedParamSet jobSuggestedParamSet =
         JobSuggestedParamSet.find.where().eq("fitness_job_execution_id", 1541).findUnique();
     JobExecution jobExecution = JobExecution.find.byId(1541L);
-    AutoTuningOptimizeManager optimizeManager = checkIPSOManager(tuningAlgorithm);
+    com.linkedin.drelephant.tuning.obt.AutoTuningOptimizeManager optimizeManager = checkIPSOManager(tuningAlgorithm);
     testIPSOIntializePrerequisite(optimizeManager, tuningAlgorithm, jobSuggestedParamSet);
     testIPSOExtractParameterInformation(jobExecution, optimizeManager);
     testIPSOParameterOptimizer(jobExecution, optimizeManager);
@@ -48,13 +51,14 @@ public class IPSOManagerTestRunner implements Runnable {
     testIPSONumberOfConstraintsViolated(optimizeManager);
   }
 
-  private AutoTuningOptimizeManager checkIPSOManager(TuningAlgorithm tuningAlgorithm) {
-    AutoTuningOptimizeManager optimizeManager = OptimizationAlgoFactory.getOptimizationAlogrithm(tuningAlgorithm);
+  private com.linkedin.drelephant.tuning.obt.AutoTuningOptimizeManager checkIPSOManager(TuningAlgorithm tuningAlgorithm) {
+    com.linkedin.drelephant.tuning.obt.AutoTuningOptimizeManager optimizeManager = OptimizationAlgoFactory.getOptimizationAlogrithm(tuningAlgorithm);
     assertTrue("Optimization Algorithm type ", optimizeManager instanceof IPSOManager);
     return optimizeManager;
   }
 
-  private void testIPSOIntializePrerequisite(AutoTuningOptimizeManager optimizeManager, TuningAlgorithm tuningAlgorithm,
+  private void testIPSOIntializePrerequisite(
+      com.linkedin.drelephant.tuning.obt.AutoTuningOptimizeManager optimizeManager, TuningAlgorithm tuningAlgorithm,
       JobSuggestedParamSet jobSuggestedParamSet) {
     optimizeManager.intializePrerequisite(tuningAlgorithm, jobSuggestedParamSet);
     List<TuningParameterConstraint> tuningParameterConstraint =
@@ -63,7 +67,7 @@ public class IPSOManagerTestRunner implements Runnable {
   }
 
   private void testIPSOExtractParameterInformation(JobExecution jobExecution,
-      AutoTuningOptimizeManager optimizeManager) {
+      com.linkedin.drelephant.tuning.obt.AutoTuningOptimizeManager optimizeManager) {
     List<AppResult> results = AppResult.find.select("*")
         .fetch(AppResult.TABLE.APP_HEURISTIC_RESULTS, "*")
         .fetch(AppResult.TABLE.APP_HEURISTIC_RESULTS + "." + AppHeuristicResult.TABLE.APP_HEURISTIC_RESULT_DETAILS, "*")
@@ -97,7 +101,7 @@ public class IPSOManagerTestRunner implements Runnable {
             == 2100);
   }
 
-  private void testIPSOParameterOptimizer(JobExecution jobExecution, AutoTuningOptimizeManager optimizeManager) {
+  private void testIPSOParameterOptimizer(JobExecution jobExecution, com.linkedin.drelephant.tuning.obt.AutoTuningOptimizeManager optimizeManager) {
     optimizeManager.parameterOptimizer(jobExecution.job.id);
     List<TuningParameterConstraint> parameterConstraints = TuningParameterConstraint.find.where().
         eq("job_definition_id", 100003).findList();
@@ -134,7 +138,7 @@ public class IPSOManagerTestRunner implements Runnable {
   }
 
   private void testIPSOApplyIntelligenceOnParameter(TuningJobDefinition tuningJobDefinition,
-      JobDefinition jobDefinition, AutoTuningOptimizeManager optimizeManager) {
+      JobDefinition jobDefinition, com.linkedin.drelephant.tuning.obt.AutoTuningOptimizeManager optimizeManager) {
     List<TuningParameter> tuningParameterList = TuningParameter.find.where()
         .eq(TuningParameter.TABLE.tuningAlgorithm + "." + TuningAlgorithm.TABLE.id,
             tuningJobDefinition.tuningAlgorithm.id)

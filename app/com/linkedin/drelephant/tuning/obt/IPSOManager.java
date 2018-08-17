@@ -14,10 +14,9 @@
  * the License.
  */
 
-package com.linkedin.drelephant.tuning;
+package com.linkedin.drelephant.tuning.obt;
 
 import com.linkedin.drelephant.util.MemoryFormatUtils;
-import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -35,7 +34,6 @@ import models.TuningParameterConstraint;
 import org.apache.commons.io.FileUtils;
 
 import static com.linkedin.drelephant.mapreduce.heuristics.CommonConstantsHeuristic.*;
-import static java.lang.Double.*;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 

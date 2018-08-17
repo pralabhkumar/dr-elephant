@@ -16,7 +16,7 @@
 
 package com.linkedin.drelephant;
 
-import com.linkedin.drelephant.tuning.foundation.Flow;
+import com.linkedin.drelephant.tuning.Flow;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.log4j.Logger;
 

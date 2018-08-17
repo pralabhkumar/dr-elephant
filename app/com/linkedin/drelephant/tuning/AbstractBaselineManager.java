@@ -1,4 +1,4 @@
-package com.linkedin.drelephant.tuning.foundation;
+package com.linkedin.drelephant.tuning;
 
 import com.avaje.ebean.Ebean;
 import com.avaje.ebean.SqlRow;

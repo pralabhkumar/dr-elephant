@@ -1,7 +1,7 @@
 package com.linkedin.drelephant.tuning.Schduler;
 
 import com.linkedin.drelephant.clients.azkaban.AzkabanJobStatusUtil;
-import com.linkedin.drelephant.tuning.foundation.AbstractJobStatusManager;
+import com.linkedin.drelephant.tuning.AbstractJobStatusManager;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;

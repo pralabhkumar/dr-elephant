@@ -1,7 +1,7 @@
 package com.linkedin.drelephant.tuning.obt;
 
 import com.linkedin.drelephant.ElephantContext;
-import com.linkedin.drelephant.tuning.foundation.AbstractBaselineManager;
+import com.linkedin.drelephant.tuning.AbstractBaselineManager;
 import com.linkedin.drelephant.util.Utils;
 import java.util.List;
 import models.TuningAlgorithm;

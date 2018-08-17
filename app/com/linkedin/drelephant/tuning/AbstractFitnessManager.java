@@ -1,9 +1,9 @@
-package com.linkedin.drelephant.tuning.foundation;
+package com.linkedin.drelephant.tuning;
 
 import com.avaje.ebean.Expr;
 import com.linkedin.drelephant.mapreduce.heuristics.CommonConstantsHeuristic;
-import com.linkedin.drelephant.tuning.AutoTuningOptimizeManager;
-import com.linkedin.drelephant.tuning.OptimizationAlgoFactory;
+import com.linkedin.drelephant.tuning.obt.AutoTuningOptimizeManager;
+import com.linkedin.drelephant.tuning.obt.OptimizationAlgoFactory;
 import com.linkedin.drelephant.util.Utils;
 import controllers.AutoTuningMetricsController;
 import java.util.Arrays;

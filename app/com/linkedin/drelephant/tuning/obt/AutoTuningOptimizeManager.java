@@ -14,7 +14,7 @@
  * the License.
  */
 
-package com.linkedin.drelephant.tuning;
+package com.linkedin.drelephant.tuning.obt;
 
 import java.util.List;
 import java.util.Map;

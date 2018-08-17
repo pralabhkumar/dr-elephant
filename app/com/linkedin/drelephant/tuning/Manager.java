@@ -1,4 +1,4 @@
-package com.linkedin.drelephant.tuning.foundation;
+package com.linkedin.drelephant.tuning;
 
 public interface Manager {
   /*
