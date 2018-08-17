@@ -5,7 +5,7 @@ import org.apache.log4j.Logger;
 
 
 public class OptimizationAlgoFactory {
-  private static final Logger logger = Logger.getLogger(FitnessComputeUtil.class);
+  private static final Logger logger = Logger.getLogger(OptimizationAlgoFactory.class);
 
   public static AutoTuningOptimizeManager getOptimizationAlogrithm(TuningAlgorithm tuningAlgorithm) {
     if (tuningAlgorithm.optimizationAlgo.name().equals(TuningAlgorithm.OptimizationAlgo.PSO_IPSO.name())) {
