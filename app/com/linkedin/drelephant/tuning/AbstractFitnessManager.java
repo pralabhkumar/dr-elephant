@@ -2,9 +2,6 @@ package com.linkedin.drelephant.tuning;
 
 import com.avaje.ebean.Expr;
 import com.linkedin.drelephant.mapreduce.heuristics.CommonConstantsHeuristic;
-import com.linkedin.drelephant.tuning.obt.AutoTuningOptimizeManager;
-import com.linkedin.drelephant.tuning.obt.OptimizationAlgoFactory;
-import com.linkedin.drelephant.util.Utils;
 import controllers.AutoTuningMetricsController;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -26,6 +23,7 @@ import models.TuningParameter;
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
 
+
 /**
  * This class computes the fitness of the suggested parameters after the execution is complete. This uses
  * Dr Elephant's DB to compute the fitness.
@@ -34,8 +32,7 @@ import org.apache.log4j.Logger;
  * adding a penalty.
  */
 
-
-public abstract class AbstractFitnessManager implements Manager{
+public abstract class AbstractFitnessManager implements Manager {
   private final Logger logger = Logger.getLogger(getClass());
   protected final String FITNESS_COMPUTE_WAIT_INTERVAL = "fitness.compute.wait_interval.ms";
   protected final String IGNORE_EXECUTION_WAIT_INTERVAL = "ignore.execution.wait.interval.ms";
@@ -98,32 +95,10 @@ public abstract class AbstractFitnessManager implements Manager{
     }
   }
 
-  private void calculateAndUpdateFitness(JobExecution jobExecution, List<AppResult> results,
-      TuningJobDefinition tuningJobDefinition, JobSuggestedParamSet jobSuggestedParamSet) {
-    Double totalResourceUsed = 0D;
-    Double totalInputBytesInBytes = 0D;
-    for (AppResult appResult : results) {
-      totalResourceUsed += appResult.resourceUsed;
-      totalInputBytesInBytes += getTotalInputBytes(appResult);
-    }
+  protected abstract void calculateAndUpdateFitness(JobExecution jobExecution, List<AppResult> results,
+      TuningJobDefinition tuningJobDefinition, JobSuggestedParamSet jobSuggestedParamSet);
 
-    Long totalRunTime = Utils.getTotalRuntime(results);
-    Long totalDelay = Utils.getTotalWaittime(results);
-    Long totalExecutionTime = totalRunTime - totalDelay;
-
-    if (totalExecutionTime != 0) {
-      updateJobExecution(jobExecution, totalResourceUsed, totalInputBytesInBytes, totalExecutionTime);
-    }
-
-    if (tuningJobDefinition.averageResourceUsage == null && totalExecutionTime != 0) {
-      updateTuningJobDefinition(tuningJobDefinition, jobExecution);
-    }
-
-    //Compute fitness
-    computeFitness(jobSuggestedParamSet, jobExecution, tuningJobDefinition, results);
-  }
-
-  private void updateJobExecution(JobExecution jobExecution, Double totalResourceUsed, Double totalInputBytesInBytes,
+  protected void updateJobExecution(JobExecution jobExecution, Double totalResourceUsed, Double totalInputBytesInBytes,
       Long totalExecutionTime) {
     jobExecution.executionTime = totalExecutionTime * 1.0 / (1000 * 60);
     jobExecution.resourceUsage = totalResourceUsed * 1.0 / (1024 * 3600);
@@ -133,7 +108,7 @@ public abstract class AbstractFitnessManager implements Manager{
         + ", Resource usage = " + totalResourceUsed + " and total input size = " + totalInputBytesInBytes);
   }
 
-  private void updateTuningJobDefinition(TuningJobDefinition tuningJobDefinition, JobExecution jobExecution) {
+  protected void updateTuningJobDefinition(TuningJobDefinition tuningJobDefinition, JobExecution jobExecution) {
     tuningJobDefinition.averageResourceUsage = jobExecution.resourceUsage;
     tuningJobDefinition.averageExecutionTime = jobExecution.executionTime;
     tuningJobDefinition.averageInputSizeInBytes = jobExecution.inputSizeInBytes.longValue();
@@ -153,32 +128,12 @@ public abstract class AbstractFitnessManager implements Manager{
     }
   }
 
-  private void computeFitness(JobSuggestedParamSet jobSuggestedParamSet, JobExecution jobExecution,
-      TuningJobDefinition tuningJobDefinition, List<AppResult> results) {
-    if (!jobSuggestedParamSet.paramSetState.equals(JobSuggestedParamSet.ParamSetStatus.FITNESS_COMPUTED)) {
-      if (jobExecution.executionState.equals(JobExecution.ExecutionState.SUCCEEDED)) {
-        logger.info("Execution id: " + jobExecution.id + " succeeded");
-        updateJobSuggestedParamSetSucceededExecution(jobExecution, jobSuggestedParamSet, tuningJobDefinition);
-        parameterSpaceOptimization(jobSuggestedParamSet, jobExecution, results);
-      } else {
-        // Resetting param set to created state because this case captures the scenarios when
-        // either the job failed for reasons other than auto tuning or was killed/cancelled/skipped etc.
-        // In all the above scenarios, fitness cannot be computed for the param set correctly.
-        // Note that the penalty on failures caused by auto tuning is applied when the job execution is retried
-        // after failure.
-        logger.info("Execution id: " + jobExecution.id + " was not successful for reason other than tuning."
-            + "Resetting param set: " + jobSuggestedParamSet.id + " to CREATED state");
-        resetParamSetToCreated(jobSuggestedParamSet);
-      }
-    }
-  }
-
   /**
    * Returns the total input size
    * @param appResult appResult
    * @return total input size
    */
-  private Long getTotalInputBytes(AppResult appResult) {
+  protected Long getTotalInputBytes(AppResult appResult) {
     Long totalInputBytes = 0L;
     if (appResult.yarnAppHeuristicResults != null) {
       for (AppHeuristicResult appHeuristicResult : appResult.yarnAppHeuristicResults) {
@@ -196,21 +151,11 @@ public abstract class AbstractFitnessManager implements Manager{
     return totalInputBytes;
   }
 
-  private void parameterSpaceOptimization(JobSuggestedParamSet jobSuggestedParamSet, JobExecution jobExecution,
-      List<AppResult> results) {
-    AutoTuningOptimizeManager optimizeManager =
-        OptimizationAlgoFactory.getOptimizationAlogrithm(jobSuggestedParamSet.tuningAlgorithm);
-    if (optimizeManager != null) {
-      optimizeManager.extractParameterInformation(results);
-      optimizeManager.parameterOptimizer(jobExecution.job.id);
-    }
-  }
-
   /**
    * Resets the param set to CREATED state if its fitness is not already computed
    * @param jobSuggestedParamSet Param set which is to be reset
    */
-  private void resetParamSetToCreated(JobSuggestedParamSet jobSuggestedParamSet) {
+  protected void resetParamSetToCreated(JobSuggestedParamSet jobSuggestedParamSet) {
     if (!jobSuggestedParamSet.paramSetState.equals(JobSuggestedParamSet.ParamSetStatus.FITNESS_COMPUTED)) {
       logger.info("Resetting parameter set to created: " + jobSuggestedParamSet.id);
       jobSuggestedParamSet.paramSetState = JobSuggestedParamSet.ParamSetStatus.CREATED;
@@ -224,7 +169,7 @@ public abstract class AbstractFitnessManager implements Manager{
    * @param jobSuggestedParamSet param set which is to be updated
    * @param tuningJobDefinition TuningJobDefinition of the job to which param set corresponds
    */
-  private void updateJobSuggestedParamSetSucceededExecution(JobExecution jobExecution,
+  protected void updateJobSuggestedParamSetSucceededExecution(JobExecution jobExecution,
       JobSuggestedParamSet jobSuggestedParamSet, TuningJobDefinition tuningJobDefinition) {
     int penaltyConstant = 3;
     Double averageResourceUsagePerGBInput =
@@ -279,9 +224,9 @@ public abstract class AbstractFitnessManager implements Manager{
     return jobSuggestedParamSet;
   }
 
-/*
-Currently update in database is happening in calculate phase . It should be seperated out
- */
+  /*
+  Currently update in database is happening in calculate phase . It should be seperated out
+   */
   protected Boolean updateDataBase(List<TuningJobExecutionParamSet> jobExecutionParamSets) {
     return true;
   }
@@ -293,7 +238,8 @@ Currently update in database is happening in calculate phase . It should be sepe
   private Boolean updateMetrics(List<TuningJobExecutionParamSet> completedJobExecutionParamSets) {
     int fitnessNotUpdated = 0;
     for (TuningJobExecutionParamSet completedJobExecutionParamSet : completedJobExecutionParamSets) {
-      if (!completedJobExecutionParamSet.jobSuggestedParamSet.paramSetState.equals(JobSuggestedParamSet.ParamSetStatus.FITNESS_COMPUTED)) {
+      if (!completedJobExecutionParamSet.jobSuggestedParamSet.paramSetState.equals(
+          JobSuggestedParamSet.ParamSetStatus.FITNESS_COMPUTED)) {
         fitnessNotUpdated++;
       } else {
         AutoTuningMetricsController.markFitnessComputedJobs();
@@ -302,7 +248,6 @@ Currently update in database is happening in calculate phase . It should be sepe
     AutoTuningMetricsController.setFitnessComputeWaitJobs(fitnessNotUpdated);
     return true;
   }
-
 
   private boolean isTuningEnabled(Integer jobDefinitionId) {
     TuningJobDefinition tuningJobDefinition = TuningJobDefinition.find.where()
@@ -381,8 +326,8 @@ Currently update in database is happening in calculate phase . It should be sepe
           TuningJobExecutionParamSet.find.fetch(TuningJobExecutionParamSet.TABLE.jobSuggestedParamSet, "*")
               .fetch(TuningJobExecutionParamSet.TABLE.jobExecution, "*")
               .where()
-              .eq(TuningJobExecutionParamSet.TABLE.jobSuggestedParamSet + '.'
-                  + JobSuggestedParamSet.TABLE.jobDefinition + '.' + JobDefinition.TABLE.id, jobDefinition.id)
+              .eq(TuningJobExecutionParamSet.TABLE.jobSuggestedParamSet + '.' + JobSuggestedParamSet.TABLE.jobDefinition
+                  + '.' + JobDefinition.TABLE.id, jobDefinition.id)
               .order()
               .desc("job_execution_id")
               .findList();
@@ -401,9 +346,6 @@ Currently update in database is happening in calculate phase . It should be sepe
       }
     }
   }
-
-
-
 
   /**
    * Switches off tuning for the given job
@@ -488,7 +430,6 @@ Currently update in database is happening in calculate phase . It should be sepe
     return result;
   }
 
-
   public final Boolean execute() {
     logger.info("Executing Fitness Manager");
     Boolean calculateFitnessDone = false, databaseUpdateDone = false, updateMetricsDone = false;
@@ -497,6 +438,9 @@ Currently update in database is happening in calculate phase . It should be sepe
       logger.info("Calculating  Fitness");
       calculateFitnessDone = calculateFitness(tuningJobExecutionParamSet);
     }
+    /*
+    Update database is not implemented , since data base update is currently occuring in calculate fitnesss
+     */
     if (calculateFitnessDone) {
       logger.info("Updating Database");
       databaseUpdateDone = updateDataBase(tuningJobExecutionParamSet);
@@ -516,5 +460,23 @@ Currently update in database is happening in calculate phase . It should be sepe
     checkToDisableTuning(jobDefinitionSet);
     logger.info("Fitness Computed");
     return true;
+  }
+
+  protected void getCompletedExecution(List<TuningJobExecutionParamSet> tuningJobExecutionParamSets,
+      List<TuningJobExecutionParamSet> completedJobExecutionParamSet) {
+    for (TuningJobExecutionParamSet tuningJobExecutionParamSet : tuningJobExecutionParamSets) {
+      JobExecution jobExecution = tuningJobExecutionParamSet.jobExecution;
+      long diff = System.currentTimeMillis() - jobExecution.updatedTs.getTime();
+      logger.info("Current Time in millis: " + System.currentTimeMillis() + ", Job execution last updated time "
+          + jobExecution.updatedTs.getTime());
+      if (diff < fitnessComputeWaitInterval) {
+        logger.info("Delaying fitness compute for execution: " + jobExecution.jobExecId);
+      } else {
+        logger.info("Adding execution " + jobExecution.jobExecId + " to fitness computation queue");
+        completedJobExecutionParamSet.add(tuningJobExecutionParamSet);
+      }
+    }
+    logger.info(
+        "Number of completed execution fetched for fitness computation: " + completedJobExecutionParamSet.size());
   }
 }

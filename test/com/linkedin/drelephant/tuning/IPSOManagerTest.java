@@ -44,7 +44,7 @@ public class IPSOManagerTest {
     fakeApp = fakeApplication(dbConn, gs);
     Configuration configuration = ElephantContext.instance().getAutoTuningConf();
     Boolean autoTuningEnabled = configuration.getBoolean(DrElephant.AUTO_TUNING_ENABLED, false);
-    org.junit.Assume.assumeTrue(autoTuningEnabled);
+   // org.junit.Assume.assumeTrue(autoTuningEnabled);
   }
 
   @Test

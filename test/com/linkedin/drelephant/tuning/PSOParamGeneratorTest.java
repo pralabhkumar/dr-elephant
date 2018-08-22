@@ -21,7 +21,8 @@ import com.fasterxml.jackson.databind.node.JsonNodeType;
 import com.linkedin.drelephant.DrElephant;
 import com.linkedin.drelephant.ElephantContext;
 import com.linkedin.drelephant.tuning.engine.MRExecutionEngine;
-import com.linkedin.drelephant.tuning.obt.AlgorithmManagerOBT;
+import com.linkedin.drelephant.tuning.obt.TuningTypeManagerOBT;
+import com.linkedin.drelephant.tuning.obt.TuningTypeManagerOBTAlgoPSO;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -110,10 +111,10 @@ public class PSOParamGeneratorTest {
         jobTuningInfo.setJobType(TuningAlgorithm.JobType.PIG);
 
         //PSOParamGenerator psoParamGenerator = new PSOParamGenerator();
-        AlgorithmManagerOBT algorithmManagerOBT = new AlgorithmManagerOBT(new MRExecutionEngine());
+        TuningTypeManagerOBT tuningTypeManagerOBT = new TuningTypeManagerOBTAlgoPSO(new MRExecutionEngine());
         //algorithmManagerOBT.generateParamSet()
 
-        JobTuningInfo updatedJobTuningInfo = algorithmManagerOBT.generateParamSet(jobTuningInfo);
+        JobTuningInfo updatedJobTuningInfo = tuningTypeManagerOBT.generateParamSet(jobTuningInfo);
         assertTrue("Updated JobTuningInfo: Job definition mismatch",
             updatedJobTuningInfo.getTuningJob().equals(jobDefinition));
         assertTrue("Updated JobTuningInfo: Parameter list mismatch",
@@ -155,7 +156,7 @@ public class PSOParamGeneratorTest {
         assertEquals("Random number state not of type string", JsonNodeType.STRING, randomNumberState.getNodeType());
 
         jobTuningInfo.setTunerState(updatedJobTuningInfo.getTunerState());
-        updatedJobTuningInfo = algorithmManagerOBT.generateParamSet(jobTuningInfo);
+        updatedJobTuningInfo = tuningTypeManagerOBT.generateParamSet(jobTuningInfo);
         assertTrue("Updated JobTuningInfo: Job definition mismatch",
             updatedJobTuningInfo.getTuningJob().equals(jobDefinition));
         assertTrue("Updated JobTuningInfo: Parameter list mismatch",
@@ -207,7 +208,7 @@ public class PSOParamGeneratorTest {
        /* PSOParamGenerator psoParamGenerator = new PSOParamGenerator();
         psoParamGenerator.getParams();*/
 
-        Manager manager = new AlgorithmManagerOBT(new MRExecutionEngine());
+        Manager manager = new TuningTypeManagerOBTAlgoPSO(new MRExecutionEngine());
         manager.execute();
 
         List<JobSuggestedParamSet> jobSuggestedParamSetList = JobSuggestedParamSet.find.where()

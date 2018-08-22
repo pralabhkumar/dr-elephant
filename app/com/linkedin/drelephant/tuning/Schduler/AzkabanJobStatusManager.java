@@ -16,8 +16,24 @@ public class AzkabanJobStatusManager extends AbstractJobStatusManager {
   private final Logger logger = Logger.getLogger(getClass());
   private AzkabanJobStatusUtil _azkabanJobStatusUtil;
 
+
   public enum AzkabanJobStatus {
     FAILED, CANCELLED, KILLED, SUCCEEDED, SKIPPED
+  }
+
+  protected List<TuningJobExecutionParamSet> detectJobsExecutionInProgress() {
+    logger.info("Fetching the executions which are in progress");
+    List<TuningJobExecutionParamSet> tuningJobExecutionParamSets =
+        TuningJobExecutionParamSet.find.fetch(TuningJobExecutionParamSet.TABLE.jobExecution)
+            .fetch(TuningJobExecutionParamSet.TABLE.jobSuggestedParamSet)
+            .where()
+            .eq(TuningJobExecutionParamSet.TABLE.jobExecution + '.' + JobExecution.TABLE.executionState,
+                JobExecution.ExecutionState.IN_PROGRESS)
+            .findList();
+
+
+    logger.info("Number of executions which are in progress: " + tuningJobExecutionParamSets.size());
+    return tuningJobExecutionParamSets;
   }
 
   @Override
@@ -86,4 +102,10 @@ public class AzkabanJobStatusManager extends AbstractJobStatusManager {
       jobExecution.executionState = JobExecution.ExecutionState.CANCELLED;
     }
   }
+
+  @Override
+  public String getManagerName() {
+    return "AzkabanJobStatusManager";
+  }
+
 }

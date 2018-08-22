@@ -18,8 +18,8 @@ package com.linkedin.drelephant.tuning;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.linkedin.drelephant.ElephantContext;
-import com.linkedin.drelephant.tuning.obt.AutoTuningOptimizeManager;
 import com.linkedin.drelephant.tuning.obt.OptimizationAlgoFactory;
+import com.linkedin.drelephant.tuning.obt.TuningTypeManagerOBT;
 import com.linkedin.drelephant.util.Utils;
 
 import controllers.AutoTuningMetricsController;
@@ -465,7 +465,7 @@ public class AutoTuningAPIHelper {
   private void intializeOptimizationAlgoPrerequisite(TuningAlgorithm tuningAlgorithm,
       JobSuggestedParamSet jobSuggestedParamSet) {
     logger.info("Inserting parameter constraint " + tuningAlgorithm.optimizationAlgo.name());
-    AutoTuningOptimizeManager manager = OptimizationAlgoFactory.getOptimizationAlogrithm(tuningAlgorithm);
+    TuningTypeManagerOBT manager = OptimizationAlgoFactory.getOptimizationAlogrithm(tuningAlgorithm);
     if (manager != null) {
       manager.intializePrerequisite(tuningAlgorithm, jobSuggestedParamSet);
     }

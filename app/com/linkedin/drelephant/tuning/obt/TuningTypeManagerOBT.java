@@ -5,9 +5,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.linkedin.drelephant.ElephantContext;
+import com.linkedin.drelephant.tuning.AbstractTuningTypeManager;
 import com.linkedin.drelephant.tuning.JobTuningInfo;
 import com.linkedin.drelephant.tuning.Particle;
-import com.linkedin.drelephant.tuning.AbstractAlgorithmManager;
 import com.linkedin.drelephant.tuning.ExecutionEngine;
 import controllers.AutoTuningMetricsController;
 import java.io.BufferedReader;
@@ -30,7 +30,8 @@ import org.apache.log4j.Logger;
 import play.libs.Json;
 import org.apache.hadoop.conf.Configuration;
 
-public class AlgorithmManagerOBT extends AbstractAlgorithmManager {
+
+public abstract class TuningTypeManagerOBT extends AbstractTuningTypeManager {
 
   private static final String PARAMS_TO_TUNE_FIELD_NAME = "parametersToTune";
   private static final String PYTHON_PATH_CONF = "python.path";
@@ -40,8 +41,8 @@ public class AlgorithmManagerOBT extends AbstractAlgorithmManager {
   private String TUNING_SCRIPT_PATH = null;
   private final Logger logger = Logger.getLogger(getClass());
 
-
-  public AlgorithmManagerOBT(ExecutionEngine executionEngine) {
+  public TuningTypeManagerOBT() {
+    tuningType = "OBT";
     Configuration configuration = ElephantContext.instance().getAutoTuningConf();
 
     PYTHON_PATH = configuration.get(PYTHON_PATH_CONF);
@@ -57,10 +58,10 @@ public class AlgorithmManagerOBT extends AbstractAlgorithmManager {
       PYTHON_PATH = "python";
     }
     TUNING_SCRIPT_PATH = PSO_DIR_PATH + "/pso_param_generation.py";
-    this._executionEngine=executionEngine;
     logger.info("Tuning script path: " + TUNING_SCRIPT_PATH);
     logger.info("Python path: " + PYTHON_PATH);
   }
+
   /**
    * Fetches the list to job which need new parameter suggestion
    * @return Job list
@@ -70,7 +71,7 @@ public class AlgorithmManagerOBT extends AbstractAlgorithmManager {
   protected List<JobTuningInfo> detectJobsForParameterGeneration() {
     List<TuningJobDefinition> jobsForSwarmSuggestion = getJobsForParamSuggestion();
     List<JobTuningInfo> jobTuningInfoList = getJobsTuningInfo(jobsForSwarmSuggestion);
-  return  jobTuningInfoList;
+    return jobTuningInfoList;
   }
 
   /**
@@ -83,7 +84,6 @@ public class AlgorithmManagerOBT extends AbstractAlgorithmManager {
     logger.info("Checking which jobs need new parameter suggestion");
     List<TuningJobDefinition> jobsForParamSuggestion = new ArrayList<TuningJobDefinition>();
     List<JobSuggestedParamSet> pendingParamSetList = getPendingParamSets();
-
 
     List<JobDefinition> pendingParamJobList = new ArrayList<JobDefinition>();
     for (JobSuggestedParamSet pendingParamSet : pendingParamSetList) {
@@ -106,59 +106,6 @@ public class AlgorithmManagerOBT extends AbstractAlgorithmManager {
     }
     logger.info("Number of job(s) which need new parameter suggestion: " + jobsForParamSuggestion.size());
     return jobsForParamSuggestion;
-  }
-
-  private List<JobSuggestedParamSet> getPendingParamSets(){
-    List<JobSuggestedParamSet> pendingParamSetList = null;
-    if(_executionEngine.getExecutionEngineName().equals("MR")){
-      pendingParamSetList = JobSuggestedParamSet.find.select("*")
-          .fetch(JobSuggestedParamSet.TABLE.jobDefinition, "*")
-          .where()
-          .or(Expr.or(Expr.eq(JobSuggestedParamSet.TABLE.paramSetState, JobSuggestedParamSet.ParamSetStatus.CREATED),
-              Expr.eq(JobSuggestedParamSet.TABLE.paramSetState, JobSuggestedParamSet.ParamSetStatus.SENT)),
-              Expr.eq(JobSuggestedParamSet.TABLE.paramSetState, JobSuggestedParamSet.ParamSetStatus.EXECUTED))
-          .eq(JobSuggestedParamSet.TABLE.isParamSetDefault, 0)
-          .eq(TuningJobDefinition.TABLE.tuningAlgorithm, TuningAlgorithm.OptimizationAlgo.PSO.name())
-          .eq(TuningAlgorithm.TABLE.jobType,TuningAlgorithm.JobType.PIG)
-          .eq(JobSuggestedParamSet.TABLE.isParamSetBest, 0).findList();
-    }
-    else if (_executionEngine.getExecutionEngineName().equals("SPARK")){
-      pendingParamSetList = JobSuggestedParamSet.find.select("*")
-          .fetch(JobSuggestedParamSet.TABLE.jobDefinition, "*")
-          .where()
-          .or(Expr.or(Expr.eq(JobSuggestedParamSet.TABLE.paramSetState, JobSuggestedParamSet.ParamSetStatus.CREATED),
-              Expr.eq(JobSuggestedParamSet.TABLE.paramSetState, JobSuggestedParamSet.ParamSetStatus.SENT)),
-              Expr.eq(JobSuggestedParamSet.TABLE.paramSetState, JobSuggestedParamSet.ParamSetStatus.EXECUTED))
-          .eq(JobSuggestedParamSet.TABLE.isParamSetDefault, 0)
-          .eq(TuningJobDefinition.TABLE.tuningAlgorithm, TuningAlgorithm.OptimizationAlgo.PSO.name())
-          .eq(TuningAlgorithm.TABLE.jobType,TuningAlgorithm.JobType.SPARK)
-          .eq(JobSuggestedParamSet.TABLE.isParamSetBest, 0).findList();
-    }
-    return pendingParamSetList;
-  }
-
-  private List<TuningJobDefinition> getTuningJobDefinitions(){
-    List<TuningJobDefinition> tuningJobDefinitionList = null;
-    if(_executionEngine.getExecutionEngineName().equals("MR")){
-      tuningJobDefinitionList = TuningJobDefinition.find.select("*")
-          .fetch(TuningJobDefinition.TABLE.job, "*")
-          .where()
-          .eq(TuningJobDefinition.TABLE.tuningEnabled, 1)
-          .eq(TuningJobDefinition.TABLE.tuningAlgorithm, TuningAlgorithm.OptimizationAlgo.PSO.name())
-          .eq(TuningAlgorithm.TABLE.jobType,TuningAlgorithm.JobType.PIG)
-          .findList();
-    }
-    else if (_executionEngine.getExecutionEngineName().equals("SPARK")){
-      tuningJobDefinitionList = TuningJobDefinition.find.select("*")
-          .fetch(TuningJobDefinition.TABLE.job, "*")
-          .where()
-          .eq(TuningJobDefinition.TABLE.tuningEnabled, 1)
-          .eq(TuningJobDefinition.TABLE.tuningAlgorithm, TuningAlgorithm.OptimizationAlgo.PSO.name())
-          .eq(TuningAlgorithm.TABLE.jobType,TuningAlgorithm.JobType.SPARK)
-          .findList();
-
-    }
-    return tuningJobDefinitionList;
   }
 
   /**
@@ -189,16 +136,14 @@ public class AlgorithmManagerOBT extends AbstractAlgorithmManager {
 
       if (defaultJobParamSet != null) {
         List<JobSuggestedParamValue> jobSuggestedParamValueList = JobSuggestedParamValue.find.where()
-            .eq(JobSuggestedParamValue.TABLE.jobSuggestedParamSet + "." + JobExecution.TABLE.id,
-                defaultJobParamSet.id)
+            .eq(JobSuggestedParamValue.TABLE.jobSuggestedParamSet + "." + JobExecution.TABLE.id, defaultJobParamSet.id)
             .findList();
 
         if (jobSuggestedParamValueList.size() > 0) {
           Map<Integer, Double> defaultExecutionParamMap = new HashMap<Integer, Double>();
 
           for (JobSuggestedParamValue jobSuggestedParamValue : jobSuggestedParamValueList) {
-            defaultExecutionParamMap.put(jobSuggestedParamValue.tuningParameter.id,
-                jobSuggestedParamValue.paramValue);
+            defaultExecutionParamMap.put(jobSuggestedParamValue.tuningParameter.id, jobSuggestedParamValue.paramValue);
           }
 
           for (TuningParameter tuningParameter : tuningParameterList) {
@@ -212,12 +157,9 @@ public class AlgorithmManagerOBT extends AbstractAlgorithmManager {
           }
         }
       }
-
       // updating boundary constraints for the job
-      AutoTuningOptimizeManager optimizeManager = OptimizationAlgoFactory.getOptimizationAlogrithm(tuningJobDefinition.tuningAlgorithm);
-      if (optimizeManager != null) {
-        optimizeManager.applyIntelligenceOnParameter(tuningParameterList,job);
-      }
+      updateBoundryConstraint(tuningParameterList, tuningJobDefinition, job);
+      // updating boundary constraints for the job
 
       JobTuningInfo jobTuningInfo = new JobTuningInfo();
       jobTuningInfo.setTuningJob(job);
@@ -268,6 +210,7 @@ public class AlgorithmManagerOBT extends AbstractAlgorithmManager {
     }
     return jobTuningInfoList;
   }
+
   /**
    * Converts a json to list of particles
    * @param jsonParticleList A list of  configurations (particles) in json
@@ -329,14 +272,8 @@ public class AlgorithmManagerOBT extends AbstractAlgorithmManager {
     String jobType = jobTuningInfo.getJobType().toString();
 
     logger.info(" ID " + jobTuningInfo.getTuningJob().id);
-    TuningJobDefinition tuningJobDefinition = TuningJobDefinition.find.select("*")
-        .fetch(TuningJobDefinition.TABLE.job, "*")
-        .where()
-        .eq(TuningJobDefinition.TABLE.job + "." + JobDefinition.TABLE.id, jobTuningInfo.getTuningJob().id)
-        .eq(TuningJobDefinition.TABLE.tuningEnabled, 1)
-        .findUnique();
 
-    int swarmSize = getSwarmSize(tuningJobDefinition.tuningAlgorithm);
+    int swarmSize = getSwarmSize();
 
     List<String> error = new ArrayList<String>();
     logger.debug("String State " + stringTunerState);
@@ -360,14 +297,6 @@ public class AlgorithmManagerOBT extends AbstractAlgorithmManager {
       logger.error("Error in generateParamSet()", e);
     }
     return newJobTuningInfo;
-  }
-
-  private int getSwarmSize(TuningAlgorithm tuningAlgorithm) {
-    AutoTuningOptimizeManager optimizeManager = OptimizationAlgoFactory.getOptimizationAlogrithm(tuningAlgorithm);
-    if (optimizeManager != null) {
-      return optimizeManager.getSwarmSize();
-    }
-    return 3;
   }
 
   /**
@@ -435,47 +364,14 @@ public class AlgorithmManagerOBT extends AbstractAlgorithmManager {
       for (Particle suggestedParticle : suggestedPopulation) {
         AutoTuningMetricsController.markParamSetGenerated();
         List<JobSuggestedParamValue> jobSuggestedParamValueList = getParamValueList(suggestedParticle, paramList);
-        _executionEngine.computeValuesOfDerivedConfigurationParameters(derivedParameterList,jobSuggestedParamValueList);
-        /*Map<String, Double> jobSuggestedParamValueMap = new HashMap<String, Double>();
-        for (JobSuggestedParamValue jobSuggestedParamValue : jobSuggestedParamValueList) {
-          jobSuggestedParamValueMap.put(jobSuggestedParamValue.tuningParameter.paramName,
-              jobSuggestedParamValue.paramValue);
-        }
-
-        for (TuningParameter derivedParameter : derivedParameterList) {
-          logger.info("Computing value of derived param: " + derivedParameter.paramName);
-          Double paramValue = null;
-          if (derivedParameter.paramName.equals("mapreduce.reduce.java.opts")) {
-            String parentParamName = "mapreduce.reduce.memory.mb";
-            if (jobSuggestedParamValueMap.containsKey(parentParamName)) {
-              paramValue = 0.75 * jobSuggestedParamValueMap.get(parentParamName);
-            }
-          } else if (derivedParameter.paramName.equals("mapreduce.map.java.opts")) {
-            String parentParamName = "mapreduce.map.memory.mb";
-            if (jobSuggestedParamValueMap.containsKey(parentParamName)) {
-              paramValue = 0.75 * jobSuggestedParamValueMap.get(parentParamName);
-            }
-          } else if (derivedParameter.paramName.equals("mapreduce.input.fileinputformat.split.maxsize")) {
-            String parentParamName = "pig.maxCombinedSplitSize";
-            if (jobSuggestedParamValueMap.containsKey(parentParamName)) {
-              paramValue = jobSuggestedParamValueMap.get(parentParamName);
-            }
-          }
-
-          if (paramValue != null) {
-            JobSuggestedParamValue jobSuggestedParamValue = new JobSuggestedParamValue();
-            jobSuggestedParamValue.paramValue = paramValue;
-            jobSuggestedParamValue.tuningParameter = derivedParameter;
-            jobSuggestedParamValueList.add(jobSuggestedParamValue);
-          }
-        }
-*/
+        _executionEngine.computeValuesOfDerivedConfigurationParameters(derivedParameterList,
+            jobSuggestedParamValueList);
         JobSuggestedParamSet jobSuggestedParamSet = new JobSuggestedParamSet();
         jobSuggestedParamSet.jobDefinition = job;
         jobSuggestedParamSet.tuningAlgorithm = tuningJobDefinition.tuningAlgorithm;
         jobSuggestedParamSet.isParamSetDefault = false;
         jobSuggestedParamSet.isParamSetBest = false;
-        if (_executionEngine.isParamConstraintViolated(jobSuggestedParamValueList, jobSuggestedParamSet.tuningAlgorithm)) {
+        if (isParamConstraintViolated(jobSuggestedParamValueList)) {
           logger.info("Parameter constraint violated. Applying penalty.");
           int penaltyConstant = 3;
           Double averageResourceUsagePerGBInput =
@@ -510,6 +406,7 @@ public class AlgorithmManagerOBT extends AbstractAlgorithmManager {
     saveTunerState(jobTuningInfoList);
     return true;
   }
+
   /**
    * Returns list of suggested parameters
    * @param particle Particle (configuration)
@@ -542,64 +439,6 @@ public class AlgorithmManagerOBT extends AbstractAlgorithmManager {
     }
     return jobSuggestedParamValueList;
   }
-
-  /**
-   * Check if the parameters violated constraints
-   * Constraint 1: sort.mb > 60% of map.memory: To avoid heap memory failure
-   * Constraint 2: map.memory - sort.mb < 768: To avoid heap memory failure
-   * Constraint 3: pig.maxCombinedSplitSize > 1.8*mapreduce.map.memory.mb
-   * @param jobSuggestedParamValueList List of suggested param values
-   * @param jobType Job type
-   * @return true if the constraint is violated, false otherwise
-   */
-  /*private boolean isParamConstraintViolated(List<JobSuggestedParamValue> jobSuggestedParamValueList,
-      TuningAlgorithm tuningAlgorithm) {
-
-    logger.info("Checking whether parameter values are within constraints");
-    Integer violations = 0;
-
-    if (tuningAlgorithm.jobType.equals(TuningAlgorithm.JobType.PIG)) {
-      AutoTuningOptimizeManager optimizeManager = OptimizationAlgoFactory.getOptimizationAlogrithm(tuningAlgorithm);
-      if (optimizeManager != null) {
-        violations = optimizeManager.numberOfConstraintsViolated(jobSuggestedParamValueList);
-      } else {
-        Double mrSortMemory = null;
-        Double mrMapMemory = null;
-        Double pigMaxCombinedSplitSize = null;
-
-        for (JobSuggestedParamValue jobSuggestedParamValue : jobSuggestedParamValueList) {
-          if (jobSuggestedParamValue.tuningParameter.paramName.equals("mapreduce.task.io.sort.mb")) {
-            mrSortMemory = jobSuggestedParamValue.paramValue;
-          } else if (jobSuggestedParamValue.tuningParameter.paramName.equals("mapreduce.map.memory.mb")) {
-            mrMapMemory = jobSuggestedParamValue.paramValue;
-          } else if (jobSuggestedParamValue.tuningParameter.paramName.equals("pig.maxCombinedSplitSize")) {
-            pigMaxCombinedSplitSize = jobSuggestedParamValue.paramValue / FileUtils.ONE_MB;
-          }
-        }
-        if (mrSortMemory != null && mrMapMemory != null) {
-          if (mrSortMemory > 0.6 * mrMapMemory) {
-            logger.info("Constraint violated: Sort memory > 60% of map memory");
-            violations++;
-          }
-          if (mrMapMemory - mrSortMemory < 768) {
-            logger.info("Constraint violated: Map memory - sort memory < 768 mb");
-            violations++;
-          }
-        }
-
-        if (pigMaxCombinedSplitSize != null && mrMapMemory != null && (pigMaxCombinedSplitSize > 1.8 * mrMapMemory)) {
-          logger.info("Constraint violated: Pig max combined split size > 1.8 * map memory");
-          violations++;
-        }
-      }
-    }
-    if (violations == 0) {
-      return false;
-    } else {
-      logger.info("Number of constraint(s) violated: " + violations);
-      return true;
-    }
-  }*/
 
   /**
    * Save the tuning info list to the database
@@ -640,4 +479,33 @@ public class AlgorithmManagerOBT extends AbstractAlgorithmManager {
     return jobSuggestedParamSet.id;
   }
 
+  @Override
+  public String getManagerName() {
+    return "TuningTypeManagerOBT";
+  }
+
+  protected abstract List<JobSuggestedParamSet> getPendingParamSets();
+
+  protected abstract List<TuningJobDefinition> getTuningJobDefinitions();
+
+  /*
+    Intialize any prequisite require for Optimizer
+    Calls once in lifetime of the flow
+   */
+  public abstract void intializePrerequisite(TuningAlgorithm tuningAlgorithm,
+      JobSuggestedParamSet jobSuggestedParamSet);
+
+  /*
+    Optimize search space
+    call after each execution of flow
+   */
+  public abstract void parameterOptimizer(Integer jobID);
+
+  /*
+    apply Intelligence on Parameter.
+    calls after swarm size number of executions
+   */
+  public abstract void applyIntelligenceOnParameter(List<TuningParameter> tuningParameterList, JobDefinition job);
+
+  protected abstract int getSwarmSize();
 }

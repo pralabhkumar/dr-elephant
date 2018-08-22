@@ -2,13 +2,16 @@ package com.linkedin.drelephant.tuning;
 
 import com.avaje.ebean.Ebean;
 import com.avaje.ebean.SqlRow;
+import com.linkedin.drelephant.ElephantContext;
 import com.linkedin.drelephant.mapreduce.heuristics.CommonConstantsHeuristic;
 import java.util.List;
+import models.JobExecution;
 import models.TuningJobDefinition;
+import models.TuningJobExecutionParamSet;
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
 import controllers.AutoTuningMetricsController;
-
+import org.apache.hadoop.conf.Configuration;
 
 public abstract class AbstractBaselineManager implements Manager {
   protected final String BASELINE_EXECUTION_COUNT = "baseline.execution.count";
@@ -28,6 +31,11 @@ public abstract class AbstractBaselineManager implements Manager {
       + "GROUP BY job_exec_id ORDER BY start_time DESC LIMIT :num ) temp";
   private final Logger logger = Logger.getLogger(getClass());
   protected Integer _numJobsForBaseline = null;
+  protected Configuration configuration = null;
+
+  public AbstractBaselineManager(){
+    configuration = ElephantContext.instance().getAutoTuningConf();
+  }
 
   /*
   Execute the whole logic for Base line Computing
@@ -53,7 +61,7 @@ public abstract class AbstractBaselineManager implements Manager {
       logger.info("Updating Metrics");
       updateMetricsDone = updateMetrics(tuningJobDefinitions);
     }
-    logger.info("Baseline Done");
+    logger.info("Baseline Done ");
     return updateMetricsDone;
   }
 
@@ -118,9 +126,14 @@ public abstract class AbstractBaselineManager implements Manager {
    * @param tuningJobDefinitions
    */
   protected Boolean updateDataBase(List<TuningJobDefinition> tuningJobDefinitions) {
-    for (TuningJobDefinition tuningJobDefinition : tuningJobDefinitions) {
-      tuningJobDefinition.update();
-      logger.info("Updated baseline metric value for job: " + tuningJobDefinition.job.jobName);
+    try {
+      for (TuningJobDefinition tuningJobDefinition : tuningJobDefinitions) {
+        tuningJobDefinition.update();
+        logger.info("Updated baseline metric value for job: " + tuningJobDefinition.job.jobName);
+      }
+    } catch (Exception e) {
+      logger.error(" Error Updating Database " + e.getMessage());
+      return false;
     }
     return true;
   }
@@ -131,15 +144,22 @@ public abstract class AbstractBaselineManager implements Manager {
    */
 
   protected Boolean updateMetrics(List<TuningJobDefinition> tuningJobDefinitions) {
-    int baselineComputeWaitJobs = 0;
-    for (TuningJobDefinition tuningJobDefinition : tuningJobDefinitions) {
-      if (tuningJobDefinition.averageResourceUsage == null) {
-        baselineComputeWaitJobs++;
-      } else {
-        AutoTuningMetricsController.markBaselineComputed();
+    try {
+      int baselineComputeWaitJobs = 0;
+      for (TuningJobDefinition tuningJobDefinition : tuningJobDefinitions) {
+        if (tuningJobDefinition.averageResourceUsage == null) {
+          baselineComputeWaitJobs++;
+        } else {
+          AutoTuningMetricsController.markBaselineComputed();
+        }
       }
+      AutoTuningMetricsController.setBaselineComputeWaitJobs(baselineComputeWaitJobs);
+    } catch (Exception e) {
+      logger.error(" Error Updating Metrics in Ingraph" + e.getMessage());
+      return false;
     }
-    AutoTuningMetricsController.setBaselineComputeWaitJobs(baselineComputeWaitJobs);
     return true;
   }
+
+
 }

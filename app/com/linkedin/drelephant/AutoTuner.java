@@ -49,22 +49,6 @@ public class AutoTuner implements Runnable {
     Long interval =
         Utils.getNonNegativeLong(configuration, AUTO_TUNING_DAEMON_WAIT_INTERVAL, DEFAULT_METRICS_COMPUTATION_INTERVAL);
     try {
-     /* AutoTuningMetricsController.init();
-      BaselineComputeUtil baselineComputeUtil = new BaselineComputeUtil();
-      FitnessComputeUtil fitnessComputeUtil = new FitnessComputeUtil();
-      ParamGenerator paramGenerator = new PSOParamGenerator();
-      JobCompleteDetector jobCompleteDetector = new AzkabanJobCompleteDetector();
-      while (!Thread.currentThread().isInterrupted()) {
-        try {
-          baselineComputeUtil.computeBaseline();
-          jobCompleteDetector.updateCompletedExecutions();
-          fitnessComputeUtil.updateFitness();
-          paramGenerator.getParams();
-        } catch (Exception e) {
-          logger.error("Error in auto tuner thread ", e);
-        }
-        Thread.sleep(interval);
-      }*/
       AutoTuningMetricsController.init();
       Flow autoTuningFlow= new Flow();
       while (!Thread.currentThread().isInterrupted()) {

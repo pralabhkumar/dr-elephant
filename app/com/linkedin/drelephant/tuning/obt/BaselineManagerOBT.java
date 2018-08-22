@@ -1,13 +1,13 @@
 package com.linkedin.drelephant.tuning.obt;
 
-import com.linkedin.drelephant.ElephantContext;
+
 import com.linkedin.drelephant.tuning.AbstractBaselineManager;
 import com.linkedin.drelephant.util.Utils;
 import java.util.List;
 import models.TuningAlgorithm;
 import models.TuningJobDefinition;
 import org.apache.log4j.Logger;
-import org.apache.hadoop.conf.Configuration;
+
 
 
 public class BaselineManagerOBT extends AbstractBaselineManager {
@@ -15,7 +15,6 @@ public class BaselineManagerOBT extends AbstractBaselineManager {
 
   public BaselineManagerOBT() {
     NUM_JOBS_FOR_BASELINE_DEFAULT = 30;
-    Configuration configuration = ElephantContext.instance().getAutoTuningConf();
     _numJobsForBaseline =
         Utils.getNonNegativeInt(configuration, super.BASELINE_EXECUTION_COUNT, NUM_JOBS_FOR_BASELINE_DEFAULT);
   }
@@ -28,5 +27,10 @@ public class BaselineManagerOBT extends AbstractBaselineManager {
         .eq(TuningJobDefinition.TABLE.tuningAlgorithm, TuningAlgorithm.OptimizationAlgo.PSO.name())
         .findList();
     return tuningJobDefinitions;
+  }
+
+  @Override
+  public String getManagerName() {
+    return "BaselineManagerOBT";
   }
 }

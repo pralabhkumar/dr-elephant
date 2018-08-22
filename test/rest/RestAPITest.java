@@ -23,7 +23,7 @@ import com.linkedin.drelephant.DrElephant;
 import com.linkedin.drelephant.ElephantContext;
 import com.linkedin.drelephant.tuning.Manager;
 import com.linkedin.drelephant.tuning.obt.BaselineManagerOBT;
-import com.linkedin.drelephant.tuning.obt.FitnessManagerOBT;
+import com.linkedin.drelephant.tuning.obt.FitnessManagerOBTAlgoPSO;
 import com.linkedin.drelephant.util.Utils;
 
 import java.util.HashMap;
@@ -167,7 +167,7 @@ public class RestAPITest {
         /*FitnessComputeUtil fitnessComputeUtil = new FitnessComputeUtil();
         fitnessComputeUtil.updateFitness();*/
 
-        Manager manager = new FitnessManagerOBT();
+        Manager manager = new FitnessManagerOBTAlgoPSO();
         manager.execute();
 
         jobSuggestedParamSet = JobSuggestedParamSet.find.byId(jobSuggestedParamSet.id);

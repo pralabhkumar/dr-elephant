@@ -1,26 +1,34 @@
 package com.linkedin.drelephant.tuning.engine;
 
-import com.linkedin.drelephant.tuning.obt.AutoTuningOptimizeManager;
-import com.linkedin.drelephant.tuning.obt.OptimizationAlgoFactory;
+import com.avaje.ebean.Expr;
+import com.avaje.ebean.ExpressionList;
+import com.linkedin.drelephant.mapreduce.heuristics.CommonConstantsHeuristic;
 import com.linkedin.drelephant.tuning.ExecutionEngine;
+import com.linkedin.drelephant.util.MemoryFormatUtils;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import models.AppHeuristicResult;
+import models.AppHeuristicResultDetails;
+import models.AppResult;
+import models.JobSuggestedParamSet;
 import models.JobSuggestedParamValue;
 import models.TuningAlgorithm;
+import models.TuningJobDefinition;
 import models.TuningParameter;
+import models.TuningParameterConstraint;
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
+
+import static java.lang.Math.*;
 
 
 public class MRExecutionEngine implements ExecutionEngine {
   private final Logger logger = Logger.getLogger(getClass());
-  private String executionEngineName = "MR";
+  enum UsageCounterSchema {USED_PHYSICAL_MEMORY, USED_VIRTUAL_MEMORY, USED_HEAP_MEMORY}
+  private String functionTypes[] = {"map", "reduce"};
 
-  @Override
-  public String getExecutionEngineName() {
-    return this.executionEngineName;
-  }
 
   @Override
   public void computeValuesOfDerivedConfigurationParameters(List<TuningParameter> derivedParameterList,
@@ -66,50 +74,71 @@ public class MRExecutionEngine implements ExecutionEngine {
    * Constraint 2: map.memory - sort.mb < 768: To avoid heap memory failure
    * Constraint 3: pig.maxCombinedSplitSize > 1.8*mapreduce.map.memory.mb
    * @param jobSuggestedParamValueList List of suggested param values
-   * @param jobType Job type
    * @return true if the constraint is violated, false otherwise
    */
 
   @Override
-  public Boolean isParamConstraintViolated(List<JobSuggestedParamValue> jobSuggestedParamValueList,
-      TuningAlgorithm tuningAlgorithm) {
-    logger.info("Checking whether parameter values are within constraints");
+  public Boolean isParamConstraintViolatedIPSO(List<JobSuggestedParamValue> jobSuggestedParamValueList) {
+    logger.info(" Constraint Violeted ");
+    Double mrSortMemory = null;
+    Double mrMapMemory = null;
+    Double mrReduceMemory = null;
+    Double mrMapXMX = null;
+    Double mrReduceXMX = null;
+    Double pigMaxCombinedSplitSize = null;
     Integer violations = 0;
 
-    if (tuningAlgorithm.jobType.equals(TuningAlgorithm.JobType.PIG)) {
-      AutoTuningOptimizeManager optimizeManager = OptimizationAlgoFactory.getOptimizationAlogrithm(tuningAlgorithm);
-      if (optimizeManager != null) {
-        violations = optimizeManager.numberOfConstraintsViolated(jobSuggestedParamValueList);
-      } else {
-        Double mrSortMemory = null;
-        Double mrMapMemory = null;
-        Double pigMaxCombinedSplitSize = null;
-
-        for (JobSuggestedParamValue jobSuggestedParamValue : jobSuggestedParamValueList) {
-          if (jobSuggestedParamValue.tuningParameter.paramName.equals("mapreduce.task.io.sort.mb")) {
-            mrSortMemory = jobSuggestedParamValue.paramValue;
-          } else if (jobSuggestedParamValue.tuningParameter.paramName.equals("mapreduce.map.memory.mb")) {
-            mrMapMemory = jobSuggestedParamValue.paramValue;
-          } else if (jobSuggestedParamValue.tuningParameter.paramName.equals("pig.maxCombinedSplitSize")) {
-            pigMaxCombinedSplitSize = jobSuggestedParamValue.paramValue / FileUtils.ONE_MB;
-          }
-        }
-        if (mrSortMemory != null && mrMapMemory != null) {
-          if (mrSortMemory > 0.6 * mrMapMemory) {
-            logger.info("Constraint violated: Sort memory > 60% of map memory");
-            violations++;
-          }
-          if (mrMapMemory - mrSortMemory < 768) {
-            logger.info("Constraint violated: Map memory - sort memory < 768 mb");
-            violations++;
-          }
-        }
-
-        if (pigMaxCombinedSplitSize != null && mrMapMemory != null && (pigMaxCombinedSplitSize > 1.8 * mrMapMemory)) {
-          logger.info("Constraint violated: Pig max combined split size > 1.8 * map memory");
-          violations++;
-        }
+    for (JobSuggestedParamValue jobSuggestedParamValue : jobSuggestedParamValueList) {
+      if (jobSuggestedParamValue.tuningParameter.paramName.equals(CommonConstantsHeuristic.ParameterKeys.SORT_BUFFER_HADOOP_CONF.getValue())) {
+        mrSortMemory = jobSuggestedParamValue.paramValue;
+      } else if (jobSuggestedParamValue.tuningParameter.paramName.equals(
+          CommonConstantsHeuristic.ParameterKeys.MAPPER_MEMORY_HADOOP_CONF.getValue())) {
+        mrMapMemory = jobSuggestedParamValue.paramValue;
+      } else if (jobSuggestedParamValue.tuningParameter.paramName.equals(
+          CommonConstantsHeuristic.ParameterKeys.REDUCER_MEMORY_HADOOP_CONF.getValue())) {
+        mrReduceMemory = jobSuggestedParamValue.paramValue;
+      } else if (jobSuggestedParamValue.tuningParameter.paramName.equals(
+          CommonConstantsHeuristic.ParameterKeys.MAPPER_HEAP_HADOOP_CONF.getValue())) {
+        mrMapXMX = jobSuggestedParamValue.paramValue;
+      } else if (jobSuggestedParamValue.tuningParameter.paramName.equals(
+          CommonConstantsHeuristic.ParameterKeys.REDUCER_HEAP_HADOOP_CONF.getValue())) {
+        mrReduceXMX = jobSuggestedParamValue.paramValue;
+      } else if (jobSuggestedParamValue.tuningParameter.paramName.equals(
+          CommonConstantsHeuristic.ParameterKeys.PIG_SPLIT_SIZE_HADOOP_CONF.getValue())) {
+        pigMaxCombinedSplitSize = jobSuggestedParamValue.paramValue / FileUtils.ONE_MB;
       }
+    }
+
+    if (mrSortMemory != null && mrMapMemory != null) {
+      if (mrSortMemory > 0.6 * mrMapMemory) {
+        logger.debug("Sort Memory " + mrSortMemory);
+        logger.debug("Mapper Memory " + mrMapMemory);
+        logger.debug("Constraint violated: Sort memory > 60% of map memory");
+        violations++;
+      }
+      if (mrMapMemory - mrSortMemory < 768) {
+        logger.debug("Sort Memory " + mrSortMemory);
+        logger.debug("Mapper Memory " + mrMapMemory);
+        logger.debug("Constraint violated: Map memory - sort memory < 768 mb");
+        violations++;
+      }
+    }
+    if (mrMapXMX != null && mrMapMemory != null && mrMapXMX > 0.80 * mrMapMemory) {
+      logger.debug("Mapper Heap Max " + mrMapXMX);
+      logger.debug("Mapper Memory " + mrMapMemory);
+      logger.debug("Constraint violated:  Mapper  XMX > 0.8*mrMapMemory");
+      violations++;
+    }
+    if (mrReduceMemory != null && mrReduceXMX != null && mrReduceXMX > 0.80 * mrReduceMemory) {
+      logger.debug("Reducer Heap Max " + mrMapXMX);
+      logger.debug("Reducer Memory " + mrMapMemory);
+      logger.debug("Constraint violated:  Reducer  XMX > 0.8*mrReducerMemory");
+      violations++;
+    }
+
+    if (pigMaxCombinedSplitSize != null && mrMapMemory != null && (pigMaxCombinedSplitSize > 1.8 * mrMapMemory)) {
+      logger.debug("Constraint violated: Pig max combined split size > 1.8 * map memory");
+      violations++;
     }
     if (violations == 0) {
       return false;
@@ -117,5 +146,236 @@ public class MRExecutionEngine implements ExecutionEngine {
       logger.info("Number of constraint(s) violated: " + violations);
       return true;
     }
+
+  }
+
+
+
+  public Boolean isParamConstraintViolatedPSO(List<JobSuggestedParamValue> jobSuggestedParamValueList){
+    Double mrSortMemory = null;
+    Double mrMapMemory = null;
+    Double pigMaxCombinedSplitSize = null;
+    Integer violations = 0;
+    for (JobSuggestedParamValue jobSuggestedParamValue : jobSuggestedParamValueList) {
+      if (jobSuggestedParamValue.tuningParameter.paramName.equals("mapreduce.task.io.sort.mb")) {
+        mrSortMemory = jobSuggestedParamValue.paramValue;
+      } else if (jobSuggestedParamValue.tuningParameter.paramName.equals("mapreduce.map.memory.mb")) {
+        mrMapMemory = jobSuggestedParamValue.paramValue;
+      } else if (jobSuggestedParamValue.tuningParameter.paramName.equals("pig.maxCombinedSplitSize")) {
+        pigMaxCombinedSplitSize = jobSuggestedParamValue.paramValue / FileUtils.ONE_MB;
+      }
+    }
+    if (mrSortMemory != null && mrMapMemory != null) {
+      if (mrSortMemory > 0.6 * mrMapMemory) {
+        logger.info("Constraint violated: Sort memory > 60% of map memory");
+        violations++;
+      }
+      if (mrMapMemory - mrSortMemory < 768) {
+        logger.info("Constraint violated: Map memory - sort memory < 768 mb");
+        violations++;
+      }
+    }
+
+    if (pigMaxCombinedSplitSize != null && mrMapMemory != null && (pigMaxCombinedSplitSize > 1.8 * mrMapMemory)) {
+      logger.info("Constraint violated: Pig max combined split size > 1.8 * map memory");
+      violations++;
+    }
+    if (violations == 0) {
+      return false;
+    } else {
+      logger.info("Number of constraint(s) violated: " + violations);
+      return true;
+    }
+  }
+
+
+  @Override
+  public ExpressionList<JobSuggestedParamSet> getPendingJobs() {
+     return JobSuggestedParamSet.find.select("*")
+        .fetch(JobSuggestedParamSet.TABLE.jobDefinition, "*")
+        .where()
+        .or(Expr.or(Expr.eq(JobSuggestedParamSet.TABLE.paramSetState, JobSuggestedParamSet.ParamSetStatus.CREATED),
+            Expr.eq(JobSuggestedParamSet.TABLE.paramSetState, JobSuggestedParamSet.ParamSetStatus.SENT)),
+            Expr.eq(JobSuggestedParamSet.TABLE.paramSetState, JobSuggestedParamSet.ParamSetStatus.EXECUTED))
+        .eq(JobSuggestedParamSet.TABLE.isParamSetDefault, 0)
+        .eq(TuningAlgorithm.TABLE.jobType,TuningAlgorithm.JobType.PIG)
+        .eq(JobSuggestedParamSet.TABLE.isParamSetBest, 0);
+  }
+
+  @Override
+  public ExpressionList<TuningJobDefinition> getTuningJobDefinitionsForParameterSuggestion() {
+    return TuningJobDefinition.find.select("*")
+        .fetch(TuningJobDefinition.TABLE.job, "*")
+        .where()
+        .eq(TuningJobDefinition.TABLE.tuningEnabled, 1)
+        .eq(TuningAlgorithm.TABLE.jobType,TuningAlgorithm.JobType.PIG);
+
+  }
+
+
+
+
+
+  @Override
+  public Map<String, Map<String, Double>> collectUsageDataPerApplicationIPSO(AppResult appResult) {
+    Map<String, Map<String, Double>> usageData = null;
+      usageData = new HashMap<String, Map<String, Double>>();
+      if (appResult.yarnAppHeuristicResults != null) {
+        for (AppHeuristicResult appHeuristicResult : appResult.yarnAppHeuristicResults) {
+
+          if (appHeuristicResult.heuristicName.equals("Mapper Memory")) {
+            Map<String, Double> counterData = new HashMap<String, Double>();
+            collectUsageDataPerApplicationForFunction(appHeuristicResult, counterData);
+            usageData.put("map", counterData);
+          }
+          if (appHeuristicResult.heuristicName.equals("Reducer Memory")) {
+            Map<String, Double> counterData = new HashMap<String, Double>();
+            collectUsageDataPerApplicationForFunction(appHeuristicResult, counterData);
+            usageData.put("reduce", counterData);
+          }
+        }
+      }
+      logger.debug("Usage Values local   " + appResult.jobExecUrl);
+      printInformation(usageData);
+
+    return usageData;
+  }
+
+  private void printInformation(Map<String, Map<String, Double>> information) {
+    for (String functionType : information.keySet()) {
+      logger.debug("function Type    " + functionType);
+      Map<String, Double> usage = information.get(functionType);
+      for (String data : usage.keySet()) {
+        logger.debug(data + " " + usage.get(data));
+      }
+    }
+  }
+
+  private void collectUsageDataPerApplicationForFunction(AppHeuristicResult appHeuristicResult,
+      Map<String, Double> counterData) {
+    if (appHeuristicResult.yarnAppHeuristicResultDetails != null) {
+      for (AppHeuristicResultDetails appHeuristicResultDetails : appHeuristicResult.yarnAppHeuristicResultDetails) {
+        for (CommonConstantsHeuristic.UtilizedParameterKeys value : CommonConstantsHeuristic.UtilizedParameterKeys.values()) {
+          if (appHeuristicResultDetails.name.equals(value.getValue())) {
+            counterData.put(value.getValue(), appHeuristicResultDetails.value == null ? 0
+                : ((double) MemoryFormatUtils.stringToBytes(appHeuristicResultDetails.value)));
+          }
+        }
+      }
+    }
+  }
+
+
+  private List<Double> extractUsageParameter(String functionType,Map<String, Map<String, Double>> usageDataGlobal) {
+    Double usedPhysicalMemoryMB = 0.0, usedVirtualMemoryMB = 0.0, usedHeapMemoryMB = 0.0;
+    usedPhysicalMemoryMB =
+        usageDataGlobal.get(functionType).get(CommonConstantsHeuristic.UtilizedParameterKeys.MAX_PHYSICAL_MEMORY.getValue());
+    usedVirtualMemoryMB = usageDataGlobal.get(functionType).get(CommonConstantsHeuristic.UtilizedParameterKeys.MAX_VIRTUAL_MEMORY.getValue());
+    usedHeapMemoryMB =
+        usageDataGlobal.get(functionType).get(CommonConstantsHeuristic.UtilizedParameterKeys.MAX_TOTAL_COMMITTED_HEAP_USAGE_MEMORY.getValue());
+    logger.debug(" Usage Stats " + functionType);
+    logger.debug(" Physical Memory Usage MB " + usedPhysicalMemoryMB);
+    logger.debug(" Virtual Memory Usage MB " + usedVirtualMemoryMB / 2.1);
+    logger.debug(" Heap Usage MB " + usedHeapMemoryMB);
+    List<Double> usageStats = new ArrayList<Double>();
+    usageStats.add(usedPhysicalMemoryMB);
+    usageStats.add(usedVirtualMemoryMB);
+    usageStats.add(usedHeapMemoryMB);
+    return usageStats;
+  }
+
+
+  private Map<String, TuningParameterConstraint> filterMemoryConstraint(
+      List<TuningParameterConstraint> parameterConstraints, String functionType) {
+    Map<String, TuningParameterConstraint> memoryConstraints = new HashMap<String, TuningParameterConstraint>();
+    for (TuningParameterConstraint parameterConstraint : parameterConstraints) {
+      if (functionType.equals("map")) {
+        if (parameterConstraint.tuningParameter.paramName.equals(CommonConstantsHeuristic.ParameterKeys.MAPPER_MEMORY_HADOOP_CONF.getValue())) {
+          memoryConstraints.put("CONTAINER_MEMORY", parameterConstraint);
+        }
+        if (parameterConstraint.tuningParameter.paramName.equals(CommonConstantsHeuristic.ParameterKeys.MAPPER_HEAP_HADOOP_CONF.getValue())) {
+          memoryConstraints.put("CONTAINER_HEAP", parameterConstraint);
+        }
+      }
+      if (functionType.equals("reduce")) {
+        if (parameterConstraint.tuningParameter.paramName.equals(CommonConstantsHeuristic.ParameterKeys.REDUCER_MEMORY_HADOOP_CONF.getValue())) {
+          memoryConstraints.put("CONTAINER_MEMORY", parameterConstraint);
+        }
+        if (parameterConstraint.tuningParameter.paramName.equals(CommonConstantsHeuristic.ParameterKeys.REDUCER_HEAP_HADOOP_CONF.getValue())) {
+          memoryConstraints.put("CONTAINER_HEAP", parameterConstraint);
+        }
+      }
+    }
+    return memoryConstraints;
+  }
+
+
+  private void memoryParameterIPSO(String trigger, Map<String, TuningParameterConstraint> constraints,
+      List<Double> usageStats) {
+    logger.info(" IPSO for " + trigger);
+    Double usagePhysicalMemory = usageStats.get(UsageCounterSchema.USED_PHYSICAL_MEMORY.ordinal());
+    Double usageVirtualMemory = usageStats.get(UsageCounterSchema.USED_VIRTUAL_MEMORY.ordinal());
+    Double usageHeapMemory = usageStats.get(UsageCounterSchema.USED_HEAP_MEMORY.ordinal());
+    Double memoryMB =
+        applyContainerSizeFormula(constraints.get("CONTAINER_MEMORY"), usagePhysicalMemory, usageVirtualMemory);
+    applyHeapSizeFormula(constraints.get("CONTAINER_HEAP"), usageHeapMemory, memoryMB);
+  }
+
+  @Override
+  public Map<String, Map<String, Double>> intializeUsageCounterValuesIPSO() {
+    Map<String, Map<String, Double>> usageDataGlobal = new HashMap<String,Map<String,Double>>();
+    for (String function : functionTypes) {
+      Map<String, Double> usageData = new HashMap<String, Double>();
+      for (CommonConstantsHeuristic.UtilizedParameterKeys value : CommonConstantsHeuristic.UtilizedParameterKeys.values()) {
+        usageData.put(value.getValue(), 0.0);
+      }
+      usageDataGlobal.put(function, usageData);
+    }
+    return usageDataGlobal;
+  }
+
+  @Override
+  public void parameterOptimizerIPSO(Integer jobID, Map<String, Map<String, Double>> previousUsedMetrics, List<TuningParameterConstraint> parameterConstraints) {
+    for (String function : functionTypes) {
+      logger.debug(" Optimizing Parameter Space  " + function);
+      if (previousUsedMetrics.get(function).get(CommonConstantsHeuristic.UtilizedParameterKeys.MAX_PHYSICAL_MEMORY.getValue()) > 0.0) {
+        List<Double> usageStats = extractUsageParameter(function,previousUsedMetrics);
+        Map<String, TuningParameterConstraint> memoryConstraints =
+            filterMemoryConstraint(parameterConstraints, function);
+        memoryParameterIPSO(function, memoryConstraints, usageStats);
+      }
+    }
+  }
+
+  private Double applyContainerSizeFormula(TuningParameterConstraint containerConstraint, Double usagePhysicalMemory,
+      Double usageVirtualMemory) {
+    Double memoryMB = max(usagePhysicalMemory, usageVirtualMemory / (2.1));
+    Double containerSizeLower = getContainerSize(memoryMB);
+    Double containerSizeUpper = getContainerSize(1.2 * memoryMB);
+    logger.debug(" Previous Lower Bound  Memory  " + containerConstraint.lowerBound);
+    logger.debug(" Previous Upper Bound  Memory " + containerConstraint.upperBound);
+    logger.debug(" Current Lower Bound  Memory  " + containerSizeLower);
+    logger.debug(" Current Upper Bound  Memory " + containerSizeUpper);
+    containerConstraint.lowerBound = containerSizeLower;
+    containerConstraint.upperBound = containerSizeUpper;
+    containerConstraint.save();
+    return memoryMB;
+  }
+
+  private void applyHeapSizeFormula(TuningParameterConstraint containerHeapSizeConstraint, Double usageHeapMemory,
+      Double memoryMB) {
+    Double heapSizeLowerBound = min(0.75 * memoryMB, usageHeapMemory);
+    Double heapSizeUpperBound = heapSizeLowerBound * 1.2;
+    logger.debug(" Previous Lower Bound  XMX  " + containerHeapSizeConstraint.lowerBound);
+    logger.debug(" Previous Upper Bound  XMX " + containerHeapSizeConstraint.upperBound);
+    logger.debug(" Current Lower Bound  XMX  " + heapSizeLowerBound);
+    logger.debug(" Current Upper Bound  XMX " + heapSizeUpperBound);
+    containerHeapSizeConstraint.lowerBound = heapSizeLowerBound;
+    containerHeapSizeConstraint.upperBound = heapSizeUpperBound;
+    containerHeapSizeConstraint.save();
+  }
+
+  private Double getContainerSize(Double memory) {
+    return Math.ceil(memory / 1024.0) * 1024;
   }
 }

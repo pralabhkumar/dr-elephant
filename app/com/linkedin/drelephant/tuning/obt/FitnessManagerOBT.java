@@ -1,21 +1,22 @@
 package com.linkedin.drelephant.tuning.obt;
 
-import com.avaje.ebean.Expr;
 import com.linkedin.drelephant.AutoTuner;
 import com.linkedin.drelephant.ElephantContext;
+import com.linkedin.drelephant.mapreduce.heuristics.CommonConstantsHeuristic;
 import com.linkedin.drelephant.tuning.AbstractFitnessManager;
 import com.linkedin.drelephant.util.Utils;
-import java.util.ArrayList;
 import java.util.List;
+import models.AppHeuristicResult;
+import models.AppHeuristicResultDetails;
+import models.AppResult;
 import models.JobExecution;
-import models.TuningAlgorithm;
+import models.JobSuggestedParamSet;
 import models.TuningJobDefinition;
 import models.TuningJobExecutionParamSet;
 import org.apache.log4j.Logger;
 import org.apache.hadoop.conf.Configuration;
 
-
-public class FitnessManagerOBT extends AbstractFitnessManager {
+public abstract class FitnessManagerOBT extends AbstractFitnessManager {
   private final Logger logger = Logger.getLogger(getClass());
 
   public FitnessManagerOBT() {
@@ -38,40 +39,35 @@ public class FitnessManagerOBT extends AbstractFitnessManager {
   }
 
   @Override
-  protected List<TuningJobExecutionParamSet> detectJobsForFitnessComputation() {
-    logger.info("Fetching completed executions whose fitness are yet to be computed");
-    List<TuningJobExecutionParamSet> completedJobExecutionParamSet = new ArrayList<TuningJobExecutionParamSet>();
-
-    List<TuningJobExecutionParamSet> tuningJobExecutionParamSets = TuningJobExecutionParamSet.find.select("*")
-        .fetch(TuningJobExecutionParamSet.TABLE.jobExecution, "*")
-        .fetch(TuningJobExecutionParamSet.TABLE.jobSuggestedParamSet, "*")
-        .where()
-        .or(Expr.or(Expr.eq(TuningJobExecutionParamSet.TABLE.jobExecution + '.' + JobExecution.TABLE.executionState,
-            JobExecution.ExecutionState.SUCCEEDED),
-            Expr.eq(TuningJobExecutionParamSet.TABLE.jobExecution + '.' + JobExecution.TABLE.executionState,
-                JobExecution.ExecutionState.FAILED)),
-            Expr.eq(TuningJobExecutionParamSet.TABLE.jobExecution + '.' + JobExecution.TABLE.executionState,
-                JobExecution.ExecutionState.CANCELLED))
-        .isNull(TuningJobExecutionParamSet.TABLE.jobExecution + '.' + JobExecution.TABLE.resourceUsage)
-        .eq(TuningJobDefinition.TABLE.tuningAlgorithm, TuningAlgorithm.OptimizationAlgo.PSO.name())
-        .findList();
-
-    logger.info("#completed executions whose metrics are not computed: " + tuningJobExecutionParamSets.size());
-
-    for (TuningJobExecutionParamSet tuningJobExecutionParamSet : tuningJobExecutionParamSets) {
-      JobExecution jobExecution = tuningJobExecutionParamSet.jobExecution;
-      long diff = System.currentTimeMillis() - jobExecution.updatedTs.getTime();
-      logger.info("Current Time in millis: " + System.currentTimeMillis() + ", Job execution last updated time "
-          + jobExecution.updatedTs.getTime());
-      if (diff < fitnessComputeWaitInterval) {
-        logger.info("Delaying fitness compute for execution: " + jobExecution.jobExecId);
-      } else {
-        logger.info("Adding execution " + jobExecution.jobExecId + " to fitness computation queue");
-        completedJobExecutionParamSet.add(tuningJobExecutionParamSet);
-      }
+  protected void calculateAndUpdateFitness(JobExecution jobExecution, List<AppResult> results,
+      TuningJobDefinition tuningJobDefinition, JobSuggestedParamSet jobSuggestedParamSet) {
+    Double totalResourceUsed = 0D;
+    Double totalInputBytesInBytes = 0D;
+    for (AppResult appResult : results) {
+      totalResourceUsed += appResult.resourceUsed;
+      totalInputBytesInBytes += getTotalInputBytes(appResult);
     }
-    logger.info(
-        "Number of completed execution fetched for fitness computation: " + completedJobExecutionParamSet.size());
-    return completedJobExecutionParamSet;
+
+    Long totalRunTime = Utils.getTotalRuntime(results);
+    Long totalDelay = Utils.getTotalWaittime(results);
+    Long totalExecutionTime = totalRunTime - totalDelay;
+
+    if (totalExecutionTime != 0) {
+      updateJobExecution(jobExecution, totalResourceUsed, totalInputBytesInBytes, totalExecutionTime);
+    }
+
+    if (tuningJobDefinition.averageResourceUsage == null && totalExecutionTime != 0) {
+      updateTuningJobDefinition(tuningJobDefinition, jobExecution);
+    }
+
+    //Compute fitness
+    computeFitness(jobSuggestedParamSet, jobExecution, tuningJobDefinition, results);
   }
+
+
+
+  protected abstract void computeFitness(JobSuggestedParamSet jobSuggestedParamSet, JobExecution jobExecution,
+      TuningJobDefinition tuningJobDefinition, List<AppResult> results);
+
+
 }

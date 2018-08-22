@@ -10,4 +10,9 @@ public class BaselineManagerHBT extends AbstractBaselineManager {
   protected List<TuningJobDefinition> detectJobsForBaseLineComputation() {
     return null;
   }
+
+  @Override
+  public String getManagerName() {
+    return "BaselineManagerHBT";
+  }
 }

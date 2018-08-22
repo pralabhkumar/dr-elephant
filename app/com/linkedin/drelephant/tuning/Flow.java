@@ -3,36 +3,40 @@ package com.linkedin.drelephant.tuning;
 import com.linkedin.drelephant.tuning.Schduler.AzkabanJobStatusManager;
 import com.linkedin.drelephant.tuning.engine.MRExecutionEngine;
 import com.linkedin.drelephant.tuning.engine.SparkExecutionEngine;
-import com.linkedin.drelephant.tuning.hbt.AlgorithmManagerHBT;
 import com.linkedin.drelephant.tuning.hbt.BaselineManagerHBT;
 import com.linkedin.drelephant.tuning.hbt.FitnessManagerHBT;
-import com.linkedin.drelephant.tuning.obt.AlgorithmManagerOBT;
+import com.linkedin.drelephant.tuning.hbt.TuningTypeManagerHBT;
+import com.linkedin.drelephant.tuning.obt.FitnessManagerOBTAlgoIPSO;
+import com.linkedin.drelephant.tuning.obt.TuningTypeManagerOBT;
 import com.linkedin.drelephant.tuning.obt.BaselineManagerOBT;
-import com.linkedin.drelephant.tuning.obt.FitnessManagerOBT;
+import com.linkedin.drelephant.tuning.obt.FitnessManagerOBTAlgoPSO;
+import com.linkedin.drelephant.tuning.obt.TuningTypeManagerOBTAlgoIPSO;
+import com.linkedin.drelephant.tuning.obt.TuningTypeManagerOBTAlgoPSO;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+import org.apache.log4j.Logger;
 
 
 public class Flow {
-  Map<String, List<Manager>> pipelines = null;
+  List<List<Manager>> pipelines = null;
+  private static final Logger logger = Logger.getLogger(Flow.class);
 
   public Flow() {
-    pipelines = new HashMap<String, List<Manager>>();
+    pipelines = new ArrayList<List<Manager>>();
     createBaseLineManagersPipeline();
     createJobStatusManagersPipeline();
     createFitnessManagersPipeline();
-    createAlgorithmManagersPipeline();
+    createTuningTypemManagersPipeline();
   }
 
   public void executeFlow() {
-    for (final String pipelineType : this.pipelines.keySet()) {
+    for (final List<Manager> pipelineType : this.pipelines) {
       new Thread(new Runnable() {
         @Override
         public void run() {
-          for (Manager manager : pipelines.get(pipelineType)) {
-            manager.execute();
+          for (Manager manager : pipelineType) {
+            Boolean execute = manager.execute();
+            logger.info(" Manager execution Status " + execute + " " + manager.getManagerName());
           }
         }
       }).start();
@@ -41,31 +45,48 @@ public class Flow {
 
   public void createBaseLineManagersPipeline() {
     List<Manager> baselineManagers = new ArrayList<Manager>();
-    baselineManagers.add(new BaselineManagerHBT());
-    baselineManagers.add(new BaselineManagerOBT());
-    this.pipelines.put("baselineManager", baselineManagers);
+    for (Constant.TuningType tuningType : Constant.TuningType.values()) {
+      baselineManagers.add(
+          ManagerFactory.getManager(tuningType.name(), null, null, AbstractBaselineManager.class.getName()));
+    }
+    this.pipelines.add(baselineManagers);
   }
 
   public void createJobStatusManagersPipeline() {
     List<Manager> jobStatusManagers = new ArrayList<Manager>();
-    jobStatusManagers.add(new AzkabanJobStatusManager());
+    jobStatusManagers.add(ManagerFactory.getManager(null, null, null, AbstractJobStatusManager.class.getName()));
     //jobStatusManagers.add(new JobStatusManagerOBT());
-    this.pipelines.put("jobStatusManagers", jobStatusManagers);
+    this.pipelines.add(jobStatusManagers);
   }
 
   public void createFitnessManagersPipeline() {
     List<Manager> fitnessManagers = new ArrayList<Manager>();
-    fitnessManagers.add(new FitnessManagerHBT());
-    fitnessManagers.add(new FitnessManagerOBT());
-    this.pipelines.put("fitnessManagers", fitnessManagers);
+    for (Constant.TuningType tuningType : Constant.TuningType.values()) {
+      for (Constant.AlgotihmType algotihmType : Constant.AlgotihmType.values()) {
+        Manager manager = ManagerFactory.getManager(tuningType.name(), algotihmType.name(), null,
+            AbstractFitnessManager.class.getName());
+        if (manager != null) {
+          fitnessManagers.add(manager);
+        }
+      }
+    }
+    this.pipelines.add(fitnessManagers);
   }
 
-  public void createAlgorithmManagersPipeline() {
+  public void createTuningTypemManagersPipeline() {
     List<Manager> algorithmManagers = new ArrayList<Manager>();
-    algorithmManagers.add(new AlgorithmManagerHBT(new com.linkedin.drelephant.tuning.engine.MRExecutionEngine()));
-    algorithmManagers.add(new AlgorithmManagerHBT(new com.linkedin.drelephant.tuning.engine.SparkExecutionEngine()));
-    algorithmManagers.add(new AlgorithmManagerOBT(new MRExecutionEngine()));
-    algorithmManagers.add(new AlgorithmManagerOBT(new SparkExecutionEngine()));
-    this.pipelines.put("algorithmManager", algorithmManagers);
+    for (Constant.TuningType tuningType : Constant.TuningType.values()) {
+      for (Constant.AlgotihmType algotihmType : Constant.AlgotihmType.values()) {
+        for (Constant.ExecutionEngineTypes executionEngineTypes : Constant.ExecutionEngineTypes.values()) {
+          Manager manager =
+              ManagerFactory.getManager(tuningType.name(), algotihmType.name(), executionEngineTypes.name(),
+                  AbstractTuningTypeManager.class.getName());
+          if (manager != null) {
+            algorithmManagers.add(manager);
+          }
+        }
+      }
+    }
+    this.pipelines.add(algorithmManagers);
   }
 }
