@@ -32,7 +32,8 @@ INSERT INTO tuning_parameter VALUES (13,'mapreduce.map.sort.spill.percent',3,0.8
 INSERT INTO tuning_parameter VALUES (14,'mapreduce.reduce.memory.mb',3,2048,1024,8192,1024, 0, current_timestamp(0), current_timestamp(0));
 INSERT INTO tuning_parameter VALUES (15,'mapreduce.reduce.java.opts',3,1536,500,6144,64, 0, current_timestamp(0), current_timestamp(0));
 INSERT INTO tuning_parameter VALUES (16,'mapreduce.map.java.opts',3,1536,500,6144,64, 0, current_timestamp(0), current_timestamp(0));
-
+INSERT INTO tuning_parameter VALUES (17,'mapreduce.input.fileinputformat.split.maxsize',3,536870912,536870912,536870912,128, 1, current_timestamp(0), current_timestamp(0));
+INSERT INTO tuning_parameter VALUES (18,'pig.maxCombinedSplitSize',3,536870912,536870912,536870912,128, 0, current_timestamp(0), current_timestamp(0));
 
 CREATE TABLE IF NOT EXISTS tuning_parameter_constraint (
   id int(10) unsigned NOT NULL AUTO_INCREMENT COMMENT 'Auto increment unique id',

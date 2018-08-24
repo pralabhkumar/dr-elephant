@@ -12,17 +12,22 @@ public class OptimizationAlgoFactory {
   public static TuningTypeManagerOBT getOptimizationAlogrithm(TuningAlgorithm tuningAlgorithm) {
     if (tuningAlgorithm.optimizationAlgo.name().equals(TuningAlgorithm.OptimizationAlgo.PSO_IPSO.name())
         && tuningAlgorithm.jobType.name().equals(TuningAlgorithm.JobType.PIG.name())) {
-      logger.info("OPTIMIZATION ALGORITHM PSO_IPSO");
+      logger.info("OPTIMIZATION ALGORITHM PSO_IPSO MR");
       return new TuningTypeManagerOBTAlgoIPSO(new MRExecutionEngine());
     }
     if (tuningAlgorithm.optimizationAlgo.name().equals(TuningAlgorithm.OptimizationAlgo.PSO_IPSO.name())
         && tuningAlgorithm.jobType.name().equals(TuningAlgorithm.JobType.SPARK.name())) {
-      logger.info("OPTIMIZATION ALGORITHM PSO_IPSO");
+      logger.info("OPTIMIZATION ALGORITHM PSO_IPSO SPARK");
       return new TuningTypeManagerOBTAlgoIPSO(new SparkExecutionEngine());
     }
     if (tuningAlgorithm.optimizationAlgo.name().equals(TuningAlgorithm.OptimizationAlgo.PSO.name())
         && tuningAlgorithm.jobType.name().equals(TuningAlgorithm.JobType.PIG.name())) {
-      logger.info("OPTIMIZATION ALGORITHM PSO_IPSO");
+      logger.info("OPTIMIZATION ALGORITHM PSO PIG");
+      return new TuningTypeManagerOBTAlgoPSO(new MRExecutionEngine());
+    }
+    if (tuningAlgorithm.optimizationAlgo.name().equals(TuningAlgorithm.OptimizationAlgo.PSO.name())
+        && tuningAlgorithm.jobType.name().equals(TuningAlgorithm.JobType.SPARK.name())) {
+      logger.info("OPTIMIZATION ALGORITHM PSO SPARK");
       return new TuningTypeManagerOBTAlgoPSO(new MRExecutionEngine());
     }
     logger.info("OPTIMIZATION ALGORITHM PSO");

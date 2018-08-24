@@ -40,7 +40,8 @@ public class FitnessManagerOBTAlgoPSO extends FitnessManagerOBT {
             Expr.eq(TuningJobExecutionParamSet.TABLE.jobExecution + '.' + JobExecution.TABLE.executionState,
                 JobExecution.ExecutionState.CANCELLED))
         .isNull(TuningJobExecutionParamSet.TABLE.jobExecution + '.' + JobExecution.TABLE.resourceUsage)
-        .eq(TuningJobDefinition.TABLE.tuningAlgorithm, TuningAlgorithm.OptimizationAlgo.PSO.name())
+        .eq(TuningJobExecutionParamSet.TABLE.jobSuggestedParamSet + "." + JobSuggestedParamSet.TABLE.tuningAlgorithm
+            + "." + TuningAlgorithm.TABLE.optimizationAlgo, TuningAlgorithm.OptimizationAlgo.PSO.name())
         .findList();
 
     logger.info("#completed executions whose metrics are not computed: " + tuningJobExecutionParamSets.size());

@@ -63,7 +63,7 @@ public class IPSOManagerTestRunner implements Runnable {
     optimizeManager.intializePrerequisite(tuningAlgorithm, jobSuggestedParamSet);
     List<TuningParameterConstraint> tuningParameterConstraint =
         TuningParameterConstraint.find.where().eq("job_definition_id", 100003).findList();
-    assertTrue(" Parameters Constraint Size ", tuningParameterConstraint.size() == 7);
+    assertTrue(" Parameters Constraint Size ", tuningParameterConstraint.size() == 9);
   }
 
   private void testIPSOExtractParameterInformation(JobExecution jobExecution,

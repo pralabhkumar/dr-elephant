@@ -111,7 +111,7 @@ public abstract class AbstractBaselineManager implements Manager {
    * @return average input size in bytes as long
    */
   private Long getAvgInputSizeInBytes(String jobDefId) {
-    logger.debug("Running query for average input size computation " + avgInputSizeSQL);
+    logger.debug("Running query for average input size computation " + avgInputSizeSQL + " Job definintion ID "+jobDefId);
 
     SqlRow baseline = Ebean.createSqlQuery(avgInputSizeSQL)
         .setParameter("jobDefId", jobDefId)

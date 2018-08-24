@@ -16,11 +16,12 @@ import models.TuningJobExecutionParamSet;
 import org.apache.log4j.Logger;
 import org.apache.hadoop.conf.Configuration;
 
+
 public class FitnessManagerOBTAlgoIPSO extends FitnessManagerOBT {
 
   private final Logger logger = Logger.getLogger(getClass());
 
-  public FitnessManagerOBTAlgoIPSO(){
+  public FitnessManagerOBTAlgoIPSO() {
     super();
   }
 
@@ -40,12 +41,13 @@ public class FitnessManagerOBTAlgoIPSO extends FitnessManagerOBT {
             Expr.eq(TuningJobExecutionParamSet.TABLE.jobExecution + '.' + JobExecution.TABLE.executionState,
                 JobExecution.ExecutionState.CANCELLED))
         .isNull(TuningJobExecutionParamSet.TABLE.jobExecution + '.' + JobExecution.TABLE.resourceUsage)
-        .eq(TuningJobDefinition.TABLE.tuningAlgorithm, TuningAlgorithm.OptimizationAlgo.PSO_IPSO.name())
+        .eq(TuningJobExecutionParamSet.TABLE.jobSuggestedParamSet + "." + JobSuggestedParamSet.TABLE.tuningAlgorithm
+            + "." + TuningAlgorithm.TABLE.optimizationAlgo, TuningAlgorithm.OptimizationAlgo.PSO_IPSO.name())
         .findList();
 
     logger.info("#completed executions whose metrics are not computed: " + tuningJobExecutionParamSets.size());
 
-    getCompletedExecution(tuningJobExecutionParamSets,completedJobExecutionParamSet);
+    getCompletedExecution(tuningJobExecutionParamSets, completedJobExecutionParamSet);
 
     return completedJobExecutionParamSet;
   }
@@ -69,12 +71,13 @@ public class FitnessManagerOBTAlgoIPSO extends FitnessManagerOBT {
       }
     }
   }
-/*
-Todo : Move this method to TuningType
- */
+
+  /*
+  Todo : Move this method to TuningType
+   */
   private void parameterSpaceOptimization(JobSuggestedParamSet jobSuggestedParamSet, JobExecution jobExecution,
       List<AppResult> results) {
-    TuningTypeManagerOBT  optimizeManager =
+    TuningTypeManagerOBT optimizeManager =
         OptimizationAlgoFactory.getOptimizationAlogrithm(jobSuggestedParamSet.tuningAlgorithm);
     if (optimizeManager != null) {
       optimizeManager.extractParameterInformation(results);

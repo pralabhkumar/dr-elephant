@@ -21,13 +21,13 @@ public abstract class AbstractTuningTypeManager implements Manager {
 
   protected abstract List<JobTuningInfo> detectJobsForParameterGeneration();
 
-  protected Boolean generateParameters(List<JobTuningInfo> jobsForParameterSuggestion) {
+  protected List<JobTuningInfo>  generateParameters(List<JobTuningInfo> jobsForParameterSuggestion) {
     List<JobTuningInfo> updatedJobTuningInfoList = new ArrayList<JobTuningInfo>();
     for (JobTuningInfo jobTuningInfo : jobsForParameterSuggestion) {
       JobTuningInfo newJobTuningInfo = generateParamSet(jobTuningInfo);
       updatedJobTuningInfoList.add(newJobTuningInfo);
     }
-    return true;
+    return updatedJobTuningInfoList;
   }
 
   protected abstract JobTuningInfo generateParamSet(JobTuningInfo jobTuningInfo);
@@ -40,11 +40,9 @@ public abstract class AbstractTuningTypeManager implements Manager {
     List<JobTuningInfo> jobTuningInfo = detectJobsForParameterGeneration();
     if (jobTuningInfo != null && jobTuningInfo.size() >= 1) {
       logger.info("Generating Parameters ");
-      parameterGenerationDone = generateParameters(jobTuningInfo);
-    }
-    if (parameterGenerationDone) {
+      List<JobTuningInfo> updatedJobTuningInfoList= generateParameters(jobTuningInfo);
       logger.info("Updating Database");
-      databaseUpdateDone = updateDatabase(jobTuningInfo);
+      databaseUpdateDone = updateDatabase(updatedJobTuningInfoList);
     }
     logger.info("Param Generation Done");
     return databaseUpdateDone;

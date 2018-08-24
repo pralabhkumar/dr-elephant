@@ -50,7 +50,8 @@ public class TuningTypeManagerOBTAlgoIPSO extends TuningTypeManagerOBT {
   @Override
   protected List<JobSuggestedParamSet> getPendingParamSets() {
     List<JobSuggestedParamSet> pendingParamSetList = _executionEngine.getPendingJobs()
-        .eq(TuningJobDefinition.TABLE.tuningAlgorithm, TuningAlgorithm.OptimizationAlgo.PSO_IPSO.name())
+        .eq(JobSuggestedParamSet.TABLE.tuningAlgorithm
+            + "." + TuningAlgorithm.TABLE.optimizationAlgo, TuningAlgorithm.OptimizationAlgo.PSO_IPSO.name())
         .findList();
     return pendingParamSetList;
   }
@@ -58,7 +59,8 @@ public class TuningTypeManagerOBTAlgoIPSO extends TuningTypeManagerOBT {
   @Override
   protected List<TuningJobDefinition> getTuningJobDefinitions() {
     return _executionEngine.getTuningJobDefinitionsForParameterSuggestion()
-        .eq(TuningJobDefinition.TABLE.tuningAlgorithm, TuningAlgorithm.OptimizationAlgo.PSO_IPSO.name())
+        .eq(TuningJobDefinition.TABLE.tuningAlgorithm
+            + "." + TuningAlgorithm.TABLE.optimizationAlgo, TuningAlgorithm.OptimizationAlgo.PSO_IPSO.name())
         .findList();
   }
 
@@ -159,5 +161,9 @@ public class TuningTypeManagerOBTAlgoIPSO extends TuningTypeManagerOBT {
   @Override
   public int getSwarmSize() {
     return 2;
+  }
+
+  public String getManagerName() {
+    return "TuningTypeManagerOBTAlgoIPSO" + this._executionEngine.getClass().getSimpleName();
   }
 }

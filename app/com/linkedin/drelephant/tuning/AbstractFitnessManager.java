@@ -450,14 +450,16 @@ public abstract class AbstractFitnessManager implements Manager {
       updateMetricsDone = updateMetrics(tuningJobExecutionParamSet);
     }
     logger.info("Disable Tuning if Required");
-    Set<JobDefinition> jobDefinitionSet = new HashSet<JobDefinition>();
-    for (TuningJobExecutionParamSet completedJobExecutionParamSet : tuningJobExecutionParamSet) {
-      JobDefinition jobDefinition = completedJobExecutionParamSet.jobSuggestedParamSet.jobDefinition;
-      if (isTuningEnabled(jobDefinition.id)) {
-        jobDefinitionSet.add(jobDefinition);
+    if(tuningJobExecutionParamSet != null && tuningJobExecutionParamSet.size() >= 1) {
+      Set<JobDefinition> jobDefinitionSet = new HashSet<JobDefinition>();
+      for (TuningJobExecutionParamSet completedJobExecutionParamSet : tuningJobExecutionParamSet) {
+        JobDefinition jobDefinition = completedJobExecutionParamSet.jobSuggestedParamSet.jobDefinition;
+        if (isTuningEnabled(jobDefinition.id)) {
+          jobDefinitionSet.add(jobDefinition);
+        }
       }
+      checkToDisableTuning(jobDefinitionSet);
     }
-    checkToDisableTuning(jobDefinitionSet);
     logger.info("Fitness Computed");
     return true;
   }

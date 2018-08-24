@@ -29,32 +29,36 @@ public class Flow {
     createTuningTypemManagersPipeline();
   }
 
-  public void executeFlow() {
+  public void executeFlow() throws InterruptedException {
     for (final List<Manager> pipelineType : this.pipelines) {
-      new Thread(new Runnable() {
+      Thread t1 = new Thread(new Runnable() {
         @Override
         public void run() {
           for (Manager manager : pipelineType) {
+            logger.info(" Manager execution Status  " +  manager.getManagerName());
             Boolean execute = manager.execute();
-            logger.info(" Manager execution Status " + execute + " " + manager.getManagerName());
+           // logger.info(" Manager execution Status " + execute + " " + manager.getManagerName());
           }
         }
-      }).start();
+      });
+      t1.start();
+      t1.join();
     }
   }
 
   public void createBaseLineManagersPipeline() {
     List<Manager> baselineManagers = new ArrayList<Manager>();
     for (Constant.TuningType tuningType : Constant.TuningType.values()) {
+
       baselineManagers.add(
-          ManagerFactory.getManager(tuningType.name(), null, null, AbstractBaselineManager.class.getName()));
+          ManagerFactory.getManager(tuningType.name(), null, null, AbstractBaselineManager.class.getSimpleName()));
     }
     this.pipelines.add(baselineManagers);
   }
 
   public void createJobStatusManagersPipeline() {
     List<Manager> jobStatusManagers = new ArrayList<Manager>();
-    jobStatusManagers.add(ManagerFactory.getManager(null, null, null, AbstractJobStatusManager.class.getName()));
+    jobStatusManagers.add(ManagerFactory.getManager(null, null, null, AbstractJobStatusManager.class.getSimpleName()));
     //jobStatusManagers.add(new JobStatusManagerOBT());
     this.pipelines.add(jobStatusManagers);
   }
@@ -63,8 +67,9 @@ public class Flow {
     List<Manager> fitnessManagers = new ArrayList<Manager>();
     for (Constant.TuningType tuningType : Constant.TuningType.values()) {
       for (Constant.AlgotihmType algotihmType : Constant.AlgotihmType.values()) {
+        logger.info(tuningType.name() + " "+ algotihmType.name());
         Manager manager = ManagerFactory.getManager(tuningType.name(), algotihmType.name(), null,
-            AbstractFitnessManager.class.getName());
+            AbstractFitnessManager.class.getSimpleName());
         if (manager != null) {
           fitnessManagers.add(manager);
         }
@@ -80,8 +85,9 @@ public class Flow {
         for (Constant.ExecutionEngineTypes executionEngineTypes : Constant.ExecutionEngineTypes.values()) {
           Manager manager =
               ManagerFactory.getManager(tuningType.name(), algotihmType.name(), executionEngineTypes.name(),
-                  AbstractTuningTypeManager.class.getName());
+                  AbstractTuningTypeManager.class.getSimpleName());
           if (manager != null) {
+            logger.info("Testing "+ manager.getManagerName());
             algorithmManagers.add(manager);
           }
         }

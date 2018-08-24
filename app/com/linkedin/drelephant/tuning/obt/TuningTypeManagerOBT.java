@@ -84,7 +84,7 @@ public abstract class TuningTypeManagerOBT extends AbstractTuningTypeManager {
     logger.info("Checking which jobs need new parameter suggestion");
     List<TuningJobDefinition> jobsForParamSuggestion = new ArrayList<TuningJobDefinition>();
     List<JobSuggestedParamSet> pendingParamSetList = getPendingParamSets();
-
+    //logger.info(" Jobs pending " + pendingParamSetList.size());
     List<JobDefinition> pendingParamJobList = new ArrayList<JobDefinition>();
     for (JobSuggestedParamSet pendingParamSet : pendingParamSetList) {
       if (!pendingParamJobList.contains(pendingParamSet.jobDefinition)) {
@@ -93,7 +93,7 @@ public abstract class TuningTypeManagerOBT extends AbstractTuningTypeManager {
     }
 
     List<TuningJobDefinition> tuningJobDefinitionList = getTuningJobDefinitions();
-
+    //logger.info("Total Jobs " + tuningJobDefinitionList.size());
     if (tuningJobDefinitionList.size() == 0) {
       logger.error("No auto-tuning enabled jobs found");
     }
@@ -282,9 +282,13 @@ public abstract class TuningTypeManagerOBT extends AbstractTuningTypeManager {
       Process p = Runtime.getRuntime()
           .exec(PYTHON_PATH + " " + TUNING_SCRIPT_PATH + " " + stringTunerState + " " + parametersToTune + " " + jobType
               + " " + swarmSize);
+      logger.info(PYTHON_PATH + " " + TUNING_SCRIPT_PATH + " " + stringTunerState + " " + parametersToTune + " " + jobType
+          + " " + swarmSize);
+
       BufferedReader inputStream = new BufferedReader(new InputStreamReader(p.getInputStream()));
       BufferedReader errorStream = new BufferedReader(new InputStreamReader(p.getErrorStream()));
       String updatedStringTunerState = inputStream.readLine();
+      logger.info("Param  Generator Testing"+updatedStringTunerState);
       newJobTuningInfo.setTunerState(updatedStringTunerState);
       String errorLine;
       while ((errorLine = errorStream.readLine()) != null) {

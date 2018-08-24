@@ -198,7 +198,8 @@ public class MRExecutionEngine implements ExecutionEngine {
             Expr.eq(JobSuggestedParamSet.TABLE.paramSetState, JobSuggestedParamSet.ParamSetStatus.SENT)),
             Expr.eq(JobSuggestedParamSet.TABLE.paramSetState, JobSuggestedParamSet.ParamSetStatus.EXECUTED))
         .eq(JobSuggestedParamSet.TABLE.isParamSetDefault, 0)
-        .eq(TuningAlgorithm.TABLE.jobType,TuningAlgorithm.JobType.PIG)
+         .eq(JobSuggestedParamSet.TABLE.tuningAlgorithm
+             + "." + TuningAlgorithm.TABLE.jobType, TuningAlgorithm.JobType.PIG.name())
         .eq(JobSuggestedParamSet.TABLE.isParamSetBest, 0);
   }
 
@@ -208,7 +209,7 @@ public class MRExecutionEngine implements ExecutionEngine {
         .fetch(TuningJobDefinition.TABLE.job, "*")
         .where()
         .eq(TuningJobDefinition.TABLE.tuningEnabled, 1)
-        .eq(TuningAlgorithm.TABLE.jobType,TuningAlgorithm.JobType.PIG);
+        .eq(TuningJobDefinition.TABLE.tuningAlgorithm+"."+TuningAlgorithm.TABLE.jobType,TuningAlgorithm.JobType.PIG.name());
 
   }
 

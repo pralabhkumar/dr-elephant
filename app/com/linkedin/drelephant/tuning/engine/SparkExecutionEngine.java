@@ -31,7 +31,8 @@ public class SparkExecutionEngine implements ExecutionEngine {
             Expr.eq(JobSuggestedParamSet.TABLE.paramSetState, JobSuggestedParamSet.ParamSetStatus.SENT)),
             Expr.eq(JobSuggestedParamSet.TABLE.paramSetState, JobSuggestedParamSet.ParamSetStatus.EXECUTED))
         .eq(JobSuggestedParamSet.TABLE.isParamSetDefault, 0)
-        .eq(TuningAlgorithm.TABLE.jobType, TuningAlgorithm.JobType.SPARK)
+        .eq(JobSuggestedParamSet.TABLE.tuningAlgorithm
+            + "." + TuningAlgorithm.TABLE.jobType, TuningAlgorithm.JobType.SPARK.name())
         .eq(JobSuggestedParamSet.TABLE.isParamSetBest, 0);
   }
 
@@ -41,7 +42,7 @@ public class SparkExecutionEngine implements ExecutionEngine {
         .fetch(TuningJobDefinition.TABLE.job, "*")
         .where()
         .eq(TuningJobDefinition.TABLE.tuningEnabled, 1)
-        .eq(TuningAlgorithm.TABLE.jobType, TuningAlgorithm.JobType.SPARK);
+        .eq(TuningJobDefinition.TABLE.tuningAlgorithm+"."+TuningAlgorithm.TABLE.jobType,TuningAlgorithm.JobType.SPARK);
   }
 
   @Override
