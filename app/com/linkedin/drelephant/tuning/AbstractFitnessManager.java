@@ -320,7 +320,8 @@ public abstract class AbstractFitnessManager implements Manager {
    *  - or number of tuning executions >= minTuningExecutions and median gain (in cost function) in last 6 executions is negative
    * @param jobDefinitionSet Set of jobs to check if tuning can be switched off for them
    */
-  private void checkToDisableTuning(Set<JobDefinition> jobDefinitionSet) {
+
+  protected void checkToDisableTuning(Set<JobDefinition> jobDefinitionSet) {
     for (JobDefinition jobDefinition : jobDefinitionSet) {
       List<TuningJobExecutionParamSet> tuningJobExecutionParamSets =
           TuningJobExecutionParamSet.find.fetch(TuningJobExecutionParamSet.TABLE.jobSuggestedParamSet, "*")
@@ -332,6 +333,9 @@ public abstract class AbstractFitnessManager implements Manager {
               .desc("job_execution_id")
               .findList();
 
+      if (reachToNumberOfThresholdIterations(tuningJobExecutionParamSets, jobDefinition)) {
+        disableTuning(jobDefinition, "User Specified Iterations reached");
+      }
       if (tuningJobExecutionParamSets.size() >= minTuningExecutions) {
         if (didParameterSetConverge(tuningJobExecutionParamSets)) {
           logger.info("Parameters converged. Disabling tuning for job: " + jobDefinition.jobName);
@@ -345,6 +349,20 @@ public abstract class AbstractFitnessManager implements Manager {
         }
       }
     }
+  }
+
+
+
+  private boolean reachToNumberOfThresholdIterations(List<TuningJobExecutionParamSet> tuningJobExecutionParamSets,
+      JobDefinition jobDefinition) {
+    TuningJobDefinition tuningJobDefinition = TuningJobDefinition.find.where()
+        .eq(TuningJobDefinition.TABLE.job + '.' + JobDefinition.TABLE.id, jobDefinition.id)
+        .findUnique();
+    if (tuningJobExecutionParamSets != null
+        && tuningJobExecutionParamSets.size() == tuningJobDefinition.numberOfIterations) {
+      return true;
+    }
+    return false;
   }
 
   /**
@@ -450,7 +468,7 @@ public abstract class AbstractFitnessManager implements Manager {
       updateMetricsDone = updateMetrics(tuningJobExecutionParamSet);
     }
     logger.info("Disable Tuning if Required");
-    if(tuningJobExecutionParamSet != null && tuningJobExecutionParamSet.size() >= 1) {
+    if (tuningJobExecutionParamSet != null && tuningJobExecutionParamSet.size() >= 1) {
       Set<JobDefinition> jobDefinitionSet = new HashSet<JobDefinition>();
       for (TuningJobExecutionParamSet completedJobExecutionParamSet : tuningJobExecutionParamSet) {
         JobDefinition jobDefinition = completedJobExecutionParamSet.jobSuggestedParamSet.jobDefinition;

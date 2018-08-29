@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import models.AppResult;
 import models.JobDefinition;
+import models.JobExecution;
 import models.JobSuggestedParamSet;
 import models.JobSuggestedParamValue;
 import models.TuningAlgorithm;
@@ -35,8 +36,7 @@ public class TuningTypeManagerOBTAlgoIPSO extends TuningTypeManagerOBT {
   }
 
   @Override
-  protected void updateBoundryConstraint(List<TuningParameter> tuningParameterList,
-      TuningJobDefinition tuningJobDefinition, JobDefinition job) {
+  protected void updateBoundryConstraint(List<TuningParameter> tuningParameterList, JobDefinition job) {
     applyIntelligenceOnParameter(tuningParameterList, job);
   }
 
@@ -52,6 +52,7 @@ public class TuningTypeManagerOBTAlgoIPSO extends TuningTypeManagerOBT {
     List<JobSuggestedParamSet> pendingParamSetList = _executionEngine.getPendingJobs()
         .eq(JobSuggestedParamSet.TABLE.tuningAlgorithm
             + "." + TuningAlgorithm.TABLE.optimizationAlgo, TuningAlgorithm.OptimizationAlgo.PSO_IPSO.name())
+        .eq(JobSuggestedParamSet.TABLE.isParamSetDefault, 0)
         .findList();
     return pendingParamSetList;
   }
@@ -84,52 +85,17 @@ public class TuningTypeManagerOBTAlgoIPSO extends TuningTypeManagerOBT {
     }
   }
 
-  private void intialize() {
-    usageDataGlobal = _executionEngine.intializeUsageCounterValuesIPSO();
-  }
-
-  @Override
-  public Map<String, Map<String, Double>> extractParameterInformation(List<AppResult> appResults) {
-    logger.info(" Extract Parameter Information");
-    intialize();
-    for (AppResult appResult : appResults) {
-      Map<String, Map<String, Double>> usageDataApplicationlocal = _executionEngine.collectUsageDataPerApplicationIPSO(appResult);
-      for (String functionType : usageDataApplicationlocal.keySet()) {
-        Map<String, Double> usageDataForFunctionGlobal = usageDataGlobal.get(functionType);
-        Map<String, Double> usageDataForFunctionlocal = usageDataApplicationlocal.get(functionType);
-        for (String usageName : usageDataForFunctionlocal.keySet()) {
-          usageDataForFunctionGlobal.put(usageName,
-              max(usageDataForFunctionGlobal.get(usageName), usageDataForFunctionlocal.get(usageName)));
-        }
-      }
-    }
-    logger.debug("Usage Values Global ");
-    printInformation(usageDataGlobal);
-    return usageDataGlobal;
-  }
-
-  private void printInformation(Map<String, Map<String, Double>> information) {
-    /*for (String functionType : information.keySet()) {
-      logger.debug("function Type    " + functionType);
-      Map<String, Double> usage = information.get(functionType);
-      for (String data : usage.keySet()) {
-        logger.debug(data + " " + usage.get(data));
-      }
-    }*/
-  }
 
 
 
 
   @Override
-  public void parameterOptimizer(Integer jobID) {
+  public void parameterOptimizer(List<AppResult> appResults, JobExecution jobExecution) {
     logger.info(" IPSO Optimizer");
-    List<TuningParameterConstraint> parameterConstraints = TuningParameterConstraint.find.where().
-        eq("job_definition_id", jobID).findList();
-    this._executionEngine.parameterOptimizerIPSO(jobID,usageDataGlobal,parameterConstraints);
+    _executionEngine.parameterOptimizerIPSO(appResults,jobExecution);
   }
 
-  @Override
+
   public void applyIntelligenceOnParameter(List<TuningParameter> tuningParameterList, JobDefinition job) {
     logger.info(" Apply Intelligence");
     List<TuningParameterConstraint> tuningParameterConstraintList = new ArrayList<TuningParameterConstraint>();

@@ -29,15 +29,24 @@ public class Flow {
     createTuningTypemManagersPipeline();
   }
 
+  public List<List<Manager>> getPipeline() {
+    return pipelines;
+  }
+
   public void executeFlow() throws InterruptedException {
     for (final List<Manager> pipelineType : this.pipelines) {
       Thread t1 = new Thread(new Runnable() {
         @Override
         public void run() {
           for (Manager manager : pipelineType) {
-            logger.info(" Manager execution Status  " +  manager.getManagerName());
-            Boolean execute = manager.execute();
-           // logger.info(" Manager execution Status " + execute + " " + manager.getManagerName());
+            logger.info(" Manager execution Status  " + manager.getManagerName());
+            if (manager.getClass().getSimpleName().toLowerCase().contains("hbt") || manager.getClass()
+                .getSimpleName()
+                .toLowerCase()
+                .contains("azkabanjob")) {
+              Boolean execute = manager.execute();
+            }
+            // logger.info(" Manager execution Status " + execute + " " + manager.getManagerName());
           }
         }
       });
@@ -67,7 +76,7 @@ public class Flow {
     List<Manager> fitnessManagers = new ArrayList<Manager>();
     for (Constant.TuningType tuningType : Constant.TuningType.values()) {
       for (Constant.AlgotihmType algotihmType : Constant.AlgotihmType.values()) {
-        logger.info(tuningType.name() + " "+ algotihmType.name());
+        logger.info(tuningType.name() + " " + algotihmType.name());
         Manager manager = ManagerFactory.getManager(tuningType.name(), algotihmType.name(), null,
             AbstractFitnessManager.class.getSimpleName());
         if (manager != null) {
@@ -87,7 +96,7 @@ public class Flow {
               ManagerFactory.getManager(tuningType.name(), algotihmType.name(), executionEngineTypes.name(),
                   AbstractTuningTypeManager.class.getSimpleName());
           if (manager != null) {
-            logger.info("Testing "+ manager.getManagerName());
+            logger.info("Testing " + manager.getManagerName());
             algorithmManagers.add(manager);
           }
         }

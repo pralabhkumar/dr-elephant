@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import models.AppResult;
 import models.JobDefinition;
+import models.JobExecution;
 import models.JobSuggestedParamSet;
 import models.JobSuggestedParamValue;
 import models.TuningAlgorithm;
@@ -20,8 +21,7 @@ public class TuningTypeManagerOBTAlgoPSO extends TuningTypeManagerOBT{
   }
 
   @Override
-  protected void updateBoundryConstraint(List<TuningParameter> tuningParameterList,
-      TuningJobDefinition tuningJobDefinition, JobDefinition job) {
+  protected void updateBoundryConstraint(List<TuningParameter> tuningParameterList, JobDefinition job) {
 
   }
 
@@ -30,16 +30,14 @@ public class TuningTypeManagerOBTAlgoPSO extends TuningTypeManagerOBT{
     return _executionEngine.isParamConstraintViolatedPSO(jobSuggestedParamValues);
   }
 
-  @Override
-  public Map<String, Map<String, Double>> extractParameterInformation(List<AppResult> appResults) {
-    return null;
-  }
+
 
   @Override
   protected List<JobSuggestedParamSet> getPendingParamSets() {
     List<JobSuggestedParamSet> pendingParamSetList = _executionEngine.getPendingJobs()
         .eq(JobSuggestedParamSet.TABLE.tuningAlgorithm
             + "." + TuningAlgorithm.TABLE.optimizationAlgo, TuningAlgorithm.OptimizationAlgo.PSO.name())
+        .eq(JobSuggestedParamSet.TABLE.isParamSetDefault, 0)
         .findList();
     return pendingParamSetList;
   }
@@ -58,12 +56,7 @@ public class TuningTypeManagerOBTAlgoPSO extends TuningTypeManagerOBT{
   }
 
   @Override
-  public void parameterOptimizer(Integer jobID) {
-
-  }
-
-  @Override
-  public void applyIntelligenceOnParameter(List<TuningParameter> tuningParameterList, JobDefinition job) {
+  public void parameterOptimizer(List<AppResult> appResults, JobExecution jobExecution) {
 
   }
 

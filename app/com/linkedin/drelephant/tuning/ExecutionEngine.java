@@ -5,6 +5,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import models.AppResult;
+import models.JobDefinition;
+import models.JobExecution;
 import models.JobSuggestedParamSet;
 import models.JobSuggestedParamValue;
 import models.TuningAlgorithm;
@@ -26,16 +28,14 @@ public interface ExecutionEngine {
    */
   Boolean isParamConstraintViolatedPSO(List<JobSuggestedParamValue> jobSuggestedParamValueList);
 
+
+
   Boolean isParamConstraintViolatedIPSO(List<JobSuggestedParamValue> jobSuggestedParamValueList);
 
-  /*
-  IPSO related Methods
-   */
+  public void parameterOptimizerIPSO(List<AppResult> results, JobExecution jobExecution);
 
-  Map<String, Map<String, Double>> collectUsageDataPerApplicationIPSO(AppResult appResult);
 
-  Map<String, Map<String, Double>> intializeUsageCounterValuesIPSO();
 
-  public void parameterOptimizerIPSO(Integer jobID, Map<String, Map<String, Double>> previousUsedMetrics,
-      List<TuningParameterConstraint> parameterConstraints);
+  public String parameterGenerationsHBT(List<AppResult> results, List<TuningParameter> tuningParameters);
+  Boolean isParamConstraintViolatedHBT(List<JobSuggestedParamValue> jobSuggestedParamValueList);
 }

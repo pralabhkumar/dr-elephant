@@ -9,6 +9,7 @@ import com.linkedin.drelephant.tuning.AbstractTuningTypeManager;
 import com.linkedin.drelephant.tuning.JobTuningInfo;
 import com.linkedin.drelephant.tuning.Particle;
 import com.linkedin.drelephant.tuning.ExecutionEngine;
+import com.linkedin.drelephant.tuning.TuningHelper;
 import controllers.AutoTuningMetricsController;
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -17,6 +18,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import models.AppResult;
 import models.JobDefinition;
 import models.JobExecution;
 import models.JobSavedState;
@@ -62,153 +64,46 @@ public abstract class TuningTypeManagerOBT extends AbstractTuningTypeManager {
     logger.info("Python path: " + PYTHON_PATH);
   }
 
-  /**
-   * Fetches the list to job which need new parameter suggestion
-   * @return Job list
-   */
-
   @Override
-  protected List<JobTuningInfo> detectJobsForParameterGeneration() {
-    List<TuningJobDefinition> jobsForSwarmSuggestion = getJobsForParamSuggestion();
-    List<JobTuningInfo> jobTuningInfoList = getJobsTuningInfo(jobsForSwarmSuggestion);
-    return jobTuningInfoList;
-  }
+  protected void saveJobState(JobTuningInfo jobTuningInfo, JobDefinition job) {
+    boolean validSavedState = true;
+    JobSavedState jobSavedState = JobSavedState.find.byId(job.id);
+    if (jobSavedState != null && jobSavedState.isValid()) {
+      String savedState = new String(jobSavedState.savedState);
+      ObjectNode jsonSavedState = (ObjectNode) Json.parse(savedState);
+      JsonNode jsonCurrentPopulation = jsonSavedState.get(JSON_CURRENT_POPULATION_KEY);
+      List<Particle> currentPopulation = jsonToParticleList(jsonCurrentPopulation);
+      for (Particle particle : currentPopulation) {
+        Long paramSetId = particle.getParamSetId();
 
-  /**
-   * Fetches the list to job which need new parameter suggestion
-   * @return Job list
-   */
-  private List<TuningJobDefinition> getJobsForParamSuggestion() {
-    // Todo: [Important] Change the logic. This is very rigid. Ideally you should look at the param set ids in the saved state,
-    // todo: [continuation] if their fitness is computed, pso can generate new params for the job
-    logger.info("Checking which jobs need new parameter suggestion");
-    List<TuningJobDefinition> jobsForParamSuggestion = new ArrayList<TuningJobDefinition>();
-    List<JobSuggestedParamSet> pendingParamSetList = getPendingParamSets();
-    //logger.info(" Jobs pending " + pendingParamSetList.size());
-    List<JobDefinition> pendingParamJobList = new ArrayList<JobDefinition>();
-    for (JobSuggestedParamSet pendingParamSet : pendingParamSetList) {
-      if (!pendingParamJobList.contains(pendingParamSet.jobDefinition)) {
-        pendingParamJobList.add(pendingParamSet.jobDefinition);
-      }
-    }
+        logger.info("Param set id: " + paramSetId.toString());
+        JobSuggestedParamSet jobSuggestedParamSet =
+            JobSuggestedParamSet.find.select("*").where().eq(JobSuggestedParamSet.TABLE.id, paramSetId).findUnique();
 
-    List<TuningJobDefinition> tuningJobDefinitionList = getTuningJobDefinitions();
-    //logger.info("Total Jobs " + tuningJobDefinitionList.size());
-    if (tuningJobDefinitionList.size() == 0) {
-      logger.error("No auto-tuning enabled jobs found");
-    }
-
-    for (TuningJobDefinition tuningJobDefinition : tuningJobDefinitionList) {
-      if (!pendingParamJobList.contains(tuningJobDefinition.job)) {
-        logger.info("New parameter suggestion needed for job: " + tuningJobDefinition.job.jobName);
-        jobsForParamSuggestion.add(tuningJobDefinition);
-      }
-    }
-    logger.info("Number of job(s) which need new parameter suggestion: " + jobsForParamSuggestion.size());
-    return jobsForParamSuggestion;
-  }
-
-  /**
-   * Returns the tuning information for the jobs
-   * @param tuningJobs Job List
-   * @return Tuning information list
-   */
-  private List<JobTuningInfo> getJobsTuningInfo(List<TuningJobDefinition> tuningJobs) {
-
-    List<JobTuningInfo> jobTuningInfoList = new ArrayList<JobTuningInfo>();
-    for (TuningJobDefinition tuningJobDefinition : tuningJobs) {
-      JobDefinition job = tuningJobDefinition.job;
-      logger.info("Getting tuning information for job: " + job.jobDefId);
-      List<TuningParameter> tuningParameterList = TuningParameter.find.where()
-          .eq(TuningParameter.TABLE.tuningAlgorithm + "." + TuningAlgorithm.TABLE.id,
-              tuningJobDefinition.tuningAlgorithm.id)
-          .eq(TuningParameter.TABLE.isDerived, 0)
-          .findList();
-
-      logger.info("Fetching default parameter values for job " + tuningJobDefinition.job.jobDefId);
-      JobSuggestedParamSet defaultJobParamSet = JobSuggestedParamSet.find.where()
-          .eq(JobSuggestedParamSet.TABLE.jobDefinition + "." + JobDefinition.TABLE.id, tuningJobDefinition.job.id)
-          .eq(JobSuggestedParamSet.TABLE.isParamSetDefault, 1)
-          .order()
-          .desc(JobSuggestedParamSet.TABLE.id)
-          .setMaxRows(1)
-          .findUnique();
-
-      if (defaultJobParamSet != null) {
-        List<JobSuggestedParamValue> jobSuggestedParamValueList = JobSuggestedParamValue.find.where()
-            .eq(JobSuggestedParamValue.TABLE.jobSuggestedParamSet + "." + JobExecution.TABLE.id, defaultJobParamSet.id)
-            .findList();
-
-        if (jobSuggestedParamValueList.size() > 0) {
-          Map<Integer, Double> defaultExecutionParamMap = new HashMap<Integer, Double>();
-
-          for (JobSuggestedParamValue jobSuggestedParamValue : jobSuggestedParamValueList) {
-            defaultExecutionParamMap.put(jobSuggestedParamValue.tuningParameter.id, jobSuggestedParamValue.paramValue);
-          }
-
-          for (TuningParameter tuningParameter : tuningParameterList) {
-            Integer paramId = tuningParameter.id;
-            if (defaultExecutionParamMap.containsKey(paramId)) {
-              logger.info(
-                  "Updating value of param " + tuningParameter.paramName + " to " + defaultExecutionParamMap.get(
-                      paramId));
-              tuningParameter.defaultValue = defaultExecutionParamMap.get(paramId);
-            }
-          }
+        if (jobSuggestedParamSet.paramSetState.equals(JobSuggestedParamSet.ParamSetStatus.FITNESS_COMPUTED)
+            && jobSuggestedParamSet.fitness != null) {
+          particle.setFitness(jobSuggestedParamSet.fitness);
+        } else {
+          validSavedState = false;
+          logger.error("Invalid saved state: Fitness of previous execution not computed.");
+          break;
         }
       }
-      // updating boundary constraints for the job
-      updateBoundryConstraint(tuningParameterList, tuningJobDefinition, job);
-      // updating boundary constraints for the job
 
-      JobTuningInfo jobTuningInfo = new JobTuningInfo();
-      jobTuningInfo.setTuningJob(job);
-      jobTuningInfo.setJobType(tuningJobDefinition.tuningAlgorithm.jobType);
-      jobTuningInfo.setParametersToTune(tuningParameterList);
-      JobSavedState jobSavedState = JobSavedState.find.byId(job.id);
-
-      boolean validSavedState = true;
-      if (jobSavedState != null && jobSavedState.isValid()) {
-        String savedState = new String(jobSavedState.savedState);
-        ObjectNode jsonSavedState = (ObjectNode) Json.parse(savedState);
-        JsonNode jsonCurrentPopulation = jsonSavedState.get(JSON_CURRENT_POPULATION_KEY);
-        List<Particle> currentPopulation = jsonToParticleList(jsonCurrentPopulation);
-        for (Particle particle : currentPopulation) {
-          Long paramSetId = particle.getParamSetId();
-
-          logger.info("Param set id: " + paramSetId.toString());
-          JobSuggestedParamSet jobSuggestedParamSet =
-              JobSuggestedParamSet.find.select("*").where().eq(JobSuggestedParamSet.TABLE.id, paramSetId).findUnique();
-
-          if (jobSuggestedParamSet.paramSetState.equals(JobSuggestedParamSet.ParamSetStatus.FITNESS_COMPUTED)
-              && jobSuggestedParamSet.fitness != null) {
-            particle.setFitness(jobSuggestedParamSet.fitness);
-          } else {
-            validSavedState = false;
-            logger.error("Invalid saved state: Fitness of previous execution not computed.");
-            break;
-          }
-        }
-
-        if (validSavedState) {
-          JsonNode updatedJsonCurrentPopulation = particleListToJson(currentPopulation);
-          jsonSavedState.set(JSON_CURRENT_POPULATION_KEY, updatedJsonCurrentPopulation);
-          savedState = Json.stringify(jsonSavedState);
-          jobTuningInfo.setTunerState(savedState);
-        }
-      } else {
-        logger.info("Saved state empty for job: " + job.jobDefId);
-        validSavedState = false;
+      if (validSavedState) {
+        JsonNode updatedJsonCurrentPopulation = particleListToJson(currentPopulation);
+        jsonSavedState.set(JSON_CURRENT_POPULATION_KEY, updatedJsonCurrentPopulation);
+        savedState = Json.stringify(jsonSavedState);
+        jobTuningInfo.setTunerState(savedState);
       }
-
-      if (!validSavedState) {
-        jobTuningInfo.setTunerState("{}");
-      }
-
-      logger.info("Adding JobTuningInfo " + Json.toJson(jobTuningInfo));
-      jobTuningInfoList.add(jobTuningInfo);
+    } else {
+      logger.info("Saved state empty for job: " + job.jobDefId);
+      validSavedState = false;
     }
-    return jobTuningInfoList;
+
+    if (!validSavedState) {
+      jobTuningInfo.setTunerState("{}");
+    }
   }
 
   /**
@@ -282,13 +177,14 @@ public abstract class TuningTypeManagerOBT extends AbstractTuningTypeManager {
       Process p = Runtime.getRuntime()
           .exec(PYTHON_PATH + " " + TUNING_SCRIPT_PATH + " " + stringTunerState + " " + parametersToTune + " " + jobType
               + " " + swarmSize);
-      logger.info(PYTHON_PATH + " " + TUNING_SCRIPT_PATH + " " + stringTunerState + " " + parametersToTune + " " + jobType
-          + " " + swarmSize);
+      logger.info(
+          PYTHON_PATH + " " + TUNING_SCRIPT_PATH + " " + stringTunerState + " " + parametersToTune + " " + jobType + " "
+              + swarmSize);
 
       BufferedReader inputStream = new BufferedReader(new InputStreamReader(p.getInputStream()));
       BufferedReader errorStream = new BufferedReader(new InputStreamReader(p.getErrorStream()));
       String updatedStringTunerState = inputStream.readLine();
-      logger.info("Param  Generator Testing"+updatedStringTunerState);
+      logger.info("Param  Generator Testing" + updatedStringTunerState);
       newJobTuningInfo.setTunerState(updatedStringTunerState);
       String errorLine;
       while ((errorLine = errorStream.readLine()) != null) {
@@ -488,10 +384,6 @@ public abstract class TuningTypeManagerOBT extends AbstractTuningTypeManager {
     return "TuningTypeManagerOBT";
   }
 
-  protected abstract List<JobSuggestedParamSet> getPendingParamSets();
-
-  protected abstract List<TuningJobDefinition> getTuningJobDefinitions();
-
   /*
     Intialize any prequisite require for Optimizer
     Calls once in lifetime of the flow
@@ -503,13 +395,9 @@ public abstract class TuningTypeManagerOBT extends AbstractTuningTypeManager {
     Optimize search space
     call after each execution of flow
    */
-  public abstract void parameterOptimizer(Integer jobID);
+  public abstract void parameterOptimizer(List<AppResult> appResults, JobExecution jobExecution);
 
-  /*
-    apply Intelligence on Parameter.
-    calls after swarm size number of executions
-   */
-  public abstract void applyIntelligenceOnParameter(List<TuningParameter> tuningParameterList, JobDefinition job);
+
 
   protected abstract int getSwarmSize();
 }

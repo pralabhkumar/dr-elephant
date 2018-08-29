@@ -118,7 +118,7 @@ public class AutoTuningAPIHelper {
    */
   private void setTuningAlgorithm(TuningInput tuningInput) throws IllegalArgumentException {
     //Todo: Handle algorithm version later
-    logger.info(" Optimization Algorithm " + tuningInput.getOptimizationAlgo());
+    logger.info(" Optimization Algorithm  Requested" + tuningInput.getOptimizationAlgo());
     TuningAlgorithm tuningAlgorithm = TuningAlgorithm.find.select("*")
         .where()
         .eq(TuningAlgorithm.TABLE.jobType, tuningInput.getJobType())
@@ -439,6 +439,7 @@ public class AutoTuningAPIHelper {
     jobSuggestedParamSet.isParamSetDefault = true;
     jobSuggestedParamSet.areConstraintsViolated = false;
     jobSuggestedParamSet.isParamSetBest = false;
+    jobSuggestedParamSet.isManuallyOverridenParameter = false;
     jobSuggestedParamSet.save();
     insertParameterValues(jobSuggestedParamSet, paramValueMap);
     intializeOptimizationAlgoPrerequisite(tuningAlgorithm, jobSuggestedParamSet);

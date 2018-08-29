@@ -50,5 +50,7 @@ public class IPSOManagerTest {
   @Test
   public void testIPSOManager() {
     running(testServer(TEST_SERVER_PORT, fakeApp), new IPSOManagerTestRunner());
+    //running(testServer(TEST_SERVER_PORT, fakeApp), new BaselineManagerTestRunner());
+
   }
 }

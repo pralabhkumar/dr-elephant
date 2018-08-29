@@ -12,6 +12,8 @@ import java.util.Map;
 import models.AppHeuristicResult;
 import models.AppHeuristicResultDetails;
 import models.AppResult;
+import models.JobDefinition;
+import models.JobExecution;
 import models.JobSuggestedParamSet;
 import models.JobSuggestedParamValue;
 import models.TuningAlgorithm;
@@ -26,9 +28,10 @@ import static java.lang.Math.*;
 
 public class MRExecutionEngine implements ExecutionEngine {
   private final Logger logger = Logger.getLogger(getClass());
-  enum UsageCounterSchema {USED_PHYSICAL_MEMORY, USED_VIRTUAL_MEMORY, USED_HEAP_MEMORY}
-  private String functionTypes[] = {"map", "reduce"};
 
+  enum UsageCounterSchema {USED_PHYSICAL_MEMORY, USED_VIRTUAL_MEMORY, USED_HEAP_MEMORY}
+
+  private String functionTypes[] = {"map", "reduce"};
 
   @Override
   public void computeValuesOfDerivedConfigurationParameters(List<TuningParameter> derivedParameterList,
@@ -89,7 +92,8 @@ public class MRExecutionEngine implements ExecutionEngine {
     Integer violations = 0;
 
     for (JobSuggestedParamValue jobSuggestedParamValue : jobSuggestedParamValueList) {
-      if (jobSuggestedParamValue.tuningParameter.paramName.equals(CommonConstantsHeuristic.ParameterKeys.SORT_BUFFER_HADOOP_CONF.getValue())) {
+      if (jobSuggestedParamValue.tuningParameter.paramName.equals(
+          CommonConstantsHeuristic.ParameterKeys.SORT_BUFFER_HADOOP_CONF.getValue())) {
         mrSortMemory = jobSuggestedParamValue.paramValue;
       } else if (jobSuggestedParamValue.tuningParameter.paramName.equals(
           CommonConstantsHeuristic.ParameterKeys.MAPPER_MEMORY_HADOOP_CONF.getValue())) {
@@ -146,12 +150,9 @@ public class MRExecutionEngine implements ExecutionEngine {
       logger.info("Number of constraint(s) violated: " + violations);
       return true;
     }
-
   }
 
-
-
-  public Boolean isParamConstraintViolatedPSO(List<JobSuggestedParamValue> jobSuggestedParamValueList){
+  public Boolean isParamConstraintViolatedPSO(List<JobSuggestedParamValue> jobSuggestedParamValueList) {
     Double mrSortMemory = null;
     Double mrMapMemory = null;
     Double pigMaxCombinedSplitSize = null;
@@ -188,18 +189,16 @@ public class MRExecutionEngine implements ExecutionEngine {
     }
   }
 
-
   @Override
   public ExpressionList<JobSuggestedParamSet> getPendingJobs() {
-     return JobSuggestedParamSet.find.select("*")
+    return JobSuggestedParamSet.find.select("*")
         .fetch(JobSuggestedParamSet.TABLE.jobDefinition, "*")
         .where()
         .or(Expr.or(Expr.eq(JobSuggestedParamSet.TABLE.paramSetState, JobSuggestedParamSet.ParamSetStatus.CREATED),
             Expr.eq(JobSuggestedParamSet.TABLE.paramSetState, JobSuggestedParamSet.ParamSetStatus.SENT)),
             Expr.eq(JobSuggestedParamSet.TABLE.paramSetState, JobSuggestedParamSet.ParamSetStatus.EXECUTED))
-        .eq(JobSuggestedParamSet.TABLE.isParamSetDefault, 0)
-         .eq(JobSuggestedParamSet.TABLE.tuningAlgorithm
-             + "." + TuningAlgorithm.TABLE.jobType, TuningAlgorithm.JobType.PIG.name())
+        .eq(JobSuggestedParamSet.TABLE.tuningAlgorithm + "." + TuningAlgorithm.TABLE.jobType,
+            TuningAlgorithm.JobType.PIG.name())
         .eq(JobSuggestedParamSet.TABLE.isParamSetBest, 0);
   }
 
@@ -209,37 +208,8 @@ public class MRExecutionEngine implements ExecutionEngine {
         .fetch(TuningJobDefinition.TABLE.job, "*")
         .where()
         .eq(TuningJobDefinition.TABLE.tuningEnabled, 1)
-        .eq(TuningJobDefinition.TABLE.tuningAlgorithm+"."+TuningAlgorithm.TABLE.jobType,TuningAlgorithm.JobType.PIG.name());
-
-  }
-
-
-
-
-
-  @Override
-  public Map<String, Map<String, Double>> collectUsageDataPerApplicationIPSO(AppResult appResult) {
-    Map<String, Map<String, Double>> usageData = null;
-      usageData = new HashMap<String, Map<String, Double>>();
-      if (appResult.yarnAppHeuristicResults != null) {
-        for (AppHeuristicResult appHeuristicResult : appResult.yarnAppHeuristicResults) {
-
-          if (appHeuristicResult.heuristicName.equals("Mapper Memory")) {
-            Map<String, Double> counterData = new HashMap<String, Double>();
-            collectUsageDataPerApplicationForFunction(appHeuristicResult, counterData);
-            usageData.put("map", counterData);
-          }
-          if (appHeuristicResult.heuristicName.equals("Reducer Memory")) {
-            Map<String, Double> counterData = new HashMap<String, Double>();
-            collectUsageDataPerApplicationForFunction(appHeuristicResult, counterData);
-            usageData.put("reduce", counterData);
-          }
-        }
-      }
-      logger.debug("Usage Values local   " + appResult.jobExecUrl);
-      printInformation(usageData);
-
-    return usageData;
+        .eq(TuningJobDefinition.TABLE.tuningAlgorithm + "." + TuningAlgorithm.TABLE.jobType,
+            TuningAlgorithm.JobType.PIG.name());
   }
 
   private void printInformation(Map<String, Map<String, Double>> information) {
@@ -266,14 +236,14 @@ public class MRExecutionEngine implements ExecutionEngine {
     }
   }
 
-
-  private List<Double> extractUsageParameter(String functionType,Map<String, Map<String, Double>> usageDataGlobal) {
+  private List<Double> extractUsageParameter(String functionType, Map<String, Map<String, Double>> usageDataGlobal) {
     Double usedPhysicalMemoryMB = 0.0, usedVirtualMemoryMB = 0.0, usedHeapMemoryMB = 0.0;
-    usedPhysicalMemoryMB =
-        usageDataGlobal.get(functionType).get(CommonConstantsHeuristic.UtilizedParameterKeys.MAX_PHYSICAL_MEMORY.getValue());
-    usedVirtualMemoryMB = usageDataGlobal.get(functionType).get(CommonConstantsHeuristic.UtilizedParameterKeys.MAX_VIRTUAL_MEMORY.getValue());
-    usedHeapMemoryMB =
-        usageDataGlobal.get(functionType).get(CommonConstantsHeuristic.UtilizedParameterKeys.MAX_TOTAL_COMMITTED_HEAP_USAGE_MEMORY.getValue());
+    usedPhysicalMemoryMB = usageDataGlobal.get(functionType)
+        .get(CommonConstantsHeuristic.UtilizedParameterKeys.MAX_PHYSICAL_MEMORY.getValue());
+    usedVirtualMemoryMB = usageDataGlobal.get(functionType)
+        .get(CommonConstantsHeuristic.UtilizedParameterKeys.MAX_VIRTUAL_MEMORY.getValue());
+    usedHeapMemoryMB = usageDataGlobal.get(functionType)
+        .get(CommonConstantsHeuristic.UtilizedParameterKeys.MAX_TOTAL_COMMITTED_HEAP_USAGE_MEMORY.getValue());
     logger.debug(" Usage Stats " + functionType);
     logger.debug(" Physical Memory Usage MB " + usedPhysicalMemoryMB);
     logger.debug(" Virtual Memory Usage MB " + usedVirtualMemoryMB / 2.1);
@@ -285,31 +255,33 @@ public class MRExecutionEngine implements ExecutionEngine {
     return usageStats;
   }
 
-
   private Map<String, TuningParameterConstraint> filterMemoryConstraint(
       List<TuningParameterConstraint> parameterConstraints, String functionType) {
     Map<String, TuningParameterConstraint> memoryConstraints = new HashMap<String, TuningParameterConstraint>();
     for (TuningParameterConstraint parameterConstraint : parameterConstraints) {
       if (functionType.equals("map")) {
-        if (parameterConstraint.tuningParameter.paramName.equals(CommonConstantsHeuristic.ParameterKeys.MAPPER_MEMORY_HADOOP_CONF.getValue())) {
+        if (parameterConstraint.tuningParameter.paramName.equals(
+            CommonConstantsHeuristic.ParameterKeys.MAPPER_MEMORY_HADOOP_CONF.getValue())) {
           memoryConstraints.put("CONTAINER_MEMORY", parameterConstraint);
         }
-        if (parameterConstraint.tuningParameter.paramName.equals(CommonConstantsHeuristic.ParameterKeys.MAPPER_HEAP_HADOOP_CONF.getValue())) {
+        if (parameterConstraint.tuningParameter.paramName.equals(
+            CommonConstantsHeuristic.ParameterKeys.MAPPER_HEAP_HADOOP_CONF.getValue())) {
           memoryConstraints.put("CONTAINER_HEAP", parameterConstraint);
         }
       }
       if (functionType.equals("reduce")) {
-        if (parameterConstraint.tuningParameter.paramName.equals(CommonConstantsHeuristic.ParameterKeys.REDUCER_MEMORY_HADOOP_CONF.getValue())) {
+        if (parameterConstraint.tuningParameter.paramName.equals(
+            CommonConstantsHeuristic.ParameterKeys.REDUCER_MEMORY_HADOOP_CONF.getValue())) {
           memoryConstraints.put("CONTAINER_MEMORY", parameterConstraint);
         }
-        if (parameterConstraint.tuningParameter.paramName.equals(CommonConstantsHeuristic.ParameterKeys.REDUCER_HEAP_HADOOP_CONF.getValue())) {
+        if (parameterConstraint.tuningParameter.paramName.equals(
+            CommonConstantsHeuristic.ParameterKeys.REDUCER_HEAP_HADOOP_CONF.getValue())) {
           memoryConstraints.put("CONTAINER_HEAP", parameterConstraint);
         }
       }
     }
     return memoryConstraints;
   }
-
 
   private void memoryParameterIPSO(String trigger, Map<String, TuningParameterConstraint> constraints,
       List<Double> usageStats) {
@@ -323,29 +295,44 @@ public class MRExecutionEngine implements ExecutionEngine {
   }
 
   @Override
-  public Map<String, Map<String, Double>> intializeUsageCounterValuesIPSO() {
-    Map<String, Map<String, Double>> usageDataGlobal = new HashMap<String,Map<String,Double>>();
-    for (String function : functionTypes) {
-      Map<String, Double> usageData = new HashMap<String, Double>();
-      for (CommonConstantsHeuristic.UtilizedParameterKeys value : CommonConstantsHeuristic.UtilizedParameterKeys.values()) {
-        usageData.put(value.getValue(), 0.0);
-      }
-      usageDataGlobal.put(function, usageData);
-    }
-    return usageDataGlobal;
-  }
-
-  @Override
-  public void parameterOptimizerIPSO(Integer jobID, Map<String, Map<String, Double>> previousUsedMetrics, List<TuningParameterConstraint> parameterConstraints) {
+  public void parameterOptimizerIPSO(List<AppResult> results, JobExecution jobExecution) {
+    Map<String, Map<String, Double>> previousUsedMetrics = extractParameterInformationIPSO(results);
+    List<TuningParameterConstraint> parameterConstraints = TuningParameterConstraint.find.where().
+        eq("job_definition_id", jobExecution.job.id).findList();
     for (String function : functionTypes) {
       logger.debug(" Optimizing Parameter Space  " + function);
-      if (previousUsedMetrics.get(function).get(CommonConstantsHeuristic.UtilizedParameterKeys.MAX_PHYSICAL_MEMORY.getValue()) > 0.0) {
-        List<Double> usageStats = extractUsageParameter(function,previousUsedMetrics);
+      if (previousUsedMetrics.get(function)
+          .get(CommonConstantsHeuristic.UtilizedParameterKeys.MAX_PHYSICAL_MEMORY.getValue()) > 0.0) {
+        List<Double> usageStats = extractUsageParameter(function, previousUsedMetrics);
         Map<String, TuningParameterConstraint> memoryConstraints =
             filterMemoryConstraint(parameterConstraints, function);
         memoryParameterIPSO(function, memoryConstraints, usageStats);
       }
     }
+  }
+
+  @Override
+  public String parameterGenerationsHBT(List<AppResult> results, List<TuningParameter> tuningParameters) {
+    Map<String, Map<String, Double>> previousUsedMetrics = extractParameterInformationIPSO(results);
+    StringBuffer idParameters = new StringBuffer();
+    for (TuningParameter tuningParameter : tuningParameters) {
+      if (tuningParameter.paramName.equals(
+          CommonConstantsHeuristic.ParameterKeys.MAPPER_MEMORY_HADOOP_CONF.getValue())) {
+        idParameters.append(tuningParameter.id)
+            .append("\t")
+            .append(previousUsedMetrics.get("map")
+                .get(CommonConstantsHeuristic.UtilizedParameterKeys.MAX_PHYSICAL_MEMORY.getValue()));
+        //idParameters.append("\n");
+        break;
+      }
+    }
+    logger.info(" New Suggested Parameter " + idParameters);
+    return idParameters.toString();
+  }
+
+  @Override
+  public Boolean isParamConstraintViolatedHBT(List<JobSuggestedParamValue> jobSuggestedParamValueList) {
+    return false;
   }
 
   private Double applyContainerSizeFormula(TuningParameterConstraint containerConstraint, Double usagePhysicalMemory,
@@ -379,4 +366,60 @@ public class MRExecutionEngine implements ExecutionEngine {
   private Double getContainerSize(Double memory) {
     return Math.ceil(memory / 1024.0) * 1024;
   }
+
+  private Map<String, Map<String, Double>> extractParameterInformationIPSO(List<AppResult> appResults) {
+    logger.info(" Extract Parameter Information for MR IPSO");
+    Map<String, Map<String, Double>> usageDataGlobal = new HashMap<String, Map<String, Double>>();
+    intialize(usageDataGlobal);
+    for (AppResult appResult : appResults) {
+      Map<String, Map<String, Double>> usageDataApplicationlocal = collectUsageDataPerApplicationIPSO(appResult);
+      for (String functionType : usageDataApplicationlocal.keySet()) {
+        Map<String, Double> usageDataForFunctionGlobal = usageDataGlobal.get(functionType);
+        Map<String, Double> usageDataForFunctionlocal = usageDataApplicationlocal.get(functionType);
+        for (String usageName : usageDataForFunctionlocal.keySet()) {
+          usageDataForFunctionGlobal.put(usageName,
+              max(usageDataForFunctionGlobal.get(usageName), usageDataForFunctionlocal.get(usageName)));
+        }
+      }
+    }
+    logger.debug("Usage Values Global ");
+    printInformation(usageDataGlobal);
+    return usageDataGlobal;
+  }
+
+  private void intialize(Map<String, Map<String, Double>> usageDataGlobal) {
+    for (String function : functionTypes) {
+      Map<String, Double> usageData = new HashMap<String, Double>();
+      for (CommonConstantsHeuristic.UtilizedParameterKeys value : CommonConstantsHeuristic.UtilizedParameterKeys.values()) {
+        usageData.put(value.getValue(), 0.0);
+      }
+      usageDataGlobal.put(function, usageData);
+    }
+  }
+
+  private Map<String, Map<String, Double>> collectUsageDataPerApplicationIPSO(AppResult appResult) {
+    Map<String, Map<String, Double>> usageData = null;
+    usageData = new HashMap<String, Map<String, Double>>();
+    if (appResult.yarnAppHeuristicResults != null) {
+      for (AppHeuristicResult appHeuristicResult : appResult.yarnAppHeuristicResults) {
+
+        if (appHeuristicResult.heuristicName.equals("Mapper Memory")) {
+          Map<String, Double> counterData = new HashMap<String, Double>();
+          collectUsageDataPerApplicationForFunction(appHeuristicResult, counterData);
+          usageData.put("map", counterData);
+        }
+        if (appHeuristicResult.heuristicName.equals("Reducer Memory")) {
+          Map<String, Double> counterData = new HashMap<String, Double>();
+          collectUsageDataPerApplicationForFunction(appHeuristicResult, counterData);
+          usageData.put("reduce", counterData);
+        }
+      }
+    }
+    logger.debug("Usage Values local   " + appResult.jobExecUrl);
+    printInformation(usageData);
+
+    return usageData;
+  }
 }
+
+

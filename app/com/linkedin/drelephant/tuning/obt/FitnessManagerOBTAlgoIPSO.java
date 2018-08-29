@@ -80,8 +80,7 @@ public class FitnessManagerOBTAlgoIPSO extends FitnessManagerOBT {
     TuningTypeManagerOBT optimizeManager =
         OptimizationAlgoFactory.getOptimizationAlogrithm(jobSuggestedParamSet.tuningAlgorithm);
     if (optimizeManager != null) {
-      optimizeManager.extractParameterInformation(results);
-      optimizeManager.parameterOptimizer(jobExecution.job.id);
+      optimizeManager.parameterOptimizer(results,jobExecution);
     }
   }
 

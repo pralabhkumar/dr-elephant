@@ -6,6 +6,7 @@ import com.linkedin.drelephant.tuning.ExecutionEngine;
 import java.util.List;
 import java.util.Map;
 import models.AppResult;
+import models.JobExecution;
 import models.JobSuggestedParamSet;
 import models.JobSuggestedParamValue;
 import models.TuningAlgorithm;
@@ -56,19 +57,18 @@ public class SparkExecutionEngine implements ExecutionEngine {
   }
 
   @Override
-  public Map<String, Map<String, Double>> collectUsageDataPerApplicationIPSO(AppResult appResult) {
+  public void parameterOptimizerIPSO(List<AppResult> results, JobExecution jobExecution) {
+
+  }
+
+  @Override
+  public String parameterGenerationsHBT(List<AppResult> results, List<TuningParameter> tuningParameters) {
     return null;
   }
 
   @Override
-  public Map<String, Map<String, Double>> intializeUsageCounterValuesIPSO() {
+  public Boolean isParamConstraintViolatedHBT(List<JobSuggestedParamValue> jobSuggestedParamValueList) {
     return null;
-  }
-
-  @Override
-  public void parameterOptimizerIPSO(Integer jobID, Map<String, Map<String, Double>> previousUsedMetrics,
-      List<TuningParameterConstraint> parameterConstraints) {
-
   }
 }
 

@@ -45,7 +45,7 @@ public class IPSOManagerTestRunner implements Runnable {
     JobExecution jobExecution = JobExecution.find.byId(1541L);
     TuningTypeManagerOBT optimizeManager = checkIPSOManager(tuningAlgorithm);
     testIPSOIntializePrerequisite(optimizeManager, tuningAlgorithm, jobSuggestedParamSet);
-    testIPSOExtractParameterInformation(jobExecution, optimizeManager);
+    //testIPSOExtractParameterInformation(jobExecution, optimizeManager);
     testIPSOParameterOptimizer(jobExecution, optimizeManager);
     testIPSOApplyIntelligenceOnParameter(tuningJobDefinition, jobDefinition, optimizeManager);
     testIPSONumberOfConstraintsViolated(optimizeManager);
@@ -57,8 +57,7 @@ public class IPSOManagerTestRunner implements Runnable {
     return optimizeManager;
   }
 
-  private void testIPSOIntializePrerequisite(
-      TuningTypeManagerOBT optimizeManager, TuningAlgorithm tuningAlgorithm,
+  private void testIPSOIntializePrerequisite(TuningTypeManagerOBT optimizeManager, TuningAlgorithm tuningAlgorithm,
       JobSuggestedParamSet jobSuggestedParamSet) {
     optimizeManager.intializePrerequisite(tuningAlgorithm, jobSuggestedParamSet);
     List<TuningParameterConstraint> tuningParameterConstraint =
@@ -66,8 +65,7 @@ public class IPSOManagerTestRunner implements Runnable {
     assertTrue(" Parameters Constraint Size ", tuningParameterConstraint.size() == 9);
   }
 
-  private void testIPSOExtractParameterInformation(JobExecution jobExecution,
-      TuningTypeManagerOBT optimizeManager) {
+ /* private void testIPSOExtractParameterInformation(JobExecution jobExecution, TuningTypeManagerOBT optimizeManager) {
     List<AppResult> results = AppResult.find.select("*")
         .fetch(AppResult.TABLE.APP_HEURISTIC_RESULTS, "*")
         .fetch(AppResult.TABLE.APP_HEURISTIC_RESULTS + "." + AppHeuristicResult.TABLE.APP_HEURISTIC_RESULT_DETAILS, "*")
@@ -76,12 +74,13 @@ public class IPSOManagerTestRunner implements Runnable {
         .eq(AppResult.TABLE.JOB_EXEC_ID, jobExecution.jobExecId)
         .findList();
     assertTrue(" Apps for Jobs ", results.size() > 0);
-    Map<String, Map<String, Double>> usageData = optimizeManager.extractParameterInformation(results);
+  *//*  Map<String, Map<String, Double>> usageData = optimizeManager.extractParameterInformation(results);
     testMapData(usageData);
     testReduceData(usageData);
-  }
+*//*
+  }*/
 
-  private void testMapData(Map<String, Map<String, Double>> usageData) {
+  /*private void testMapData(Map<String, Map<String, Double>> usageData) {
     assertTrue(" Usage data ",
         usageData.get("map").get(CommonConstantsHeuristic.UtilizedParameterKeys.MAX_PHYSICAL_MEMORY.getValue()) == 595);
     assertTrue(" Usage data ", usageData.get("map")
@@ -99,10 +98,18 @@ public class IPSOManagerTestRunner implements Runnable {
     assertTrue(" Usage data ",
         usageData.get("reduce").get(CommonConstantsHeuristic.UtilizedParameterKeys.MAX_VIRTUAL_MEMORY.getValue())
             == 2100);
-  }
+  }*/
 
   private void testIPSOParameterOptimizer(JobExecution jobExecution, TuningTypeManagerOBT optimizeManager) {
-    optimizeManager.parameterOptimizer(jobExecution.job.id);
+    List<AppResult> results = AppResult.find.select("*")
+        .fetch(AppResult.TABLE.APP_HEURISTIC_RESULTS, "*")
+        .fetch(AppResult.TABLE.APP_HEURISTIC_RESULTS + "." + AppHeuristicResult.TABLE.APP_HEURISTIC_RESULT_DETAILS, "*")
+        .where()
+        .eq(AppResult.TABLE.FLOW_EXEC_ID, jobExecution.flowExecution.flowExecId)
+        .eq(AppResult.TABLE.JOB_EXEC_ID, jobExecution.jobExecId)
+        .findList();
+    assertTrue(" Apps for Jobs ", results.size() > 0);
+    optimizeManager.parameterOptimizer(results,jobExecution);
     List<TuningParameterConstraint> parameterConstraints = TuningParameterConstraint.find.where().
         eq("job_definition_id", 100003).findList();
     for (TuningParameterConstraint parameterConstraint : parameterConstraints) {
@@ -144,7 +151,7 @@ public class IPSOManagerTestRunner implements Runnable {
             tuningJobDefinition.tuningAlgorithm.id)
         .eq(TuningParameter.TABLE.isDerived, 0)
         .findList();
-    optimizeManager.applyIntelligenceOnParameter(tuningParameterList, jobDefinition);
+    optimizeManager.updateBoundryConstraint(tuningParameterList, jobDefinition);
     for (TuningParameter tuningParameter : tuningParameterList) {
       testMapMinMaxValue(tuningParameter);
       testReduceMinMaxValue(tuningParameter);
@@ -199,6 +206,6 @@ public class IPSOManagerTestRunner implements Runnable {
     jobSuggestedParamValueList.add(jobSuggestedParamValue);
     jobSuggestedParamValueList.add(jobSuggestedParamValue1);
     violations = optimizeManager.isParamConstraintViolated(jobSuggestedParamValueList);
-    assertTrue("Parameter constraint violeted " + violations, violations==false);
+    assertTrue("Parameter constraint violeted " + violations, violations == false);
   }
 }
