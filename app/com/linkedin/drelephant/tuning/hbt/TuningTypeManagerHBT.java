@@ -27,6 +27,7 @@ import models.TuningParameter;
 import org.apache.log4j.Logger;
 import play.libs.Json;
 import org.apache.commons.io.FileUtils;
+
 import static java.lang.Math.*;
 
 import com.avaje.ebean.Expr;
@@ -50,20 +51,21 @@ public class TuningTypeManagerHBT extends AbstractTuningTypeManager {
     List<JobSuggestedParamSet> pendingParamSetList = _executionEngine.getPendingJobs()
         .eq(JobSuggestedParamSet.TABLE.tuningAlgorithm + "." + TuningAlgorithm.TABLE.optimizationAlgo,
             TuningAlgorithm.OptimizationAlgo.HBT.name())
-       // .eq(JobSuggestedParamSet.TABLE.isParamSetDefault, 0)
+        // .eq(JobSuggestedParamSet.TABLE.isParamSetDefault, 0)
         .findList();
-    logger.info(" Number of Pending Jobs for parameter suggestion " + this._executionEngine + " "+pendingParamSetList.size());
+    logger.info(
+        " Number of Pending Jobs for parameter suggestion " + this._executionEngine + " " + pendingParamSetList.size());
     return pendingParamSetList;
   }
 
   @Override
   protected List<TuningJobDefinition> getTuningJobDefinitions() {
-    List<TuningJobDefinition> totalJobs =  _executionEngine.getTuningJobDefinitionsForParameterSuggestion()
+    List<TuningJobDefinition> totalJobs = _executionEngine.getTuningJobDefinitionsForParameterSuggestion()
         .eq(TuningJobDefinition.TABLE.tuningAlgorithm + "." + TuningAlgorithm.TABLE.optimizationAlgo,
             TuningAlgorithm.OptimizationAlgo.HBT.name())
         .findList();
 
-    logger.info(" Number of Pending Jobs for parameter suggestion " + this._executionEngine + " "+totalJobs.size());
+    logger.info(" Number of Total Jobs for parameter suggestion " + this._executionEngine + " " + totalJobs.size());
     return totalJobs;
   }
 
@@ -88,20 +90,38 @@ public class TuningTypeManagerHBT extends AbstractTuningTypeManager {
         .desc(JobExecution.TABLE.updatedTs)
         .setMaxRows(1)
         .findUnique();
+    logger.info("Job Status " + jobExecution.executionState.name());
+    if (jobExecution.executionState.name().equals(JobExecution.ExecutionState.IN_PROGRESS.name())
+        || jobExecution.executionState.name().equals(JobExecution.ExecutionState.NOT_STARTED.name())) {
+      logger.info(" Job is still running , cannot use for param generation ");
+      return "";
+    }
+
     List<AppResult> results = getAppResults(jobExecution);
-    String idParameters = this._executionEngine.parameterGenerationsHBT(results,tuningParameters);
+    if (results == null) {
+      logger.info(
+          " Job is analyzing  , cannot use for param generation " + jobExecution.id + " " + jobExecution.job.id);
+      return "";
+    }
+    String idParameters = this._executionEngine.parameterGenerationsHBT(results, tuningParameters);
     return idParameters.toString();
   }
 
   private List<AppResult> getAppResults(JobExecution jobExecution) {
-    List<AppResult> results = AppResult.find.select("*")
-        .fetch(AppResult.TABLE.APP_HEURISTIC_RESULTS, "*")
-        .fetch(AppResult.TABLE.APP_HEURISTIC_RESULTS + "." + AppHeuristicResult.TABLE.APP_HEURISTIC_RESULT_DETAILS, "*")
-        .where()
-        .eq(AppResult.TABLE.FLOW_EXEC_ID, jobExecution.flowExecution.flowExecId)
-        .eq(AppResult.TABLE.JOB_EXEC_ID, jobExecution.jobExecId)
-        .findList();
-
+    List<AppResult> results = null;
+    try {
+      results = AppResult.find.select("*")
+          .fetch(AppResult.TABLE.APP_HEURISTIC_RESULTS, "*")
+          .fetch(AppResult.TABLE.APP_HEURISTIC_RESULTS + "." + AppHeuristicResult.TABLE.APP_HEURISTIC_RESULT_DETAILS,
+              "*")
+          .where()
+          .eq(AppResult.TABLE.FLOW_EXEC_ID, jobExecution.flowExecution.flowExecId)
+          .eq(AppResult.TABLE.JOB_EXEC_ID, jobExecution.jobExecId)
+          .findList();
+    } catch (Exception e) {
+      logger.warn(" Job Analysis is not completed . ");
+      return results;
+    }
     return results;
   }
 
@@ -120,7 +140,7 @@ public class TuningTypeManagerHBT extends AbstractTuningTypeManager {
    * @param jobTuningInfoList JobTuningInfo List
    */
   protected Boolean updateDatabase(List<JobTuningInfo> jobTuningInfoList) {
-    logger.info("Updating new parameter suggestion in database");
+    logger.info("Updating new parameter suggestion in database HBT");
     if (jobTuningInfoList == null) {
       logger.info("No new parameter suggestion to update");
       return false;
@@ -154,6 +174,7 @@ public class TuningTypeManagerHBT extends AbstractTuningTypeManager {
       if (isParamConstraintViolated(jobSuggestedParamValueList)) {
         penaltyApplication(jobSuggestedParamSet, tuningJobDefinition);
       } else {
+        logger.info(" Parameters constraints not violeted ");
         jobSuggestedParamSet.areConstraintsViolated = false;
         processParamSetStatus(jobSuggestedParamSet);
       }
@@ -162,6 +183,7 @@ public class TuningTypeManagerHBT extends AbstractTuningTypeManager {
       for (JobSuggestedParamValue jobSuggestedParamValue : jobSuggestedParamValueList) {
         jobSuggestedParamValue.jobSuggestedParamSet = jobSuggestedParamSet;
       }
+      logger.info(" Job Suggested list " + jobSuggestedParamValueList.size());
       saveSuggestedParams(jobSuggestedParamValueList);
     }
 
@@ -185,17 +207,17 @@ public class TuningTypeManagerHBT extends AbstractTuningTypeManager {
     }
     List<JobSuggestedParamSet> tempJobSuggestedParamSet = JobSuggestedParamSet.find.select("*")
         .where()
-        .eq(JobSuggestedParamSet.TABLE.jobDefinition + "." + JobDefinition.TABLE.id, tuningJobDefinition1.job.id).findList();
+        .eq(JobSuggestedParamSet.TABLE.jobDefinition + "." + JobDefinition.TABLE.id, tuningJobDefinition1.job.id)
+        .findList();
     Boolean isManuallyOverriden = false;
-    for(JobSuggestedParamSet jobSuggestedParamSet1 : tempJobSuggestedParamSet){
-      if(jobSuggestedParamSet1.isManuallyOverridenParameter){
+    for (JobSuggestedParamSet jobSuggestedParamSet1 : tempJobSuggestedParamSet) {
+      if (jobSuggestedParamSet1.isManuallyOverridenParameter) {
         isManuallyOverriden = true;
       }
     }
-    if(isManuallyOverriden){
+    if (isManuallyOverriden) {
       jobSuggestedParamSet.paramSetState = JobSuggestedParamSet.ParamSetStatus.DISCARDED;
     }
-
   }
 
   private void penaltyApplication(JobSuggestedParamSet jobSuggestedParamSet, TuningJobDefinition tuningJobDefinition) {
@@ -233,33 +255,30 @@ public class TuningTypeManagerHBT extends AbstractTuningTypeManager {
 
   private List<JobSuggestedParamValue> getParamValueList(String tunerState) {
     List<JobSuggestedParamValue> jobSuggestedParamValueList = new ArrayList<JobSuggestedParamValue>();
-    for(String parameter : tunerState.split("\n")){
-      String paramIDValues [] = parameter.split("\t");
-      if(paramIDValues.length==2){
+    for (String parameter : tunerState.split("\n")) {
+      logger.info(" Parameter values " + parameter);
+      String paramIDValues[] = parameter.split("\t");
+      if (paramIDValues.length == 2) {
         JobSuggestedParamValue jobSuggestedParamValue = new JobSuggestedParamValue();
         jobSuggestedParamValue.tuningParameter = TuningParameter.find.byId(Integer.parseInt(paramIDValues[0]));
         jobSuggestedParamValue.paramValue = Double.parseDouble(paramIDValues[1]);
         jobSuggestedParamValueList.add(jobSuggestedParamValue);
       }
     }
+    logger.info(" Job Suggested Values " + jobSuggestedParamValueList.size());
     return jobSuggestedParamValueList;
   }
 
   @Override
-  protected void updateBoundryConstraint(List<TuningParameter> tuningParameterList,
-       JobDefinition job) {
+  protected void updateBoundryConstraint(List<TuningParameter> tuningParameterList, JobDefinition job) {
 
   }
 
   @Override
   public boolean isParamConstraintViolated(List<JobSuggestedParamValue> jobSuggestedParamValues) {
 
-    return this.isParamConstraintViolated(jobSuggestedParamValues);
+    return _executionEngine.isParamConstraintViolatedHBT(jobSuggestedParamValues);
   }
-
-
-
-
 
   @Override
   public String getManagerName() {

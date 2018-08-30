@@ -196,7 +196,8 @@ public class MRExecutionEngine implements ExecutionEngine {
         .where()
         .or(Expr.or(Expr.eq(JobSuggestedParamSet.TABLE.paramSetState, JobSuggestedParamSet.ParamSetStatus.CREATED),
             Expr.eq(JobSuggestedParamSet.TABLE.paramSetState, JobSuggestedParamSet.ParamSetStatus.SENT)),
-            Expr.eq(JobSuggestedParamSet.TABLE.paramSetState, JobSuggestedParamSet.ParamSetStatus.EXECUTED))
+            Expr.or(Expr.eq(JobSuggestedParamSet.TABLE.paramSetState, JobSuggestedParamSet.ParamSetStatus.EXECUTED),
+                Expr.eq(JobSuggestedParamSet.TABLE.paramSetState, JobSuggestedParamSet.ParamSetStatus.DISCARDED)))
         .eq(JobSuggestedParamSet.TABLE.tuningAlgorithm + "." + TuningAlgorithm.TABLE.jobType,
             TuningAlgorithm.JobType.PIG.name())
         .eq(JobSuggestedParamSet.TABLE.isParamSetBest, 0);
@@ -322,7 +323,7 @@ public class MRExecutionEngine implements ExecutionEngine {
             .append("\t")
             .append(previousUsedMetrics.get("map")
                 .get(CommonConstantsHeuristic.UtilizedParameterKeys.MAX_PHYSICAL_MEMORY.getValue()));
-        //idParameters.append("\n");
+        idParameters.append("\n");
         break;
       }
     }
