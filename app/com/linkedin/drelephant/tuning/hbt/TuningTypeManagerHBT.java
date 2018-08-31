@@ -65,7 +65,7 @@ public class TuningTypeManagerHBT extends AbstractTuningTypeManager {
             TuningAlgorithm.OptimizationAlgo.HBT.name())
         .findList();
 
-    logger.info(" Number of Total Jobs for parameter suggestion " + this._executionEngine + " " + totalJobs.size());
+    logger.info(" Number of Total Jobs " + this._executionEngine + " " + totalJobs.size());
     return totalJobs;
   }
 

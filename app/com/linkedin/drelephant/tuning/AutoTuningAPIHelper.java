@@ -393,6 +393,7 @@ public class AutoTuningAPIHelper {
     JobSuggestedParamSet jobSuggestedParamSet;
     logger.debug("Finding parameter suggestion for job: " + jobExecution.job.jobName);
     if (tuningInput.getRetry()) {
+      logger.info(" Retry ");
       applyPenalty(tuningInput.getJobExecId());
       jobSuggestedParamSet = getBestParamSet(tuningInput.getJobDefId());
     } else {
