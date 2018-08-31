@@ -24,15 +24,30 @@ import java.sql.Statement;
 import org.apache.commons.io.IOUtils;
 import play.db.DB;
 
-import static common.TestConstants.TEST_DATA_FILE;
+import static common.TestConstants.*;
 
 
 public class DBTestUtil {
 
-  public static void initDB()
-      throws IOException, SQLException {
+  public static void initDBBaseline() throws IOException, SQLException {
+    initDBUtil(TEST_BASELINE_DATA_FILE);
+  }
+
+  public static void initDBIPSO() throws IOException, SQLException {
+    initDBUtil(TEST_IPSO_DATA_FILE);
+  }
+
+  public static void initDB() throws IOException, SQLException {
+    initDBUtil(TEST_DATA_FILE);
+  }
+
+  public static void initAutoTuningDB1() throws IOException, SQLException {
+    initDBUtil(TEST_AUTO_TUNING_DATA_FILE1);
+  }
+
+  public static void initDBUtil(String fileName) throws IOException, SQLException {
     String query = "";
-    FileInputStream inputStream = new FileInputStream(TEST_DATA_FILE);
+    FileInputStream inputStream = new FileInputStream(fileName);
 
     try {
       query = IOUtils.toString(inputStream);
@@ -49,4 +64,5 @@ public class DBTestUtil {
       connection.close();
     }
   }
+
 }
