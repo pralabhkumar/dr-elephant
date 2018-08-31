@@ -357,40 +357,40 @@ public class AutoTuningAPIHelper {
         .findUnique();
     JobExecution jobExecution = getJobExecution(tuningInput);
     if (tuningJobDefinition == null) {
-      logger.info(" New Job. Hence  Not checking for AutoTuning . Running with default Parameters"
-          + tuningInput.getJobExecId());
-      List<JobSuggestedParamValue> jobSuggestedParamValues = getSuggestedParameters(tuningInput);
-      return jobSuggestedParamValueListToMap(jobSuggestedParamValues);
+      return processForFirstExecution(tuningInput,jobExecution);
     } else {
-      logger.info(" Not a New Job . Hence check for autotTuning" + tuningInput.getJobExecId());
-      if (tuningJobDefinition.autoApply) {
-        List<JobSuggestedParamValue> jobSuggestedParamValues = processParameterTuningEnabled(tuningInput);
-        return jobSuggestedParamValueListToMap(jobSuggestedParamValues);
-      } else {
-        logger.info("Not a new Job . Auto Tuning Disabled . Send default parameters");
-        return sendDefaultParameters(tuningInput, jobExecution);
-      }
+      return processForSubsequentExecutions(tuningJobDefinition, tuningInput,jobExecution);
     }
   }
 
-  private List<JobSuggestedParamValue> getSuggestedParameters(TuningInput tuningInput) {
-    JobSuggestedParamSet jobSuggestedParamSet;
-    JobExecution jobExecution = getJobExecution(tuningInput);
-    logger.debug("Finding parameter suggestion for job: " + jobExecution.job.jobName);
-    jobSuggestedParamSet = getNewSuggestedParamSet(jobExecution.job);
+  private Map<String, Double> processForFirstExecution(TuningInput tuningInput,JobExecution jobExecution){
+    logger.info(" New Job. Hence  Not checking for AutoTuning . Running with default Parameters "
+        + tuningInput.getJobExecId());
+    JobSuggestedParamSet jobSuggestedParamSet = getDefaultParameters(jobExecution.job);
     markParameterSetSent(jobSuggestedParamSet);
     addNewTuningJobExecutionParamSet(jobSuggestedParamSet, jobExecution);
     List<JobSuggestedParamValue> jobSuggestedParamValues = getParamSetValues(jobSuggestedParamSet.id);
     logger.debug("Number of output parameters for execution " + tuningInput.getJobExecId() + " = "
         + jobSuggestedParamValues.size());
     logger.info("Finishing getCurrentRunParameters");
-    return jobSuggestedParamValues;
+    return jobSuggestedParamValueListToMap(jobSuggestedParamValues);
   }
 
-  private List<JobSuggestedParamValue> processParameterTuningEnabled(TuningInput tuningInput) {
-    logger.info(" If auto tuning enabled , then suggest Parameters ");
+
+  private Map<String, Double> processForSubsequentExecutions (TuningJobDefinition tuningJobDefinition, TuningInput tuningInput,JobExecution jobExecution){
+    logger.info(" Not a New Job . Hence check for autoTuning" + tuningInput.getJobExecId());
+    if (tuningJobDefinition.autoApply) {
+      logger.info( " Auto Tuning Enabled . Hence Apply generated Parameter ,generated based on tuning algorithm");
+      List<JobSuggestedParamValue> jobSuggestedParamValues = processParameterTuningEnabled(tuningInput, jobExecution);
+      return jobSuggestedParamValueListToMap(jobSuggestedParamValues);
+    } else {
+      logger.info("Not a new Job . Auto Tuning Disabled . Send default parameters");
+      return sendDefaultParameters(tuningInput, jobExecution);
+    }
+  }
+
+  private List<JobSuggestedParamValue> processParameterTuningEnabled(TuningInput tuningInput,JobExecution jobExecution) {
     JobSuggestedParamSet jobSuggestedParamSet;
-    JobExecution jobExecution = getJobExecution(tuningInput);
     logger.debug("Finding parameter suggestion for job: " + jobExecution.job.jobName);
     if (tuningInput.getRetry()) {
       applyPenalty(tuningInput.getJobExecId());
@@ -411,14 +411,15 @@ public class AutoTuningAPIHelper {
   private Map<String, Double> sendDefaultParameters(TuningInput tuningInput, JobExecution jobExecution) {
     JobSuggestedParamSet jobSuggestedParamSet;
     logger.info(" Auto Tuning Disabled . Hence no parameter suggestion. Tagging execution with default values");
-    processDefaultValues(tuningInput);
-    jobSuggestedParamSet = getNewSuggestedParamSet(jobExecution.job);
+    updateDataBaseWithDefaultValues(tuningInput);
+    jobSuggestedParamSet = getDefaultParameters(jobExecution.job);
     markParameterSetSent(jobSuggestedParamSet);
     addNewTuningJobExecutionParamSet(jobSuggestedParamSet, jobExecution);
+    discardGeneratedParameter(jobExecution.job);
     return new HashMap<String, Double>();
   }
 
-  public void processDefaultValues(TuningInput tuningInput) {
+  public void updateDataBaseWithDefaultValues(TuningInput tuningInput) {
     JobDefinition job =
         JobDefinition.find.select("*").where().eq(JobDefinition.TABLE.jobDefId, tuningInput.getJobDefId()).findUnique();
     Map<String, Double> defaultParams = null;
@@ -429,6 +430,35 @@ public class AutoTuningAPIHelper {
       logger.error("Error in getting default parameters from request. ", e);
     }
     insertParamSetForDefault(job, tuningInput.getTuningAlgorithm(), defaultParams);
+  }
+
+  public JobSuggestedParamSet getDefaultParameters(JobDefinition jobDefinition){
+    JobSuggestedParamSet jobSuggestedParamSet = JobSuggestedParamSet.find.select("*")
+        .fetch(JobSuggestedParamSet.TABLE.jobDefinition, "*")
+        .where()
+        .eq(JobSuggestedParamSet.TABLE.jobDefinition + "." + JobDefinition.TABLE.id, jobDefinition.id)
+        .eq(JobSuggestedParamSet.TABLE.paramSetState, ParamSetStatus.CREATED)
+        .order()
+        .desc(JobSuggestedParamSet.TABLE.id)
+        .setMaxRows(1)
+        .findUnique();
+    return jobSuggestedParamSet;
+  }
+
+  public void discardGeneratedParameter(JobDefinition jobDefinition){
+    List<JobSuggestedParamSet> jobSuggestedParamSets = JobSuggestedParamSet.find.select("*")
+        .fetch(JobSuggestedParamSet.TABLE.jobDefinition, "*")
+        .where()
+        .eq(JobSuggestedParamSet.TABLE.jobDefinition + "." + JobDefinition.TABLE.id, jobDefinition.id)
+        .eq(JobSuggestedParamSet.TABLE.paramSetState, ParamSetStatus.CREATED).findList();
+
+    if(jobSuggestedParamSets!=null  && jobSuggestedParamSets.size()>=1){
+      logger.info(" Discarding Generated Parameters , as auto tuning off."+jobSuggestedParamSets.size());
+      for(JobSuggestedParamSet jobSuggestedParamSet : jobSuggestedParamSets){
+        jobSuggestedParamSet.paramSetState=ParamSetStatus.DISCARDED;
+        jobSuggestedParamSet.update();
+      }
+    }
   }
 
   private void insertParamSetForDefault(JobDefinition job, TuningAlgorithm tuningAlgorithm,

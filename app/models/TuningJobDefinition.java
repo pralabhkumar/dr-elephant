@@ -73,7 +73,7 @@ public class TuningJobDefinition extends Model {
   public boolean tuningEnabled;
 
   @Column(nullable = true)
-  public boolean autoApply = true;
+  public boolean autoApply = false;
 
   @Column(nullable = true)
   public Double averageResourceUsage;

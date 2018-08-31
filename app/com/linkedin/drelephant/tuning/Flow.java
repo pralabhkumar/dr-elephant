@@ -39,7 +39,7 @@ public class Flow {
         @Override
         public void run() {
           for (Manager manager : pipelineType) {
-            logger.info(" Manager execution Status  " + manager.getManagerName());
+          //  logger.info(" Manager execution Status  " + manager.getManagerName());
             if (manager.getClass().getSimpleName().toLowerCase().contains("hbt") || manager.getClass()
                 .getSimpleName()
                 .toLowerCase()

@@ -196,10 +196,11 @@ public class TuningTypeManagerHBT extends AbstractTuningTypeManager {
         .eq(TuningJobDefinition.TABLE.job + "." + JobDefinition.TABLE.id, jobSuggestedParamSet.jobDefinition.id)
         .setMaxRows(1)
         .findUnique();
-    handleDiscarding(tuningJobDefinition1, jobSuggestedParamSet);
+    jobSuggestedParamSet.paramSetState = JobSuggestedParamSet.ParamSetStatus.CREATED;
+    //handleDiscarding(tuningJobDefinition1, jobSuggestedParamSet);
   }
 
-  private void handleDiscarding(TuningJobDefinition tuningJobDefinition1, JobSuggestedParamSet jobSuggestedParamSet) {
+ /* private void handleDiscarding(TuningJobDefinition tuningJobDefinition1, JobSuggestedParamSet jobSuggestedParamSet) {
     if (tuningJobDefinition1.autoApply) {
       jobSuggestedParamSet.paramSetState = JobSuggestedParamSet.ParamSetStatus.CREATED;
     } else {
@@ -218,7 +219,7 @@ public class TuningTypeManagerHBT extends AbstractTuningTypeManager {
     if (isManuallyOverriden) {
       jobSuggestedParamSet.paramSetState = JobSuggestedParamSet.ParamSetStatus.DISCARDED;
     }
-  }
+  }*/
 
   private void penaltyApplication(JobSuggestedParamSet jobSuggestedParamSet, TuningJobDefinition tuningJobDefinition) {
     logger.info("Parameter constraint violated. Applying penalty.");
