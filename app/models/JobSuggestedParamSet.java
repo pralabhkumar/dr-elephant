@@ -52,6 +52,7 @@ public class JobSuggestedParamSet extends Model {
     public static final String tuningAlgorithm = "tuningAlgorithm";
     public static final String paramSetState = "paramSetState";
     public static final String isParamSetDefault = "isParamSetDefault";
+    public static final String isParamSetSuggested = "isParamSetSuggested";
     public static final String fitness = "fitness";
     public static final String fitnessJobExecution = "fitnessJobExecution";
     public static final String isParamSetBest = "isParamSetBest";
@@ -86,6 +87,9 @@ public class JobSuggestedParamSet extends Model {
 
   @Column(nullable = false)
   public Boolean isParamSetDefault;
+
+  @Column(nullable = true)
+  public Boolean isParamSetSuggested ;
 
   public Double fitness;
 

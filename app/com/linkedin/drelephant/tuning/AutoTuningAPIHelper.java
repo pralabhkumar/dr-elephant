@@ -473,8 +473,9 @@ public class AutoTuningAPIHelper {
     jobSuggestedParamSet.areConstraintsViolated = false;
     jobSuggestedParamSet.isParamSetBest = false;
     jobSuggestedParamSet.isManuallyOverridenParameter = false;
+    jobSuggestedParamSet.isParamSetSuggested = false;
     jobSuggestedParamSet.save();
-    insertParameterValues(jobSuggestedParamSet, paramValueMap);
+    insertParameterValues(jobSuggestedParamSet, paramValueMap,tuningAlgorithm);
     logger.debug("Default parameter set inserted for job: " + job.jobName);
   }
 
@@ -569,8 +570,9 @@ public class AutoTuningAPIHelper {
       jobSuggestedParamSet.areConstraintsViolated = false;
       jobSuggestedParamSet.isParamSetBest = false;
       jobSuggestedParamSet.isManuallyOverridenParameter = false;
+      jobSuggestedParamSet.isParamSetSuggested = false;
       jobSuggestedParamSet.save();
-      insertParameterValues(jobSuggestedParamSet, paramValueMap);
+      insertParameterValues(jobSuggestedParamSet, paramValueMap,tuningAlgorithm);
       intializeOptimizationAlgoPrerequisite(tuningAlgorithm, jobSuggestedParamSet);
       logger.debug("Default parameter set inserted for job: " + job.jobName);
     }
@@ -581,11 +583,11 @@ public class AutoTuningAPIHelper {
      * @param paramValueMap Map of parameter values as string
      */
     @SuppressWarnings("unchecked") private void insertParameterValues (JobSuggestedParamSet
-    jobSuggestedParamSet, Map < String, Double > paramValueMap){
+    jobSuggestedParamSet, Map < String, Double > paramValueMap, TuningAlgorithm tuningAlgorithm){
       ObjectMapper mapper = new ObjectMapper();
       if (paramValueMap != null) {
         for (Map.Entry<String, Double> paramValue : paramValueMap.entrySet()) {
-          insertParameterValue(jobSuggestedParamSet, paramValue.getKey(), paramValue.getValue());
+          insertParameterValue(jobSuggestedParamSet, paramValue.getKey(), paramValue.getValue(),tuningAlgorithm);
         }
       } else {
         logger.warn("ParamValueMap is null ");
@@ -607,12 +609,13 @@ public class AutoTuningAPIHelper {
      * @param paramName Parameter name
      * @param paramValue Parameter value
      */
-    private void insertParameterValue (JobSuggestedParamSet jobSuggestedParamSet, String paramName, Double paramValue){
+    private void insertParameterValue (JobSuggestedParamSet jobSuggestedParamSet, String paramName, Double paramValue,TuningAlgorithm tuningAlgorithm){
       logger.debug("Starting insertParameterValue");
       JobSuggestedParamValue jobSuggestedParamValue = new JobSuggestedParamValue();
       jobSuggestedParamValue.jobSuggestedParamSet = jobSuggestedParamSet;
       TuningParameter tuningParameter =
-          TuningParameter.find.where().eq(TuningParameter.TABLE.paramName, paramName).findUnique();
+          TuningParameter.find.where().eq(TuningParameter.TABLE.paramName, paramName)
+              .eq(TuningParameter.TABLE.tuningAlgorithm,tuningAlgorithm).findUnique();
       if (tuningParameter != null) {
         jobSuggestedParamValue.tuningParameter = tuningParameter;
         jobSuggestedParamValue.paramValue = paramValue;

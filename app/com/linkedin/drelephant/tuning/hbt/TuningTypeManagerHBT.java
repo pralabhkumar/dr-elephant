@@ -171,6 +171,7 @@ public class TuningTypeManagerHBT extends AbstractTuningTypeManager {
       jobSuggestedParamSet.tuningAlgorithm = tuningJobDefinition.tuningAlgorithm;
       jobSuggestedParamSet.isParamSetDefault = false;
       jobSuggestedParamSet.isParamSetBest = false;
+      jobSuggestedParamSet.isParamSetSuggested = true;
       if (isParamConstraintViolated(jobSuggestedParamValueList)) {
         penaltyApplication(jobSuggestedParamSet, tuningJobDefinition);
       } else {

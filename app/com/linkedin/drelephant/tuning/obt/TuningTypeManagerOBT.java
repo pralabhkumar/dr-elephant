@@ -43,6 +43,26 @@ public abstract class TuningTypeManagerOBT extends AbstractTuningTypeManager {
   private String TUNING_SCRIPT_PATH = null;
   private final Logger logger = Logger.getLogger(getClass());
 
+
+  /*
+    Intialize any prequisite require for Optimizer
+    Calls once in lifetime of the flow
+   */
+  public abstract void intializePrerequisite(TuningAlgorithm tuningAlgorithm,
+      JobSuggestedParamSet jobSuggestedParamSet);
+
+  /*
+    Optimize search space
+    call after each execution of flow
+   */
+  public abstract void parameterOptimizer(List<AppResult> appResults, JobExecution jobExecution);
+
+  /**
+   * Swarm size specific to OBT
+   * @return
+   */
+  protected abstract int getSwarmSize();
+
   public TuningTypeManagerOBT() {
     tuningType = "OBT";
     Configuration configuration = ElephantContext.instance().getAutoTuningConf();
@@ -271,6 +291,7 @@ public abstract class TuningTypeManagerOBT extends AbstractTuningTypeManager {
         jobSuggestedParamSet.tuningAlgorithm = tuningJobDefinition.tuningAlgorithm;
         jobSuggestedParamSet.isParamSetDefault = false;
         jobSuggestedParamSet.isParamSetBest = false;
+        jobSuggestedParamSet.isParamSetSuggested = true;
         if (isParamConstraintViolated(jobSuggestedParamValueList)) {
           logger.info("Parameter constraint violated. Applying penalty.");
           int penaltyConstant = 3;
@@ -384,20 +405,4 @@ public abstract class TuningTypeManagerOBT extends AbstractTuningTypeManager {
     return "TuningTypeManagerOBT";
   }
 
-  /*
-    Intialize any prequisite require for Optimizer
-    Calls once in lifetime of the flow
-   */
-  public abstract void intializePrerequisite(TuningAlgorithm tuningAlgorithm,
-      JobSuggestedParamSet jobSuggestedParamSet);
-
-  /*
-    Optimize search space
-    call after each execution of flow
-   */
-  public abstract void parameterOptimizer(List<AppResult> appResults, JobExecution jobExecution);
-
-
-
-  protected abstract int getSwarmSize();
 }

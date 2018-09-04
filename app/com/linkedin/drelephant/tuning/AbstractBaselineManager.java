@@ -13,6 +13,11 @@ import org.apache.log4j.Logger;
 import controllers.AutoTuningMetricsController;
 import org.apache.hadoop.conf.Configuration;
 
+
+/**
+ * This class is abstract class for BaselineManager. Each tuning type will have its own specific implementation.
+ * for e.g BaselineManagerOBT, BaselineManagerHBT
+ */
 public abstract class AbstractBaselineManager implements Manager {
   protected final String BASELINE_EXECUTION_COUNT = "baseline.execution.count";
   protected Integer NUM_JOBS_FOR_BASELINE_DEFAULT = 30;
@@ -33,7 +38,7 @@ public abstract class AbstractBaselineManager implements Manager {
   protected Integer _numJobsForBaseline = null;
   protected Configuration configuration = null;
 
-  public AbstractBaselineManager(){
+  public AbstractBaselineManager() {
     configuration = ElephantContext.instance().getAutoTuningConf();
   }
 
@@ -111,7 +116,8 @@ public abstract class AbstractBaselineManager implements Manager {
    * @return average input size in bytes as long
    */
   private Long getAvgInputSizeInBytes(String jobDefId) {
-    logger.debug("Running query for average input size computation " + avgInputSizeSQL + " Job definintion ID "+jobDefId);
+    logger.debug(
+        "Running query for average input size computation " + avgInputSizeSQL + " Job definintion ID " + jobDefId);
 
     SqlRow baseline = Ebean.createSqlQuery(avgInputSizeSQL)
         .setParameter("jobDefId", jobDefId)
@@ -160,6 +166,4 @@ public abstract class AbstractBaselineManager implements Manager {
     }
     return true;
   }
-
-
 }

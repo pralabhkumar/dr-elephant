@@ -15,6 +15,9 @@ import models.TuningParameter;
 import models.TuningParameterConstraint;
 
 
+/**
+ * This class represents Spark Exectuion Engine. It handles all the cases releated to Spark Engine
+ */
 public class SparkExecutionEngine implements ExecutionEngine {
 
   @Override
@@ -32,8 +35,8 @@ public class SparkExecutionEngine implements ExecutionEngine {
             Expr.eq(JobSuggestedParamSet.TABLE.paramSetState, JobSuggestedParamSet.ParamSetStatus.SENT)),
             Expr.eq(JobSuggestedParamSet.TABLE.paramSetState, JobSuggestedParamSet.ParamSetStatus.EXECUTED))
         .eq(JobSuggestedParamSet.TABLE.isParamSetDefault, 0)
-        .eq(JobSuggestedParamSet.TABLE.tuningAlgorithm
-            + "." + TuningAlgorithm.TABLE.jobType, TuningAlgorithm.JobType.SPARK.name())
+        .eq(JobSuggestedParamSet.TABLE.tuningAlgorithm + "." + TuningAlgorithm.TABLE.jobType,
+            TuningAlgorithm.JobType.SPARK.name())
         .eq(JobSuggestedParamSet.TABLE.isParamSetBest, 0);
   }
 
@@ -43,7 +46,8 @@ public class SparkExecutionEngine implements ExecutionEngine {
         .fetch(TuningJobDefinition.TABLE.job, "*")
         .where()
         .eq(TuningJobDefinition.TABLE.tuningEnabled, 1)
-        .eq(TuningJobDefinition.TABLE.tuningAlgorithm+"."+TuningAlgorithm.TABLE.jobType,TuningAlgorithm.JobType.SPARK);
+        .eq(TuningJobDefinition.TABLE.tuningAlgorithm + "." + TuningAlgorithm.TABLE.jobType,
+            TuningAlgorithm.JobType.SPARK);
   }
 
   @Override

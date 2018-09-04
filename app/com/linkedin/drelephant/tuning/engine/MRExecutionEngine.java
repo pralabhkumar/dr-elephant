@@ -26,6 +26,10 @@ import org.apache.log4j.Logger;
 import static java.lang.Math.*;
 
 
+/**
+ * This class represents Map Reduce Exectuion Engine. It handles all the cases releated to Map Reduce Engine
+ */
+
 public class MRExecutionEngine implements ExecutionEngine {
   private final Logger logger = Logger.getLogger(getClass());
 
@@ -320,10 +324,19 @@ public class MRExecutionEngine implements ExecutionEngine {
           CommonConstantsHeuristic.ParameterKeys.MAPPER_MEMORY_HADOOP_CONF.getValue())) {
         idParameters.append(tuningParameter.id)
             .append("\t")
-            .append(previousUsedMetrics.get("map")
-                .get(CommonConstantsHeuristic.UtilizedParameterKeys.MAX_PHYSICAL_MEMORY.getValue()));
+            .append(Math.max(previousUsedMetrics.get("map")
+                .get(CommonConstantsHeuristic.UtilizedParameterKeys.MAX_PHYSICAL_MEMORY.getValue()), previousUsedMetrics
+                .get("map")
+                .get(CommonConstantsHeuristic.UtilizedParameterKeys.MAX_VIRTUAL_MEMORY.getValue()) / 2.1));
         idParameters.append("\n");
-        break;
+      }
+      if (tuningParameter.paramName.equals(
+          CommonConstantsHeuristic.ParameterKeys.MAPPER_HEAP_HADOOP_CONF.getValue())) {
+        idParameters.append(tuningParameter.id)
+            .append("\t")
+            .append(previousUsedMetrics.get("map")
+                .get(CommonConstantsHeuristic.UtilizedParameterKeys.MAX_TOTAL_COMMITTED_HEAP_USAGE_MEMORY.getValue()));
+        idParameters.append("\n");
       }
     }
     logger.info(" New Suggested Parameter " + idParameters);

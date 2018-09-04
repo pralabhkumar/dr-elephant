@@ -43,7 +43,27 @@ public abstract class AbstractFitnessManager implements Manager {
   protected Long fitnessComputeWaitInterval;
   protected Long ignoreExecutionWaitInterval;
 
+  /**
+   * Detects  & return the jobs for which fitness computation have to be done.
+   * @return
+   */
   protected abstract List<TuningJobExecutionParamSet> detectJobsForFitnessComputation();
+
+  /**
+   * This method is used to calculate the fitness and update into DB.
+   * @param jobExecution : Job Execution for which fitness need to be computed
+   * @param results : Heuristics App results for the same.
+   * @param tuningJobDefinition : Tuning job defination of the job.
+   * @param jobSuggestedParamSet : Status of the suggested param set , so that fitness can be computed.
+   */
+  protected abstract void calculateAndUpdateFitness(JobExecution jobExecution, List<AppResult> results,
+      TuningJobDefinition tuningJobDefinition, JobSuggestedParamSet jobSuggestedParamSet);
+
+  /**
+   *  This methods disable tuning , if certain prereuistes matched.
+   * @param jobDefinitionSet
+   */
+  protected abstract void checkToDisableTuning(Set<JobDefinition> jobDefinitionSet);
 
   protected Boolean calculateFitness(List<TuningJobExecutionParamSet> completedJobExecutionParamSets) {
     for (TuningJobExecutionParamSet completedJobExecutionParamSet : completedJobExecutionParamSets) {
@@ -95,8 +115,7 @@ public abstract class AbstractFitnessManager implements Manager {
     }
   }
 
-  protected abstract void calculateAndUpdateFitness(JobExecution jobExecution, List<AppResult> results,
-      TuningJobDefinition tuningJobDefinition, JobSuggestedParamSet jobSuggestedParamSet);
+
 
   protected void updateJobExecution(JobExecution jobExecution, Double totalResourceUsed, Double totalInputBytesInBytes,
       Long totalExecutionTime) {
@@ -262,98 +281,14 @@ public abstract class AbstractFitnessManager implements Manager {
     return tuningJobDefinition != null && tuningJobDefinition.tuningEnabled;
   }
 
-  /**
-   * Checks if the median gain (from tuning) during the last 6 executions is negative
-   * Last 6 executions constitutes 2 iterations of PSO (given the swarm size is three). Negative average gains in
-   * latest 2 algorithm iterations (after a fixed number of minimum iterations) imply that either the algorithm hasn't
-   * converged or there isn't enough scope for tuning. In both the cases, switching tuning off is desired
-   * @param tuningJobExecutionParamSets List of previous executions
-   * @return true if the median gain is negative, else false
-   */
-  private boolean isMedianGainNegative(List<TuningJobExecutionParamSet> tuningJobExecutionParamSets) {
-    int numFitnessForMedian = 6;
-    Double[] fitnessArray = new Double[numFitnessForMedian];
-    int entries = 0;
-
-    if (tuningJobExecutionParamSets.size() < numFitnessForMedian) {
-      return false;
-    }
-    for (TuningJobExecutionParamSet tuningJobExecutionParamSet : tuningJobExecutionParamSets) {
-      JobSuggestedParamSet jobSuggestedParamSet = tuningJobExecutionParamSet.jobSuggestedParamSet;
-      JobExecution jobExecution = tuningJobExecutionParamSet.jobExecution;
-      if (jobExecution.executionState == JobExecution.ExecutionState.SUCCEEDED
-          && jobSuggestedParamSet.paramSetState == JobSuggestedParamSet.ParamSetStatus.FITNESS_COMPUTED) {
-        fitnessArray[entries] = jobSuggestedParamSet.fitness;
-        entries += 1;
-        if (entries == numFitnessForMedian) {
-          break;
-        }
-      }
-    }
-    Arrays.sort(fitnessArray);
-    double medianFitness;
-    if (fitnessArray.length % 2 == 0) {
-      medianFitness = (fitnessArray[fitnessArray.length / 2] + fitnessArray[fitnessArray.length / 2 - 1]) / 2;
-    } else {
-      medianFitness = fitnessArray[fitnessArray.length / 2];
-    }
-
-    JobDefinition jobDefinition = tuningJobExecutionParamSets.get(0).jobSuggestedParamSet.jobDefinition;
-    TuningJobDefinition tuningJobDefinition = TuningJobDefinition.find.where().
-        eq(TuningJobDefinition.TABLE.job + '.' + JobDefinition.TABLE.id, jobDefinition.id).findUnique();
-    double baselineFitness =
-        tuningJobDefinition.averageResourceUsage * FileUtils.ONE_GB / tuningJobDefinition.averageInputSizeInBytes;
-
-    if (medianFitness > baselineFitness) {
-      logger.info("Switching off tuning for job: " + jobDefinition.jobName + " Reason: unable to tune enough");
-      return true;
-    } else {
-      return false;
-    }
-  }
-
-  /**
-   * Checks and disables tuning for the given job definitions.
-   * Tuning can be disabled if:
-   *  - Number of tuning executions >=  maxTuningExecutions
-   *  - or number of tuning executions >= minTuningExecutions and parameters converge
-   *  - or number of tuning executions >= minTuningExecutions and median gain (in cost function) in last 6 executions is negative
-   * @param jobDefinitionSet Set of jobs to check if tuning can be switched off for them
-   */
-
-  protected void checkToDisableTuning(Set<JobDefinition> jobDefinitionSet) {
-    for (JobDefinition jobDefinition : jobDefinitionSet) {
-      List<TuningJobExecutionParamSet> tuningJobExecutionParamSets =
-          TuningJobExecutionParamSet.find.fetch(TuningJobExecutionParamSet.TABLE.jobSuggestedParamSet, "*")
-              .fetch(TuningJobExecutionParamSet.TABLE.jobExecution, "*")
-              .where()
-              .eq(TuningJobExecutionParamSet.TABLE.jobSuggestedParamSet + '.' + JobSuggestedParamSet.TABLE.jobDefinition
-                  + '.' + JobDefinition.TABLE.id, jobDefinition.id)
-              .order()
-              .desc("job_execution_id")
-              .findList();
-
-      if (reachToNumberOfThresholdIterations(tuningJobExecutionParamSets, jobDefinition)) {
-        disableTuning(jobDefinition, "User Specified Iterations reached");
-      }
-      if (tuningJobExecutionParamSets.size() >= minTuningExecutions) {
-        if (didParameterSetConverge(tuningJobExecutionParamSets)) {
-          logger.info("Parameters converged. Disabling tuning for job: " + jobDefinition.jobName);
-          disableTuning(jobDefinition, "Parameters converged");
-        } else if (isMedianGainNegative(tuningJobExecutionParamSets)) {
-          logger.info("Unable to get gain while tuning. Disabling tuning for job: " + jobDefinition.jobName);
-          disableTuning(jobDefinition, "Unable to get gain");
-        } else if (tuningJobExecutionParamSets.size() >= maxTuningExecutions) {
-          logger.info("Maximum tuning executions limit reached. Disabling tuning for job: " + jobDefinition.jobName);
-          disableTuning(jobDefinition, "Maximum executions reached");
-        }
-      }
-    }
-  }
 
 
 
-  private boolean reachToNumberOfThresholdIterations(List<TuningJobExecutionParamSet> tuningJobExecutionParamSets,
+
+
+
+
+  public boolean reachToNumberOfThresholdIterations(List<TuningJobExecutionParamSet> tuningJobExecutionParamSets,
       JobDefinition jobDefinition) {
     TuningJobDefinition tuningJobDefinition = TuningJobDefinition.find.where()
         .eq(TuningJobDefinition.TABLE.job + '.' + JobDefinition.TABLE.id, jobDefinition.id)
@@ -369,7 +304,7 @@ public abstract class AbstractFitnessManager implements Manager {
    * Switches off tuning for the given job
    * @param jobDefinition Job for which tuning is to be switched off
    */
-  private void disableTuning(JobDefinition jobDefinition, String reason) {
+  public void disableTuning(JobDefinition jobDefinition, String reason) {
     TuningJobDefinition tuningJobDefinition = TuningJobDefinition.find.where()
         .eq(TuningJobDefinition.TABLE.job + '.' + JobDefinition.TABLE.id, jobDefinition.id)
         .findUnique();
@@ -380,73 +315,7 @@ public abstract class AbstractFitnessManager implements Manager {
     }
   }
 
-  /**
-   * Checks if the tuning parameters converge
-   * @param tuningJobExecutionParamSets List of previous executions and corresponding param sets
-   * @return true if the parameters converge, else false
-   */
-  private boolean didParameterSetConverge(List<TuningJobExecutionParamSet> tuningJobExecutionParamSets) {
-    boolean result = false;
-    int numParamSetForConvergence = 3;
 
-    if (tuningJobExecutionParamSets.size() < numParamSetForConvergence) {
-      return false;
-    }
-
-    TuningAlgorithm.JobType jobType = tuningJobExecutionParamSets.get(0).jobSuggestedParamSet.tuningAlgorithm.jobType;
-
-    if (jobType == TuningAlgorithm.JobType.PIG) {
-
-      Map<Integer, Set<Double>> paramValueSet = new HashMap<Integer, Set<Double>>();
-
-      for (TuningJobExecutionParamSet tuningJobExecutionParamSet : tuningJobExecutionParamSets) {
-
-        JobSuggestedParamSet jobSuggestedParamSet = tuningJobExecutionParamSet.jobSuggestedParamSet;
-
-        List<JobSuggestedParamValue> jobSuggestedParamValueList = JobSuggestedParamValue.find.where()
-            .eq(JobSuggestedParamValue.TABLE.jobSuggestedParamSet + '.' + JobSuggestedParamSet.TABLE.id,
-                jobSuggestedParamSet.id)
-            .or(Expr.eq(JobSuggestedParamValue.TABLE.tuningParameter + '.' + TuningParameter.TABLE.paramName,
-                "mapreduce.map.memory.mb"),
-                Expr.eq(JobSuggestedParamValue.TABLE.tuningParameter + '.' + TuningParameter.TABLE.paramName,
-                    "mapreduce.reduce.memory.mb"))
-            .findList();
-
-        // if jobSuggestedParamValueList contains both mapreduce.map.memory.mb and mapreduce.reduce.memory.mb
-        // ie, if the size of jobSuggestedParamValueList is 2
-        if (jobSuggestedParamValueList != null && jobSuggestedParamValueList.size() == 2) {
-          numParamSetForConvergence -= 1;
-          for (JobSuggestedParamValue jobSuggestedParamValue : jobSuggestedParamValueList) {
-            Set<Double> tmp;
-            if (paramValueSet.containsKey(jobSuggestedParamValue.id)) {
-              tmp = paramValueSet.get(jobSuggestedParamValue.id);
-            } else {
-              tmp = new HashSet<Double>();
-            }
-            tmp.add(jobSuggestedParamValue.paramValue);
-            paramValueSet.put(jobSuggestedParamValue.id, tmp);
-          }
-        }
-
-        if (numParamSetForConvergence == 0) {
-          break;
-        }
-      }
-
-      result = true;
-      for (Integer paramId : paramValueSet.keySet()) {
-        if (paramValueSet.get(paramId).size() > 1) {
-          result = false;
-        }
-      }
-    }
-
-    if (result) {
-      logger.info("Switching off tuning for job: " + tuningJobExecutionParamSets.get(
-          0).jobSuggestedParamSet.jobDefinition.jobName + " Reason: parameter set converged");
-    }
-    return result;
-  }
 
   public final Boolean execute() {
     logger.info("Executing Fitness Manager");

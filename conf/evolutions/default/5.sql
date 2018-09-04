@@ -181,6 +181,7 @@ CREATE TABLE IF NOT EXISTS job_suggested_param_set (
   param_set_state enum('CREATED','SENT','EXECUTED','FITNESS_COMPUTED','DISCARDED') NOT NULL COMMENT 'state of this execution parameter set',
   are_constraints_violated tinyint(4) default 0 NOT NULL COMMENT 'are constraints violated for the parameter set',
   is_param_set_default tinyint(4) DEFAULT 0 NOT NULL COMMENT 'Is parameter set default',
+  is_param_set_suggested tinyint(4) DEFAULT 0 NOT NULL COMMENT 'Is parameter set suggested',
   is_param_set_best tinyint(4) DEFAULT 0 NOT NULL COMMENT 'Is parameter set best',
   is_manually_overriden_parameter tinyint(4) DEFAULT 0 NOT NULL COMMENT 'Is parameter set is manually overriden',
   fitness double DEFAULT NULL COMMENT 'fitness of this parameter set',
