@@ -8,9 +8,20 @@ import models.TuningJobExecutionParamSet;
 import org.apache.log4j.Logger;
 
 
+/**
+ * Abstract Job Status Manager provides the functionality to check the job status of the job. This should have implementation specific to schduler
+ */
 public abstract class AbstractJobStatusManager implements Manager {
   private final Logger logger = Logger.getLogger(getClass());
-  protected abstract Boolean analyzeCompletedJobsExecution(List<TuningJobExecutionParamSet> inProgressExecutionParamSet);
+
+  /**
+   * This method find out the completed execution of the job and update the database.
+   * This method is schduler dependent.
+   * @param inProgressExecutionParamSet : Jobs for which status have to find out.
+   * @return
+   */
+  protected abstract Boolean analyzeCompletedJobsExecution(
+      List<TuningJobExecutionParamSet> inProgressExecutionParamSet);
 
   protected List<TuningJobExecutionParamSet> detectJobsExecutionInProgress() {
     logger.info("Fetching the executions which are in progress");
@@ -22,15 +33,12 @@ public abstract class AbstractJobStatusManager implements Manager {
                 JobExecution.ExecutionState.IN_PROGRESS)
             .findList();
 
-
     logger.info("Number of executions which are in progress: " + tuningJobExecutionParamSets.size());
     return tuningJobExecutionParamSets;
   }
 
-
-
   protected Boolean updateDataBase(List<TuningJobExecutionParamSet> jobs) {
-    for(TuningJobExecutionParamSet job : jobs){
+    for (TuningJobExecutionParamSet job : jobs) {
       JobSuggestedParamSet jobSuggestedParamSet = job.jobSuggestedParamSet;
       JobExecution jobExecution = job.jobExecution;
       if (isJobCompleted(jobExecution)) {
@@ -44,17 +52,18 @@ public abstract class AbstractJobStatusManager implements Manager {
     return true;
   }
 
-  private Boolean isJobCompleted(JobExecution jobExecution){
+  private Boolean isJobCompleted(JobExecution jobExecution) {
     if (jobExecution.executionState.equals(JobExecution.ExecutionState.SUCCEEDED) || jobExecution.executionState.equals(
         JobExecution.ExecutionState.FAILED) || jobExecution.executionState.equals(
         JobExecution.ExecutionState.CANCELLED)) {
       return true;
+    } else {
+      return false;
     }
-    else return false;
   }
 
   protected Boolean updateMetrics(List<TuningJobExecutionParamSet> completedJobs) {
-    for(TuningJobExecutionParamSet completedJob : completedJobs){
+    for (TuningJobExecutionParamSet completedJob : completedJobs) {
       JobExecution jobExecution = completedJob.jobExecution;
       if (jobExecution.executionState.equals(JobExecution.ExecutionState.SUCCEEDED)) {
         AutoTuningMetricsController.markSuccessfulJobs();
@@ -64,8 +73,6 @@ public abstract class AbstractJobStatusManager implements Manager {
     }
     return true;
   }
-
-
 
   @Override
   public final Boolean execute() {

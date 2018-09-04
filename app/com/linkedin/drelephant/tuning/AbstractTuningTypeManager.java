@@ -14,12 +14,74 @@ import models.TuningParameter;
 import org.apache.log4j.Logger;
 import play.libs.Json;
 
+
+/**
+ * This class is used to generate/suggest parameters . Based on TuningType , Algorithm Type & execution engine.
+ */
 public abstract class AbstractTuningTypeManager implements Manager {
   protected final String JSON_CURRENT_POPULATION_KEY = "current_population";
   private final Logger logger = Logger.getLogger(getClass());
   protected ExecutionEngine _executionEngine;
   protected String tuningType = null;
   protected String tuningAlgorithm = null;
+
+  /**
+   * This method will generate the Param Set and update in JobTuningInfo in saved state.
+   * @param jobTuningInfo
+   * @return
+   */
+  protected abstract JobTuningInfo generateParamSet(JobTuningInfo jobTuningInfo);
+
+  /**
+   * This method is used to update the database as required by param generator
+   * @param tuningJobDefinitions
+   * @return
+   */
+
+  protected abstract Boolean updateDatabase(List<JobTuningInfo> tuningJobDefinitions);
+
+  /**
+   * Get pending jobs for which param generation cannot be done
+   * @return
+   */
+  protected abstract List<JobSuggestedParamSet> getPendingParamSets();
+
+  /**
+   * Get Jobs for which tuning enabled. Subtraction of  above one from this will give , the jobs for which param
+   * generation have to done
+   * @return
+   */
+
+  protected abstract List<TuningJobDefinition> getTuningJobDefinitions();
+
+  /**
+   * If the algorithm requires to save previous state ,then this method should be implemented
+   * @param jobTuningInfo
+   * @param job
+   */
+
+  protected abstract void saveJobState(JobTuningInfo jobTuningInfo, JobDefinition job);
+
+  /**
+   *
+   * @param tuningParameterList
+   * @param job
+   */
+
+  /**
+   * Update the boundry constraint based on the previous executions
+   * @param tuningParameterList
+   * @param job
+   */
+
+  protected abstract void updateBoundryConstraint(List<TuningParameter> tuningParameterList, JobDefinition job);
+
+  /**
+   * Check if the suggested parameter violetes the constraint.
+   * @param jobSuggestedParamValues
+   * @return
+   */
+  public abstract boolean isParamConstraintViolated(List<JobSuggestedParamValue> jobSuggestedParamValues);
 
   /**
    * Fetches the list to job which need new parameter suggestion
@@ -75,10 +137,6 @@ public abstract class AbstractTuningTypeManager implements Manager {
     return updatedJobTuningInfoList;
   }
 
-  protected abstract JobTuningInfo generateParamSet(JobTuningInfo jobTuningInfo);
-
-  protected abstract Boolean updateDatabase(List<JobTuningInfo> tuningJobDefinitions);
-
   public final Boolean execute() {
     logger.info("Executing Tuning Algorithm");
     Boolean parameterGenerationDone = false, databaseUpdateDone = false, updateMetricsDone = false;
@@ -92,10 +150,6 @@ public abstract class AbstractTuningTypeManager implements Manager {
     logger.info("Param Generation Done");
     return databaseUpdateDone;
   }
-
-  protected abstract List<JobSuggestedParamSet> getPendingParamSets();
-
-  protected abstract List<TuningJobDefinition> getTuningJobDefinitions();
 
   /**
    * Returns the tuning information for the jobs
@@ -123,13 +177,6 @@ public abstract class AbstractTuningTypeManager implements Manager {
     }
     return jobTuningInfoList;
   }
-
-  protected abstract void saveJobState(JobTuningInfo jobTuningInfo, JobDefinition job);
-
-  protected abstract void updateBoundryConstraint(List<TuningParameter> tuningParameterList,JobDefinition job);
-
-  public abstract boolean isParamConstraintViolated(List<JobSuggestedParamValue> jobSuggestedParamValues);
-
 
   protected List<TuningParameter> generateTuningParameterListWithDefaultValues(
       TuningJobDefinition tuningJobDefinition) {

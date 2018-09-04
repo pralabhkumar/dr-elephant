@@ -8,6 +8,7 @@ import com.linkedin.drelephant.util.Utils;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import models.AppHeuristicResult;
 import models.AppResult;
 import models.JobDefinition;
 import models.JobExecution;
@@ -17,6 +18,7 @@ import models.TuningJobDefinition;
 import models.TuningJobExecutionParamSet;
 import org.apache.log4j.Logger;
 import org.apache.hadoop.conf.Configuration;
+import scala.App;
 
 
 public class FitnessManagerHBT extends AbstractFitnessManager {
@@ -128,6 +130,91 @@ public class FitnessManagerHBT extends AbstractFitnessManager {
     }
   }
 
+  @Override
+  protected void checkToDisableTuning(Set<JobDefinition> jobDefinitionSet) {
+    for (JobDefinition jobDefinition : jobDefinitionSet) {
+      List<TuningJobExecutionParamSet> tuningJobExecutionParamSets =
+          TuningJobExecutionParamSet.find.fetch(TuningJobExecutionParamSet.TABLE.jobSuggestedParamSet, "*")
+              .fetch(TuningJobExecutionParamSet.TABLE.jobExecution, "*")
+              .where()
+              .eq(TuningJobExecutionParamSet.TABLE.jobSuggestedParamSet + '.' + JobSuggestedParamSet.TABLE.jobDefinition
+                  + '.' + JobDefinition.TABLE.id, jobDefinition.id)
+              .order()
+              .desc("job_execution_id")
+              .findList();
+
+      if (reachToNumberOfThresholdIterations(tuningJobExecutionParamSets, jobDefinition)) {
+        disableTuning(jobDefinition, "User Specified Iterations reached");
+      }
+      if (areHeuristicsPassed(tuningJobExecutionParamSets)) {
+        disableTuning(jobDefinition, "All Heuristics Passed");
+      }
+    }
+  }
+
+  private boolean areHeuristicsPassed(List<TuningJobExecutionParamSet> tuningJobExecutionParamSets) {
+    if (tuningJobExecutionParamSets != null && tuningJobExecutionParamSets.size() >= 1) {
+      TuningJobExecutionParamSet tuningJobExecutionParamSet = tuningJobExecutionParamSets.get(0);
+      JobExecution jobExecution = tuningJobExecutionParamSet.jobExecution;
+      List<AppResult> results = getAppResult(jobExecution);
+      if (results != null) {
+        return areAppResultsHaveSeverity(results);
+      } else {
+        logger.info(" App Results are null ");
+        return false;
+      }
+    } else {
+      logger.info(" Tuning Job Execution Param Set is null ");
+      return false;
+    }
+  }
+
+  private boolean areAppResultsHaveSeverity(List<AppResult> results) {
+    List<String> heuristicsWithHighSeverity = new ArrayList<String>();
+    for (AppResult appResult : results) {
+      if (appResult.yarnAppHeuristicResults != null) {
+        for (AppHeuristicResult appHeuristicResult : appResult.yarnAppHeuristicResults) {
+          if (appHeuristicResult.severity.getValue() == 3 || appHeuristicResult.severity.getValue() == 4) {
+            heuristicsWithHighSeverity.add(
+                appResult.id + "\t" + appHeuristicResult.heuristicName + "\t" + "have high severity" + "\t"
+                    + appHeuristicResult.severity.getValue());
+          }
+        }
+      } else {
+        logger.info(appResult.id + " " + appResult.jobDefId + " have yarn app result null ");
+        return false;
+      }
+    }
+    return checkHeuriticsforSeverity(heuristicsWithHighSeverity);
+  }
+
+  private boolean checkHeuriticsforSeverity(List<String> heuristicsWithHighSeverity) {
+    if (heuristicsWithHighSeverity.size() == 0) {
+      return true;
+    } else {
+      for (String failedHeuristics : heuristicsWithHighSeverity) {
+        logger.info(failedHeuristics);
+      }
+      return false;
+    }
+  }
+
+  private List<AppResult> getAppResult(JobExecution jobExecution) {
+    List<AppResult> results = null;
+    try {
+      results = AppResult.find.select("*")
+          .fetch(AppResult.TABLE.APP_HEURISTIC_RESULTS, "*")
+          .fetch(AppResult.TABLE.APP_HEURISTIC_RESULTS + "." + AppHeuristicResult.TABLE.APP_HEURISTIC_RESULT_DETAILS,
+              "*")
+          .where()
+          .eq(AppResult.TABLE.FLOW_EXEC_ID, jobExecution.flowExecution.flowExecId)
+          .eq(AppResult.TABLE.JOB_EXEC_ID, jobExecution.jobExecId)
+          .findList();
+    } catch (Exception e) {
+      logger.warn(" Job Analysis is not completed . ");
+    }
+    return results;
+  }
 
   @Override
   public String getManagerName() {

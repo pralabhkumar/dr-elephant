@@ -6,6 +6,10 @@ import models.TuningAlgorithm;
 import org.apache.log4j.Logger;
 
 
+/**
+ * Optimization Algo Factory . Based on the Tuning Type , algorithm type & execution engine type.
+ * Factory will produce one of the tuningtype manager object
+ */
 public class OptimizationAlgoFactory {
   private static final Logger logger = Logger.getLogger(OptimizationAlgoFactory.class);
 
@@ -30,7 +34,7 @@ public class OptimizationAlgoFactory {
       logger.info("OPTIMIZATION ALGORITHM PSO SPARK");
       return new TuningTypeManagerOBTAlgoPSO(new MRExecutionEngine());
     }
-    logger.info("OPTIMIZATION ALGORITHM PSO");
+    logger.info("OPTIMIZATION ALGORITHM HBT");
     return null;
   }
 }

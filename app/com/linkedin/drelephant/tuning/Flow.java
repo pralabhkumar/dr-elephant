@@ -17,6 +17,15 @@ import java.util.List;
 import org.apache.log4j.Logger;
 
 
+/**
+ *  This is the Flow , which create four pipeline and each pipeline executes in seperate thread.
+ *  Four pipeline are
+ *  BaseLineManager : This will have two manager BaselineManagerOBT, BaselineManagerHBT
+ *  JobStatusManagerPipeline: This will have one manager , AzkabanJobStatusManager
+ *  FitnessManager : This will have three managers FitnessManagerHBT,FitnessManagerOBTAlgoIPSO,FitnessManagerOBTPSO
+ *  TuningTypeManager : This will have Combinations of TuningType , AlgorithmType and execution engine. for e.g
+ *  TuningTypeManagerOBTAlgoIPSO for Map Reduce and Spark ...
+ */
 public class Flow {
   List<List<Manager>> pipelines = null;
   private static final Logger logger = Logger.getLogger(Flow.class);
@@ -39,7 +48,7 @@ public class Flow {
         @Override
         public void run() {
           for (Manager manager : pipelineType) {
-          //  logger.info(" Manager execution Status  " + manager.getManagerName());
+            //  logger.info(" Manager execution Status  " + manager.getManagerName());
             if (manager.getClass().getSimpleName().toLowerCase().contains("hbt") || manager.getClass()
                 .getSimpleName()
                 .toLowerCase()
