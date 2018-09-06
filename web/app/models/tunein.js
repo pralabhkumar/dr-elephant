@@ -13,24 +13,13 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
+import DS from 'ember-data';
 
-import Ember from 'ember';
-
-export default Ember.Route.extend({
-  beforeModel: function (transition) {
-    this.jobid = transition.queryParams.jobid;
-  },
-  model(){
-    return Ember.RSVP.hash({
-      jobs:   this.store.queryRecord('job', {jobid: this.get("jobid")}),
-      tunein: this.store.queryRecord('tunein', {id: this.get("jobid")})
-    });
-  },
-  actions: {
-    error(error, transition) {
-      if (error.errors[0].status == 404) {
-        return this.transitionTo('not-found', { queryParams: {'previous': window.location.href}});
-      }
-    }
-  }
+export default DS.Model.extend({
+  tuningParameters: DS.attr(),
+  tuningAlgorithmId: DS.attr('number'),
+  tuningAlgorithm: DS.attr('string'),
+  tuningAlgorithms: DS.attr(),
+  iterationCount: DS.attr('number'),
+  jobSuggestedParamSetId: DS.attr('string')
 });

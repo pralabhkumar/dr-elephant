@@ -25,6 +25,11 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.logging.Level;
+import play.libs.F;
+import play.mvc.Action;
+import play.mvc.Http;
+import play.mvc.Result;
+import play.mvc.SimpleResult;
 
 
 /**
@@ -87,4 +92,26 @@ public class Global extends GlobalSettings {
     modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL);
     field.set(null, newValue);
   }
+
+  private class ActionWrapper extends Action.Simple {
+    public ActionWrapper(Action<?> action) {
+      this.delegate = action;
+    }
+
+    @Override
+    public F.Promise<SimpleResult> call(Http.Context ctx) throws java.lang.Throwable {
+      F.Promise<SimpleResult> result = this.delegate.call(ctx);
+      Http.Response response = ctx.response();
+      response.setHeader("Access-Control-Allow-Origin", "*");
+      return result;
+    }
+  }
+
+  @Override
+  public Action<?> onRequest(Http.Request request, java.lang.reflect.Method actionMethod) {
+    return new ActionWrapper(super.onRequest(request, actionMethod));
+  }
+
+
+
 }
