@@ -44,17 +44,20 @@ public class ManagerFactory {
       logger.info("Manager Type Base line Manager HBT");
       return new BaselineManagerHBT();
     }
-    if (typeOfManagers.equals(Constant.TypeofManagers.AbstractFitnessManager.name())) {
+    if (typeOfManagers.equals(Constant.TypeofManagers.AbstractFitnessManager.name()) && algorithmType.equals(
+        Constant.AlgotihmType.HBT.name())) {
       logger.info("Manager Type Fitness Manager HBT");
       return new FitnessManagerHBT();
     }
     if (typeOfManagers.equals(Constant.TypeofManagers.AbstractTuningTypeManager.name()) && executionEngineTypes.equals(
-        Constant.ExecutionEngineTypes.MR.name())) {
+        Constant.ExecutionEngineTypes.MR.name()) && algorithmType.equals(
+        Constant.AlgotihmType.HBT.name())) {
       logger.info("Manager Type TuningType Manager HBT MR");
       return new TuningTypeManagerHBT(new MRExecutionEngine());
     }
     if (typeOfManagers.equals(Constant.TypeofManagers.AbstractTuningTypeManager.name()) && executionEngineTypes.equals(
-        Constant.ExecutionEngineTypes.SPARK.name())) {
+        Constant.ExecutionEngineTypes.SPARK.name()) && algorithmType.equals(
+        Constant.AlgotihmType.HBT.name())) {
       logger.info("Manager Type TuningType Manager HBT Spark");
       return new TuningTypeManagerHBT(new SparkExecutionEngine());
     }

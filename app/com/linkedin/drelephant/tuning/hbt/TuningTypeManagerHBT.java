@@ -177,7 +177,8 @@ public class TuningTypeManagerHBT extends AbstractTuningTypeManager {
       } else {
         logger.info(" Parameters constraints not violeted ");
         jobSuggestedParamSet.areConstraintsViolated = false;
-        processParamSetStatus(jobSuggestedParamSet);
+        jobSuggestedParamSet.paramSetState = JobSuggestedParamSet.ParamSetStatus.CREATED;
+        //processParamSetStatus(jobSuggestedParamSet);
       }
       saveSuggestedParamSet(jobSuggestedParamSet);
 
@@ -197,7 +198,7 @@ public class TuningTypeManagerHBT extends AbstractTuningTypeManager {
         .eq(TuningJobDefinition.TABLE.job + "." + JobDefinition.TABLE.id, jobSuggestedParamSet.jobDefinition.id)
         .setMaxRows(1)
         .findUnique();
-    jobSuggestedParamSet.paramSetState = JobSuggestedParamSet.ParamSetStatus.CREATED;
+    //jobSuggestedParamSet.paramSetState = JobSuggestedParamSet.ParamSetStatus.CREATED;
     //handleDiscarding(tuningJobDefinition1, jobSuggestedParamSet);
   }
 

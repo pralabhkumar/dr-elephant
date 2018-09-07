@@ -44,7 +44,7 @@ public class IPSOManagerTestRunner implements Runnable {
         JobSuggestedParamSet.find.where().eq("fitness_job_execution_id", 1541).findUnique();
     JobExecution jobExecution = JobExecution.find.byId(1541L);
     TuningTypeManagerOBT optimizeManager = checkIPSOManager(tuningAlgorithm);
-    testIPSOIntializePrerequisite(optimizeManager, tuningAlgorithm, jobSuggestedParamSet);
+    testIPSOInitializePrerequisite(optimizeManager, tuningAlgorithm, jobSuggestedParamSet);
     //testIPSOExtractParameterInformation(jobExecution, optimizeManager);
     testIPSOParameterOptimizer(jobExecution, optimizeManager);
     testIPSOApplyIntelligenceOnParameter(tuningJobDefinition, jobDefinition, optimizeManager);
@@ -57,9 +57,9 @@ public class IPSOManagerTestRunner implements Runnable {
     return optimizeManager;
   }
 
-  private void testIPSOIntializePrerequisite(TuningTypeManagerOBT optimizeManager, TuningAlgorithm tuningAlgorithm,
+  private void testIPSOInitializePrerequisite(TuningTypeManagerOBT optimizeManager, TuningAlgorithm tuningAlgorithm,
       JobSuggestedParamSet jobSuggestedParamSet) {
-    optimizeManager.intializePrerequisite(tuningAlgorithm, jobSuggestedParamSet);
+    optimizeManager.initializePrerequisite(tuningAlgorithm, jobSuggestedParamSet);
     List<TuningParameterConstraint> tuningParameterConstraint =
         TuningParameterConstraint.find.where().eq("job_definition_id", 100003).findList();
     assertTrue(" Parameters Constraint Size ", tuningParameterConstraint.size() == 9);

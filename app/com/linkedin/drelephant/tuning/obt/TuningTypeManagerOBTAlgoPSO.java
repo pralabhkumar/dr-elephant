@@ -51,7 +51,7 @@ public class TuningTypeManagerOBTAlgoPSO extends TuningTypeManagerOBT{
   }
 
   @Override
-  public void intializePrerequisite(TuningAlgorithm tuningAlgorithm, JobSuggestedParamSet jobSuggestedParamSet) {
+  public void initializePrerequisite(TuningAlgorithm tuningAlgorithm, JobSuggestedParamSet jobSuggestedParamSet) {
 
   }
 

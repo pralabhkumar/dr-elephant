@@ -35,7 +35,7 @@ public class Flow {
     createBaseLineManagersPipeline();
     createJobStatusManagersPipeline();
     createFitnessManagersPipeline();
-    createTuningTypemManagersPipeline();
+    createTuningTypeManagersPipeline();
   }
 
   public List<List<Manager>> getPipeline() {
@@ -48,14 +48,9 @@ public class Flow {
         @Override
         public void run() {
           for (Manager manager : pipelineType) {
-            //  logger.info(" Manager execution Status  " + manager.getManagerName());
-            if (manager.getClass().getSimpleName().toLowerCase().contains("hbt") || manager.getClass()
-                .getSimpleName()
-                .toLowerCase()
-                .contains("azkabanjob")) {
+              logger.info(" Manager execution Status  " + manager.getManagerName());
               Boolean execute = manager.execute();
-            }
-            // logger.info(" Manager execution Status " + execute + " " + manager.getManagerName());
+             logger.info(" Manager execution Status " + execute + " " + manager.getManagerName());
           }
         }
       });
@@ -85,18 +80,22 @@ public class Flow {
     List<Manager> fitnessManagers = new ArrayList<Manager>();
     for (Constant.TuningType tuningType : Constant.TuningType.values()) {
       for (Constant.AlgotihmType algotihmType : Constant.AlgotihmType.values()) {
-        logger.info(tuningType.name() + " " + algotihmType.name());
         Manager manager = ManagerFactory.getManager(tuningType.name(), algotihmType.name(), null,
             AbstractFitnessManager.class.getSimpleName());
         if (manager != null) {
+          logger.info(manager.getManagerName());
           fitnessManagers.add(manager);
         }
       }
     }
+    /*fitnessManagers.add(new FitnessManagerHBT());
+    fitnessManagers.add(new FitnessManagerOBTAlgoIPSO());
+    fitnessManagers.add(new FitnessManagerOBTAlgoPSO());*/
+    //this.pipelines.add(new FitnessManagerHBT())
     this.pipelines.add(fitnessManagers);
   }
 
-  public void createTuningTypemManagersPipeline() {
+  public void createTuningTypeManagersPipeline() {
     List<Manager> algorithmManagers = new ArrayList<Manager>();
     for (Constant.TuningType tuningType : Constant.TuningType.values()) {
       for (Constant.AlgotihmType algotihmType : Constant.AlgotihmType.values()) {
@@ -105,12 +104,21 @@ public class Flow {
               ManagerFactory.getManager(tuningType.name(), algotihmType.name(), executionEngineTypes.name(),
                   AbstractTuningTypeManager.class.getSimpleName());
           if (manager != null) {
-            logger.info("Testing " + manager.getManagerName());
+            logger.info(manager.getManagerName());
             algorithmManagers.add(manager);
           }
         }
       }
     }
+    /*algorithmManagers.add(new TuningTypeManagerHBT(new MRExecutionEngine()));
+    algorithmManagers.add(new TuningTypeManagerHBT(new SparkExecutionEngine()));
+    algorithmManagers.add(new TuningTypeManagerOBTAlgoPSO(new MRExecutionEngine()));
+    algorithmManagers.add(new TuningTypeManagerOBTAlgoPSO(new SparkExecutionEngine()));
+    algorithmManagers.add(new TuningTypeManagerOBTAlgoIPSO(new MRExecutionEngine()));
+    algorithmManagers.add(new TuningTypeManagerOBTAlgoIPSO(new SparkExecutionEngine()));
+*/
     this.pipelines.add(algorithmManagers);
   }
+
+
 }

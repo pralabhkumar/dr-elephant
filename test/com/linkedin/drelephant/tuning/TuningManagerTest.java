@@ -21,8 +21,8 @@ import org.junit.Before;
 import org.junit.Test;
 
 
-public class IPSOManagerTest {
-  private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(IPSOManagerTest.class);
+public class TuningManagerTest {
+  private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(TuningManagerTest.class);
   private static FakeApplication fakeApp;
   private int numParametersToTune;
 
@@ -50,7 +50,11 @@ public class IPSOManagerTest {
   @Test
   public void testIPSOManager() {
     running(testServer(TEST_SERVER_PORT, fakeApp), new IPSOManagerTestRunner());
-    //running(testServer(TEST_SERVER_PORT, fakeApp), new BaselineManagerTestRunner());
 
+  }
+
+  @Test
+  public void testFlowTestRunner(){
+    running(testServer(TEST_SERVER_PORT, fakeApp), new FlowTestRunner());
   }
 }
