@@ -24,7 +24,7 @@ import static java.lang.Math.*;
 
 public class TuningTypeManagerOBTAlgoIPSO extends TuningTypeManagerOBT {
 
-  private static final Logger logger = Logger.getLogger(TuningTypeManagerOBTAlgoIPSO.class);
+  private final Logger logger = Logger.getLogger(getClass());
   private Map<String, Map<String, Double>> usageDataGlobal = null;
 
 
@@ -66,7 +66,7 @@ public class TuningTypeManagerOBTAlgoIPSO extends TuningTypeManagerOBT {
   }
 
   @Override
-  public void intializePrerequisite(TuningAlgorithm tuningAlgorithm, JobSuggestedParamSet jobSuggestedParamSet) {
+  public void initializePrerequisite(TuningAlgorithm tuningAlgorithm, JobSuggestedParamSet jobSuggestedParamSet) {
     logger.info(" Intialize Prerequisite ");
     setDefaultParameterValues(tuningAlgorithm, jobSuggestedParamSet);
   }

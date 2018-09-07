@@ -147,17 +147,20 @@ public class FitnessManagerHBT extends AbstractFitnessManager {
         disableTuning(jobDefinition, "User Specified Iterations reached");
       }
       if (areHeuristicsPassed(tuningJobExecutionParamSets)) {
-        disableTuning(jobDefinition, "All Heuristics Passed");
+        disableTuning(jobDefinition, "All Heuristics Passed1");
       }
     }
   }
 
   private boolean areHeuristicsPassed(List<TuningJobExecutionParamSet> tuningJobExecutionParamSets) {
+    logger.info(" Testing All Heuristics ");
     if (tuningJobExecutionParamSets != null && tuningJobExecutionParamSets.size() >= 1) {
+      logger.info("tuningJobExecutionParamSets have some values");
       TuningJobExecutionParamSet tuningJobExecutionParamSet = tuningJobExecutionParamSets.get(0);
       JobExecution jobExecution = tuningJobExecutionParamSet.jobExecution;
       List<AppResult> results = getAppResult(jobExecution);
       if (results != null) {
+        logger.info(" Results are not null ");
         return areAppResultsHaveSeverity(results);
       } else {
         logger.info(" App Results are null ");
@@ -180,9 +183,6 @@ public class FitnessManagerHBT extends AbstractFitnessManager {
                     + appHeuristicResult.severity.getValue());
           }
         }
-      } else {
-        logger.info(appResult.id + " " + appResult.jobDefId + " have yarn app result null ");
-        return false;
       }
     }
     return checkHeuriticsforSeverity(heuristicsWithHighSeverity);
@@ -190,6 +190,7 @@ public class FitnessManagerHBT extends AbstractFitnessManager {
 
   private boolean checkHeuriticsforSeverity(List<String> heuristicsWithHighSeverity) {
     if (heuristicsWithHighSeverity.size() == 0) {
+      logger.info(" No sever heursitics ");
       return true;
     } else {
       for (String failedHeuristics : heuristicsWithHighSeverity) {

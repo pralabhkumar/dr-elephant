@@ -48,7 +48,7 @@ public abstract class TuningTypeManagerOBT extends AbstractTuningTypeManager {
     Intialize any prequisite require for Optimizer
     Calls once in lifetime of the flow
    */
-  public abstract void intializePrerequisite(TuningAlgorithm tuningAlgorithm,
+  public abstract void initializePrerequisite(TuningAlgorithm tuningAlgorithm,
       JobSuggestedParamSet jobSuggestedParamSet);
 
   /*

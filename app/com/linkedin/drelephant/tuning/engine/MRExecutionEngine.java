@@ -32,7 +32,7 @@ import static java.lang.Math.*;
 
 public class MRExecutionEngine implements ExecutionEngine {
   private final Logger logger = Logger.getLogger(getClass());
-
+  boolean debugEnabled = logger.isDebugEnabled();
   enum UsageCounterSchema {USED_PHYSICAL_MEMORY, USED_VIRTUAL_MEMORY, USED_HEAP_MEMORY}
 
   private String functionTypes[] = {"map", "reduce"};
@@ -119,33 +119,43 @@ public class MRExecutionEngine implements ExecutionEngine {
 
     if (mrSortMemory != null && mrMapMemory != null) {
       if (mrSortMemory > 0.6 * mrMapMemory) {
-        logger.debug("Sort Memory " + mrSortMemory);
-        logger.debug("Mapper Memory " + mrMapMemory);
-        logger.debug("Constraint violated: Sort memory > 60% of map memory");
+        if (debugEnabled) {
+          logger.debug("Sort Memory " + mrSortMemory);
+          logger.debug("Mapper Memory " + mrMapMemory);
+          logger.debug("Constraint violated: Sort memory > 60% of map memory");
+        }
         violations++;
       }
       if (mrMapMemory - mrSortMemory < 768) {
-        logger.debug("Sort Memory " + mrSortMemory);
-        logger.debug("Mapper Memory " + mrMapMemory);
-        logger.debug("Constraint violated: Map memory - sort memory < 768 mb");
+        if (debugEnabled) {
+          logger.debug("Sort Memory " + mrSortMemory);
+          logger.debug("Mapper Memory " + mrMapMemory);
+          logger.debug("Constraint violated: Map memory - sort memory < 768 mb");
+        }
         violations++;
       }
     }
     if (mrMapXMX != null && mrMapMemory != null && mrMapXMX > 0.80 * mrMapMemory) {
-      logger.debug("Mapper Heap Max " + mrMapXMX);
-      logger.debug("Mapper Memory " + mrMapMemory);
-      logger.debug("Constraint violated:  Mapper  XMX > 0.8*mrMapMemory");
+      if (debugEnabled) {
+        logger.debug("Mapper Heap Max " + mrMapXMX);
+        logger.debug("Mapper Memory " + mrMapMemory);
+        logger.debug("Constraint violated:  Mapper  XMX > 0.8*mrMapMemory");
+      }
       violations++;
     }
     if (mrReduceMemory != null && mrReduceXMX != null && mrReduceXMX > 0.80 * mrReduceMemory) {
-      logger.debug("Reducer Heap Max " + mrMapXMX);
-      logger.debug("Reducer Memory " + mrMapMemory);
-      logger.debug("Constraint violated:  Reducer  XMX > 0.8*mrReducerMemory");
+      if (debugEnabled) {
+        logger.debug("Reducer Heap Max " + mrMapXMX);
+        logger.debug("Reducer Memory " + mrMapMemory);
+        logger.debug("Constraint violated:  Reducer  XMX > 0.8*mrReducerMemory");
+      }
       violations++;
     }
 
     if (pigMaxCombinedSplitSize != null && mrMapMemory != null && (pigMaxCombinedSplitSize > 1.8 * mrMapMemory)) {
-      logger.debug("Constraint violated: Pig max combined split size > 1.8 * map memory");
+      if (debugEnabled) {
+        logger.debug("Constraint violated: Pig max combined split size > 1.8 * map memory");
+      }
       violations++;
     }
     if (violations == 0) {
@@ -218,10 +228,14 @@ public class MRExecutionEngine implements ExecutionEngine {
 
   private void printInformation(Map<String, Map<String, Double>> information) {
     for (String functionType : information.keySet()) {
-      logger.debug("function Type    " + functionType);
+      if (debugEnabled) {
+        logger.debug("function Type    " + functionType);
+      }
       Map<String, Double> usage = information.get(functionType);
       for (String data : usage.keySet()) {
-        logger.debug(data + " " + usage.get(data));
+        if (debugEnabled) {
+          logger.debug(data + " " + usage.get(data));
+        }
       }
     }
   }
@@ -248,10 +262,12 @@ public class MRExecutionEngine implements ExecutionEngine {
         .get(CommonConstantsHeuristic.UtilizedParameterKeys.MAX_VIRTUAL_MEMORY.getValue());
     usedHeapMemoryMB = usageDataGlobal.get(functionType)
         .get(CommonConstantsHeuristic.UtilizedParameterKeys.MAX_TOTAL_COMMITTED_HEAP_USAGE_MEMORY.getValue());
-    logger.debug(" Usage Stats " + functionType);
-    logger.debug(" Physical Memory Usage MB " + usedPhysicalMemoryMB);
-    logger.debug(" Virtual Memory Usage MB " + usedVirtualMemoryMB / 2.1);
-    logger.debug(" Heap Usage MB " + usedHeapMemoryMB);
+    if (debugEnabled) {
+      logger.debug(" Usage Stats " + functionType);
+      logger.debug(" Physical Memory Usage MB " + usedPhysicalMemoryMB);
+      logger.debug(" Virtual Memory Usage MB " + usedVirtualMemoryMB / 2.1);
+      logger.debug(" Heap Usage MB " + usedHeapMemoryMB);
+    }
     List<Double> usageStats = new ArrayList<Double>();
     usageStats.add(usedPhysicalMemoryMB);
     usageStats.add(usedVirtualMemoryMB);
@@ -304,7 +320,7 @@ public class MRExecutionEngine implements ExecutionEngine {
     List<TuningParameterConstraint> parameterConstraints = TuningParameterConstraint.find.where().
         eq("job_definition_id", jobExecution.job.id).findList();
     for (String function : functionTypes) {
-      logger.debug(" Optimizing Parameter Space  " + function);
+      logger.info(" Optimizing Parameter Space  " + function);
       if (previousUsedMetrics.get(function)
           .get(CommonConstantsHeuristic.UtilizedParameterKeys.MAX_PHYSICAL_MEMORY.getValue()) > 0.0) {
         List<Double> usageStats = extractUsageParameter(function, previousUsedMetrics);
@@ -353,10 +369,12 @@ public class MRExecutionEngine implements ExecutionEngine {
     Double memoryMB = max(usagePhysicalMemory, usageVirtualMemory / (2.1));
     Double containerSizeLower = getContainerSize(memoryMB);
     Double containerSizeUpper = getContainerSize(1.2 * memoryMB);
-    logger.debug(" Previous Lower Bound  Memory  " + containerConstraint.lowerBound);
-    logger.debug(" Previous Upper Bound  Memory " + containerConstraint.upperBound);
-    logger.debug(" Current Lower Bound  Memory  " + containerSizeLower);
-    logger.debug(" Current Upper Bound  Memory " + containerSizeUpper);
+    if (debugEnabled) {
+      logger.debug(" Previous Lower Bound  Memory  " + containerConstraint.lowerBound);
+      logger.debug(" Previous Upper Bound  Memory " + containerConstraint.upperBound);
+      logger.debug(" Current Lower Bound  Memory  " + containerSizeLower);
+      logger.debug(" Current Upper Bound  Memory " + containerSizeUpper);
+    }
     containerConstraint.lowerBound = containerSizeLower;
     containerConstraint.upperBound = containerSizeUpper;
     containerConstraint.save();
@@ -367,10 +385,12 @@ public class MRExecutionEngine implements ExecutionEngine {
       Double memoryMB) {
     Double heapSizeLowerBound = min(0.75 * memoryMB, usageHeapMemory);
     Double heapSizeUpperBound = heapSizeLowerBound * 1.2;
-    logger.debug(" Previous Lower Bound  XMX  " + containerHeapSizeConstraint.lowerBound);
-    logger.debug(" Previous Upper Bound  XMX " + containerHeapSizeConstraint.upperBound);
-    logger.debug(" Current Lower Bound  XMX  " + heapSizeLowerBound);
-    logger.debug(" Current Upper Bound  XMX " + heapSizeUpperBound);
+    if (debugEnabled) {
+      logger.debug(" Previous Lower Bound  XMX  " + containerHeapSizeConstraint.lowerBound);
+      logger.debug(" Previous Upper Bound  XMX " + containerHeapSizeConstraint.upperBound);
+      logger.debug(" Current Lower Bound  XMX  " + heapSizeLowerBound);
+      logger.debug(" Current Upper Bound  XMX " + heapSizeUpperBound);
+    }
     containerHeapSizeConstraint.lowerBound = heapSizeLowerBound;
     containerHeapSizeConstraint.upperBound = heapSizeUpperBound;
     containerHeapSizeConstraint.save();
@@ -395,7 +415,7 @@ public class MRExecutionEngine implements ExecutionEngine {
         }
       }
     }
-    logger.debug("Usage Values Global ");
+    logger.info("Usage Values Global ");
     printInformation(usageDataGlobal);
     return usageDataGlobal;
   }
@@ -428,7 +448,7 @@ public class MRExecutionEngine implements ExecutionEngine {
         }
       }
     }
-    logger.debug("Usage Values local   " + appResult.jobExecUrl);
+    logger.info("Usage Values local   " + appResult.jobExecUrl);
     printInformation(usageData);
 
     return usageData;
