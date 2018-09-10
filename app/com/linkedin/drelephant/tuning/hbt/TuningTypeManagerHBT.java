@@ -103,7 +103,14 @@ public class TuningTypeManagerHBT extends AbstractTuningTypeManager {
           " Job is analyzing  , cannot use for param generation " + jobExecution.id + " " + jobExecution.job.id);
       return "";
     }
-    String idParameters = this._executionEngine.parameterGenerationsHBT(results, tuningParameters);
+    String idParameters = null;
+    try
+    {
+      idParameters=this._executionEngine.parameterGenerationsHBT(results, tuningParameters);
+    }catch(Exception e)
+    {
+      logger.error("Exception in getting specific parameters ", e);
+    }
     return idParameters.toString();
   }
 
