@@ -4,14 +4,16 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import models.AppResult;
+
 import models.JobDefinition;
 import models.JobExecution;
 import models.JobSuggestedParamSet;
 import models.JobSuggestedParamValue;
 import models.TuningJobDefinition;
 import models.TuningParameter;
+
 import org.apache.log4j.Logger;
+
 import play.libs.Json;
 
 
@@ -138,17 +140,22 @@ public abstract class AbstractTuningTypeManager implements Manager {
   }
 
   public final Boolean execute() {
-    logger.info("Executing Tuning Algorithm");
-    Boolean parameterGenerationDone = false, databaseUpdateDone = false, updateMetricsDone = false;
-    List<JobTuningInfo> jobTuningInfo = detectJobsForParameterGeneration();
-    if (jobTuningInfo != null && jobTuningInfo.size() >= 1) {
-      logger.info("Generating Parameters ");
-      List<JobTuningInfo> updatedJobTuningInfoList = generateParameters(jobTuningInfo);
-      logger.info("Updating Database");
-      databaseUpdateDone = updateDatabase(updatedJobTuningInfoList);
+    try {
+      logger.info("Executing Tuning Algorithm");
+      Boolean parameterGenerationDone = false, databaseUpdateDone = false, updateMetricsDone = false;
+      List<JobTuningInfo> jobTuningInfo = detectJobsForParameterGeneration();
+      if (jobTuningInfo != null && jobTuningInfo.size() >= 1) {
+        logger.info("Generating Parameters ");
+        List<JobTuningInfo> updatedJobTuningInfoList = generateParameters(jobTuningInfo);
+        logger.info("Updating Database");
+        databaseUpdateDone = updateDatabase(updatedJobTuningInfoList);
+      }
+      logger.info("Param Generation Done");
+      return databaseUpdateDone;
+    } catch (Exception e) {
+      logger.info("Exception in generating parameters ", e);
     }
-    logger.info("Param Generation Done");
-    return databaseUpdateDone;
+    return false;
   }
 
   /**
@@ -178,8 +185,7 @@ public abstract class AbstractTuningTypeManager implements Manager {
     return jobTuningInfoList;
   }
 
-  protected List<TuningParameter> generateTuningParameterListWithDefaultValues(
-      TuningJobDefinition tuningJobDefinition) {
+  protected List<TuningParameter> generateTuningParameterListWithDefaultValues(TuningJobDefinition tuningJobDefinition) {
     JobDefinition job = tuningJobDefinition.job;
     logger.info("Getting tuning information for job: " + job.jobDefId);
     List<TuningParameter> tuningParameterList = TuningHelper.getTuningParameterList(tuningJobDefinition);
@@ -190,13 +196,14 @@ public abstract class AbstractTuningTypeManager implements Manager {
     return tuningParameterList;
   }
 
-  protected void assignDefaultValues(JobSuggestedParamSet defaultJobParamSet,
-      List<TuningParameter> tuningParameterList) {
+  protected void assignDefaultValues(JobSuggestedParamSet defaultJobParamSet, List<TuningParameter> tuningParameterList) {
     if (defaultJobParamSet != null) {
       logger.info("Fetching default parameter values for job ");
-      List<JobSuggestedParamValue> jobSuggestedParamValueList = JobSuggestedParamValue.find.where()
-          .eq(JobSuggestedParamValue.TABLE.jobSuggestedParamSet + "." + JobExecution.TABLE.id, defaultJobParamSet.id)
-          .findList();
+      List<JobSuggestedParamValue> jobSuggestedParamValueList =
+          JobSuggestedParamValue.find
+              .where()
+              .eq(JobSuggestedParamValue.TABLE.jobSuggestedParamSet + "." + JobExecution.TABLE.id,
+                  defaultJobParamSet.id).findList();
 
       if (jobSuggestedParamValueList.size() > 0) {
         logger.info("Giving default values ");
@@ -210,8 +217,8 @@ public abstract class AbstractTuningTypeManager implements Manager {
           logger.info("Giving default values ");
           Integer paramId = tuningParameter.id;
           if (defaultExecutionParamMap.containsKey(paramId)) {
-            logger.info("Updating value of param " + tuningParameter.paramName + " to " + defaultExecutionParamMap.get(
-                paramId));
+            logger.info("Updating value of param " + tuningParameter.paramName + " to "
+                + defaultExecutionParamMap.get(paramId));
             tuningParameter.defaultValue = defaultExecutionParamMap.get(paramId);
           }
         }

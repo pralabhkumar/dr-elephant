@@ -1,10 +1,5 @@
 package com.linkedin.drelephant.tuning.hbt;
 
-import com.avaje.ebean.Expr;
-import com.linkedin.drelephant.AutoTuner;
-import com.linkedin.drelephant.ElephantContext;
-import com.linkedin.drelephant.tuning.AbstractFitnessManager;
-import com.linkedin.drelephant.util.Utils;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -16,9 +11,13 @@ import models.JobSuggestedParamSet;
 import models.TuningAlgorithm;
 import models.TuningJobDefinition;
 import models.TuningJobExecutionParamSet;
-import org.apache.log4j.Logger;
 import org.apache.hadoop.conf.Configuration;
-import scala.App;
+import org.apache.log4j.Logger;
+import com.avaje.ebean.Expr;
+import com.linkedin.drelephant.AutoTuner;
+import com.linkedin.drelephant.ElephantContext;
+import com.linkedin.drelephant.tuning.AbstractFitnessManager;
+import com.linkedin.drelephant.util.Utils;
 
 
 public class FitnessManagerHBT extends AbstractFitnessManager {
@@ -76,9 +75,11 @@ public class FitnessManagerHBT extends AbstractFitnessManager {
     logger.info("calculateAndUpdateFitness");
     Double totalResourceUsed = 0D;
     Double totalInputBytesInBytes = 0D;
+    Double score=0D;
     for (AppResult appResult : results) {
       totalResourceUsed += appResult.resourceUsed;
       totalInputBytesInBytes += getTotalInputBytes(appResult);
+      score += appResult.score;
     }
 
     Long totalRunTime = Utils.getTotalRuntime(results);
@@ -86,6 +87,7 @@ public class FitnessManagerHBT extends AbstractFitnessManager {
     Long totalExecutionTime = totalRunTime - totalDelay;
 
     if (totalExecutionTime != 0) {
+      jobExecution.score=score;
       updateJobExecution(jobExecution, totalResourceUsed, totalInputBytesInBytes, totalExecutionTime);
     }
 
@@ -117,6 +119,20 @@ public class FitnessManagerHBT extends AbstractFitnessManager {
     }
   }
 
+  /**
+   * Updates the job suggested param set when the corresponding execution was succeeded
+   * @param jobExecution JobExecution: succeeded job execution corresponding to the param set which is to be updated
+   * @param jobSuggestedParamSet param set which is to be updated
+   * @param tuningJobDefinition TuningJobDefinition of the job to which param set corresponds
+   */
+  protected void updateJobSuggestedParamSetSucceededExecution(JobExecution jobExecution,
+      JobSuggestedParamSet jobSuggestedParamSet, TuningJobDefinition tuningJobDefinition) {
+    jobSuggestedParamSet.fitness = jobExecution.score;
+    jobSuggestedParamSet.paramSetState = JobSuggestedParamSet.ParamSetStatus.FITNESS_COMPUTED;
+    jobSuggestedParamSet.fitnessJobExecution = jobExecution;
+    jobSuggestedParamSet = updateBestJobSuggestedParamSet(jobSuggestedParamSet);
+    jobSuggestedParamSet.update();
+  }
   /**
    * Resets the param set to CREATED state if its fitness is not already computed
    * @param jobSuggestedParamSet Param set which is to be reset
@@ -183,6 +199,9 @@ public class FitnessManagerHBT extends AbstractFitnessManager {
                     + appHeuristicResult.severity.getValue());
           }
         }
+      } else {
+        logger.info(appResult.id + " " + appResult.jobDefId + " have yarn app result null ");
+        return true;
       }
     }
     return checkHeuriticsforSeverity(heuristicsWithHighSeverity);

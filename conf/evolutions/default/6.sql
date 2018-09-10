@@ -24,6 +24,7 @@ ALTER TABLE tuning_algorithm MODIFY COLUMN optimization_algo enum('PSO','PSO_IPS
 
 INSERT INTO tuning_algorithm VALUES (3, 'PIG', 'PSO_IPSO', '3', 'RESOURCE', current_timestamp(0), current_timestamp(0));
 INSERT INTO tuning_algorithm VALUES (4, 'PIG', 'HBT', '4', 'RESOURCE', current_timestamp(0), current_timestamp(0));
+INSERT INTO tuning_algorithm VALUES (5, 'SPARK', 'HBT', '1', 'RESOURCE', current_timestamp(0), current_timestamp(0));
 
 INSERT INTO tuning_parameter VALUES (10,'mapreduce.task.io.sort.mb',3,100,50,1920,50, 0, current_timestamp(0), current_timestamp(0));
 INSERT INTO tuning_parameter VALUES (11,'mapreduce.map.memory.mb',3,2048,1024,8192,1024, 0, current_timestamp(0), current_timestamp(0));
@@ -34,9 +35,15 @@ INSERT INTO tuning_parameter VALUES (15,'mapreduce.reduce.java.opts',3,1536,500,
 INSERT INTO tuning_parameter VALUES (16,'mapreduce.map.java.opts',3,1536,500,6144,64, 0, current_timestamp(0), current_timestamp(0));
 INSERT INTO tuning_parameter VALUES (17,'mapreduce.input.fileinputformat.split.maxsize',3,536870912,536870912,536870912,128, 1, current_timestamp(0), current_timestamp(0));
 INSERT INTO tuning_parameter VALUES (18,'pig.maxCombinedSplitSize',3,536870912,536870912,536870912,128, 0, current_timestamp(0), current_timestamp(0));
-
 INSERT INTO tuning_parameter VALUES (19,'mapreduce.map.memory.mb',4,2048,1024,8192,1024, 0, current_timestamp(0), current_timestamp(0));
 INSERT INTO tuning_parameter VALUES (20,'mapreduce.map.java.opts',4,1536,500,6144,64, 0, current_timestamp(0), current_timestamp(0));
+
+
+
+INSERT INTO tuning_parameter VALUES (21,'spark.executor.memory',5,2048,1024,8192,1024, 0, current_timestamp(0), current_timestamp(0));
+INSERT INTO tuning_parameter VALUES (22,'spark.driver.memory',5,2048,1024,8192,1024, 0, current_timestamp(0), current_timestamp(0));
+INSERT INTO tuning_parameter VALUES (23,'spark.executor.cores',5,1,1,5,1,0, current_timestamp(0), current_timestamp(0));
+INSERT INTO tuning_parameter VALUES (24,'spark.memory.fraction',5,0.05,0.05,0.9,0.01,0, current_timestamp(0), current_timestamp(0));
 
 
 CREATE TABLE IF NOT EXISTS tuning_parameter_constraint (

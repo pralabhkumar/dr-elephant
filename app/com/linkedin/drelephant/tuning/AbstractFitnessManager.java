@@ -220,7 +220,7 @@ public abstract class AbstractFitnessManager implements Manager {
    * (since the objective is to minimize the fitness, the param set with the lowest fitness is the best)
    * @param jobSuggestedParamSet JobSuggestedParamSet
    */
-  private JobSuggestedParamSet updateBestJobSuggestedParamSet(JobSuggestedParamSet jobSuggestedParamSet) {
+  protected JobSuggestedParamSet updateBestJobSuggestedParamSet(JobSuggestedParamSet jobSuggestedParamSet) {
     logger.info("Checking if a new best param set is found for job: " + jobSuggestedParamSet.jobDefinition.jobDefId);
     JobSuggestedParamSet currentBestJobSuggestedParamSet = JobSuggestedParamSet.find.where()
         .eq(JobSuggestedParamSet.TABLE.jobDefinition + "." + JobDefinition.TABLE.id,
