@@ -1,17 +1,5 @@
 package com.linkedin.drelephant.tuning;
 
-import com.linkedin.drelephant.tuning.Schduler.AzkabanJobStatusManager;
-import com.linkedin.drelephant.tuning.engine.MRExecutionEngine;
-import com.linkedin.drelephant.tuning.engine.SparkExecutionEngine;
-import com.linkedin.drelephant.tuning.hbt.BaselineManagerHBT;
-import com.linkedin.drelephant.tuning.hbt.FitnessManagerHBT;
-import com.linkedin.drelephant.tuning.hbt.TuningTypeManagerHBT;
-import com.linkedin.drelephant.tuning.obt.FitnessManagerOBTAlgoIPSO;
-import com.linkedin.drelephant.tuning.obt.TuningTypeManagerOBT;
-import com.linkedin.drelephant.tuning.obt.BaselineManagerOBT;
-import com.linkedin.drelephant.tuning.obt.FitnessManagerOBTAlgoPSO;
-import com.linkedin.drelephant.tuning.obt.TuningTypeManagerOBTAlgoIPSO;
-import com.linkedin.drelephant.tuning.obt.TuningTypeManagerOBTAlgoPSO;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.log4j.Logger;
@@ -102,7 +90,7 @@ public class Flow {
         for (Constant.ExecutionEngineTypes executionEngineTypes : Constant.ExecutionEngineTypes.values()) {
           Manager manager =
               ManagerFactory.getManager(tuningType.name(), algotihmType.name(), executionEngineTypes.name(),
-                  AbstractTuningTypeManager.class.getSimpleName());
+                  AbstractParameterGenerateManager.class.getSimpleName());
           if (manager != null) {
             logger.info(manager.getManagerName());
             algorithmManagers.add(manager);

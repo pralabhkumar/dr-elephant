@@ -1,24 +1,16 @@
 package com.linkedin.drelephant.tuning.hbt;
 
-import com.linkedin.drelephant.mapreduce.heuristics.CommonConstantsHeuristic;
-import com.linkedin.drelephant.tuning.AbstractTuningTypeManager;
+import com.linkedin.drelephant.tuning.AbstractParameterGenerateManager;
 import com.linkedin.drelephant.tuning.JobTuningInfo;
 import com.linkedin.drelephant.tuning.ExecutionEngine;
-import com.linkedin.drelephant.tuning.Particle;
 import com.linkedin.drelephant.tuning.TuningHelper;
-import controllers.AutoTuningMetricsController;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import models.AppHeuristicResult;
 import models.AppResult;
 import models.JobDefinition;
 import models.JobExecution;
-import models.JobSavedState;
 import models.JobSuggestedParamSet;
 import models.JobSuggestedParamValue;
 import models.TuningAlgorithm;
@@ -28,21 +20,18 @@ import org.apache.log4j.Logger;
 import play.libs.Json;
 import org.apache.commons.io.FileUtils;
 
-import static java.lang.Math.*;
-
 import com.avaje.ebean.Expr;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 
-public class TuningTypeManagerHBT extends AbstractTuningTypeManager {
+public class ParameterGenerateManagerHBT extends AbstractParameterGenerateManager {
   private final Logger logger = Logger.getLogger(getClass());
 
   private Map<String, Map<String, Double>> usageDataGlobal = null;
 
-  public TuningTypeManagerHBT(ExecutionEngine executionEngine) {
-    tuningType = "HBT";
+  public ParameterGenerateManagerHBT(ExecutionEngine executionEngine) {
     this._executionEngine = executionEngine;
   }
 
@@ -146,7 +135,7 @@ public class TuningTypeManagerHBT extends AbstractTuningTypeManager {
    *
    * @param jobTuningInfoList JobTuningInfo List
    */
-  protected Boolean updateDatabase(List<JobTuningInfo> jobTuningInfoList) {
+  protected boolean updateDatabase(List<JobTuningInfo> jobTuningInfoList) {
     logger.info("Updating new parameter suggestion in database HBT");
     if (jobTuningInfoList == null) {
       logger.info("No new parameter suggestion to update");

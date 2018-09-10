@@ -2,11 +2,10 @@ package com.linkedin.drelephant.tuning;
 
 import com.linkedin.drelephant.mapreduce.heuristics.CommonConstantsHeuristic;
 import com.linkedin.drelephant.tuning.obt.OptimizationAlgoFactory;
-import com.linkedin.drelephant.tuning.obt.TuningTypeManagerOBT;
-import com.linkedin.drelephant.tuning.obt.TuningTypeManagerOBTAlgoIPSO;
+import com.linkedin.drelephant.tuning.obt.ParameterGenerateManagerOBT;
+import com.linkedin.drelephant.tuning.obt.ParameterGenerateManagerOBTAlgoPSOIPSOImpl;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import models.AppHeuristicResult;
 import models.AppResult;
 import models.JobDefinition;
@@ -43,7 +42,7 @@ public class IPSOManagerTestRunner implements Runnable {
     JobSuggestedParamSet jobSuggestedParamSet =
         JobSuggestedParamSet.find.where().eq("fitness_job_execution_id", 1541).findUnique();
     JobExecution jobExecution = JobExecution.find.byId(1541L);
-    TuningTypeManagerOBT optimizeManager = checkIPSOManager(tuningAlgorithm);
+    ParameterGenerateManagerOBT optimizeManager = checkIPSOManager(tuningAlgorithm);
     testIPSOInitializePrerequisite(optimizeManager, tuningAlgorithm, jobSuggestedParamSet);
     //testIPSOExtractParameterInformation(jobExecution, optimizeManager);
     testIPSOParameterOptimizer(jobExecution, optimizeManager);
@@ -51,13 +50,13 @@ public class IPSOManagerTestRunner implements Runnable {
     testIPSONumberOfConstraintsViolated(optimizeManager);
   }
 
-  private TuningTypeManagerOBT checkIPSOManager(TuningAlgorithm tuningAlgorithm) {
-    TuningTypeManagerOBT optimizeManager = OptimizationAlgoFactory.getOptimizationAlogrithm(tuningAlgorithm);
-    assertTrue("Optimization Algorithm type ", optimizeManager instanceof TuningTypeManagerOBTAlgoIPSO);
+  private ParameterGenerateManagerOBT checkIPSOManager(TuningAlgorithm tuningAlgorithm) {
+    ParameterGenerateManagerOBT optimizeManager = OptimizationAlgoFactory.getOptimizationAlogrithm(tuningAlgorithm);
+    assertTrue("Optimization Algorithm type ", optimizeManager instanceof ParameterGenerateManagerOBTAlgoPSOIPSOImpl);
     return optimizeManager;
   }
 
-  private void testIPSOInitializePrerequisite(TuningTypeManagerOBT optimizeManager, TuningAlgorithm tuningAlgorithm,
+  private void testIPSOInitializePrerequisite(ParameterGenerateManagerOBT optimizeManager, TuningAlgorithm tuningAlgorithm,
       JobSuggestedParamSet jobSuggestedParamSet) {
     optimizeManager.initializePrerequisite(tuningAlgorithm, jobSuggestedParamSet);
     List<TuningParameterConstraint> tuningParameterConstraint =
@@ -100,7 +99,7 @@ public class IPSOManagerTestRunner implements Runnable {
             == 2100);
   }*/
 
-  private void testIPSOParameterOptimizer(JobExecution jobExecution, TuningTypeManagerOBT optimizeManager) {
+  private void testIPSOParameterOptimizer(JobExecution jobExecution, ParameterGenerateManagerOBT optimizeManager) {
     List<AppResult> results = AppResult.find.select("*")
         .fetch(AppResult.TABLE.APP_HEURISTIC_RESULTS, "*")
         .fetch(AppResult.TABLE.APP_HEURISTIC_RESULTS + "." + AppHeuristicResult.TABLE.APP_HEURISTIC_RESULT_DETAILS, "*")
@@ -145,7 +144,7 @@ public class IPSOManagerTestRunner implements Runnable {
   }
 
   private void testIPSOApplyIntelligenceOnParameter(TuningJobDefinition tuningJobDefinition,
-      JobDefinition jobDefinition, TuningTypeManagerOBT optimizeManager) {
+      JobDefinition jobDefinition, ParameterGenerateManagerOBT optimizeManager) {
     List<TuningParameter> tuningParameterList = TuningParameter.find.where()
         .eq(TuningParameter.TABLE.tuningAlgorithm + "." + TuningAlgorithm.TABLE.id,
             tuningJobDefinition.tuningAlgorithm.id)
@@ -189,7 +188,7 @@ public class IPSOManagerTestRunner implements Runnable {
     }
   }
 
-  private void testIPSONumberOfConstraintsViolated(TuningTypeManagerOBT optimizeManager) {
+  private void testIPSONumberOfConstraintsViolated(ParameterGenerateManagerOBT optimizeManager) {
     JobSuggestedParamValue jobSuggestedParamValue = new JobSuggestedParamValue();
     jobSuggestedParamValue.tuningParameter = TuningParameter.find.byId(11);
     jobSuggestedParamValue.paramValue = 2048.0;

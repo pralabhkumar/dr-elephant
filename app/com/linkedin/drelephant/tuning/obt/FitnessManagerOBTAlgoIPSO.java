@@ -1,10 +1,6 @@
 package com.linkedin.drelephant.tuning.obt;
 
 import com.avaje.ebean.Expr;
-import com.linkedin.drelephant.AutoTuner;
-import com.linkedin.drelephant.ElephantContext;
-import com.linkedin.drelephant.tuning.AbstractFitnessManager;
-import com.linkedin.drelephant.util.Utils;
 import java.util.ArrayList;
 import java.util.List;
 import models.AppResult;
@@ -77,7 +73,7 @@ public class FitnessManagerOBTAlgoIPSO extends FitnessManagerOBT {
    */
   private void parameterSpaceOptimization(JobSuggestedParamSet jobSuggestedParamSet, JobExecution jobExecution,
       List<AppResult> results) {
-    TuningTypeManagerOBT optimizeManager =
+    ParameterGenerateManagerOBT optimizeManager =
         OptimizationAlgoFactory.getOptimizationAlogrithm(jobSuggestedParamSet.tuningAlgorithm);
     if (optimizeManager != null) {
       optimizeManager.parameterOptimizer(results,jobExecution);

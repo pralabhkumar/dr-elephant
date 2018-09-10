@@ -13,26 +13,26 @@ import org.apache.log4j.Logger;
 public class OptimizationAlgoFactory {
   private static final Logger logger = Logger.getLogger(OptimizationAlgoFactory.class);
 
-  public static TuningTypeManagerOBT getOptimizationAlogrithm(TuningAlgorithm tuningAlgorithm) {
+  public static ParameterGenerateManagerOBT getOptimizationAlogrithm(TuningAlgorithm tuningAlgorithm) {
     if (tuningAlgorithm.optimizationAlgo.name().equals(TuningAlgorithm.OptimizationAlgo.PSO_IPSO.name())
         && tuningAlgorithm.jobType.name().equals(TuningAlgorithm.JobType.PIG.name())) {
       logger.info("OPTIMIZATION ALGORITHM PSO_IPSO MR");
-      return new TuningTypeManagerOBTAlgoIPSO(new MRExecutionEngine());
+      return new ParameterGenerateManagerOBTAlgoPSOIPSOImpl(new MRExecutionEngine());
     }
     if (tuningAlgorithm.optimizationAlgo.name().equals(TuningAlgorithm.OptimizationAlgo.PSO_IPSO.name())
         && tuningAlgorithm.jobType.name().equals(TuningAlgorithm.JobType.SPARK.name())) {
       logger.info("OPTIMIZATION ALGORITHM PSO_IPSO SPARK");
-      return new TuningTypeManagerOBTAlgoIPSO(new SparkExecutionEngine());
+      return new ParameterGenerateManagerOBTAlgoPSOIPSOImpl(new SparkExecutionEngine());
     }
     if (tuningAlgorithm.optimizationAlgo.name().equals(TuningAlgorithm.OptimizationAlgo.PSO.name())
         && tuningAlgorithm.jobType.name().equals(TuningAlgorithm.JobType.PIG.name())) {
       logger.info("OPTIMIZATION ALGORITHM PSO PIG");
-      return new TuningTypeManagerOBTAlgoPSO(new MRExecutionEngine());
+      return new ParameterGenerateManagerOBTAlgoPSOImpl(new MRExecutionEngine());
     }
     if (tuningAlgorithm.optimizationAlgo.name().equals(TuningAlgorithm.OptimizationAlgo.PSO.name())
         && tuningAlgorithm.jobType.name().equals(TuningAlgorithm.JobType.SPARK.name())) {
       logger.info("OPTIMIZATION ALGORITHM PSO SPARK");
-      return new TuningTypeManagerOBTAlgoPSO(new MRExecutionEngine());
+      return new ParameterGenerateManagerOBTAlgoPSOImpl(new MRExecutionEngine());
     }
     logger.info("OPTIMIZATION ALGORITHM HBT");
     return null;

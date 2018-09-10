@@ -20,7 +20,7 @@ import com.avaje.ebean.Expr;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.linkedin.drelephant.ElephantContext;
 import com.linkedin.drelephant.tuning.obt.OptimizationAlgoFactory;
-import com.linkedin.drelephant.tuning.obt.TuningTypeManagerOBT;
+import com.linkedin.drelephant.tuning.obt.ParameterGenerateManagerOBT;
 import com.linkedin.drelephant.util.Utils;
 
 import controllers.AutoTuningMetricsController;
@@ -635,7 +635,7 @@ public class AutoTuningAPIHelper {
   private void initializeOptimizationAlgoPrerequisite(TuningAlgorithm tuningAlgorithm,
       JobSuggestedParamSet jobSuggestedParamSet) {
     logger.info("Inserting parameter constraint " + tuningAlgorithm.optimizationAlgo.name());
-    TuningTypeManagerOBT manager = OptimizationAlgoFactory.getOptimizationAlogrithm(tuningAlgorithm);
+    ParameterGenerateManagerOBT manager = OptimizationAlgoFactory.getOptimizationAlogrithm(tuningAlgorithm);
     if (manager != null) {
       manager.initializePrerequisite(tuningAlgorithm, jobSuggestedParamSet);
     }
