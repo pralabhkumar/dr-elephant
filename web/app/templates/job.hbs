@@ -96,72 +96,66 @@
     </table>
   </div>
 
-  {{#if (eq model.jobs.jobtype "Pig")}}
-    <div class="shadow details-container box">
-      <h4>TuneIn Recommended Parameters</h4>
-      {{#unless (eq model.tunein.jobSuggestedParamSetId "null")}}
-        <hr class="bold-horizontal-line">
-        <table class="table info borderless">
-          <tbody>
-          <tr class="heading">
-            <th>Parameter Name</th>
-            <th>Suggested Value</th>
-            <th>Manual Override</th>
+  <div class="shadow details-container box">
+    <h4>TuneIn Recommended Parameters</h4>
+    {{#unless (eq model.tunein.jobSuggestedParamSetId "null")}}
+      <hr class="bold-horizontal-line">
+      <table class="table info borderless">
+        <tbody>
+        <tr class="heading">
+          <th>Parameter Name</th>
+          <th>Suggested Value</th>
+          <th>Manual Override</th>
+        </tr>
+        {{#each model.tunein.tuningParameters as |el|}}
+          <tr>
+            <td class="bold">{{el.name}}</td>
+            <td>{{el.suggestedValue}}</td>
+            <td>
+              {{input type="text" class="param-value" name="tuneInParameter" value=el.suggestedValue}}
+            </td>
           </tr>
-          {{#each model.tunein.tuningParameters as |el|}}
-            <tr>
-              <td class="bold">{{el.name}}</td>
-              <td>{{el.suggestedValue}}</td>
-              <td>
-                <input type="text" class="param-value" name="tuneInParameter" value={{el.suggestedValue}}>
-              </td>
-            </tr>
-          {{/each}}
-          </tbody>
-        </table>
-        <hr class="bold-horizontal-line">
-        <div class="container">
-          <div class="row">
-            <div class="col-sm-3 heading bold">Auto Tuning</div>
-            <div class="col-sm-3 heading bold">Tuning Algorithm</div>
-            <div class="col-sm-3 heading bold">Number of Iterations</div>
+        {{/each}}
+        </tbody>
+      </table>
+      <hr class="bold-horizontal-line">
+      <div class="container">
+        <div class="row">
+          <div class="col-sm-3 heading bold">Auto Tuning</div>
+          <div class="col-sm-3 heading bold">Tuning Algorithm</div>
+          <div class="col-sm-3 heading bold">Number of Iterations</div>
+        </div>
+      </div>
+      <div class="container">
+        <div class="row">
+          <div class="col-sm-3">
+            <label class="switch">
+              {{input type="checkbox" id="togBtn" checked=model.tunein.autoApply change=(action "autoTuningToggle")}}
+              <div class="slider round"></div>
+            </label>
+          </div>
+          <div class="col-sm-3">
+            <select id='soflow' onchange={{action "changeTuningAlgorithm" value="target.value"}}>
+              {{#each model.tunein.tuningAlgorithms as |algorithm|}}
+                <option value={{algorithm.name}} selected={{eq algorithm.name model.tunein.tuningAlgorithm}}>{{algorithm.name}}</option>
+              {{/each}}
+            </select>
+          </div>
+
+          <div class="col-sm-3">
+            {{input type="text" class="iteration-count" id="form-workflow-id" name="iterationCount" value=model.tunein.iterationCount}}
+          </div>
+
+          <div class="col-sm-3">
+            <button type="submit" class="btn wf-button" {{action "paramChange" model.tunein}}> Submit</button>
           </div>
         </div>
-        <div class="container">
-          <div class="row">
-            <div class="col-sm-3">
-              <label class="switch">
-                {{#if (eq  model.tunein.autoApply "checked")}}
-                  <input type="checkbox" id="togBtn" checked>
-                {{else}}
-                  <input type="checkbox" id="togBtn">
-                {{/if}}
-                <div class="slider round"></div>
-              </label>
-            </div>
-            <div class="col-sm-3">
-              <select id='soflow' onchange={{action (mut vehicle) value="targer.value"}}>
-                {{#each model.tunein.tuningAlgorithms as |algorithm|}}
-                  <option value={{algorithm}} selected={{eq algorithm.name model.tunein.tuningAlgorithm}}>{{algorithm.name}}</option>
-                {{/each}}
-              </select>
-            </div>
-
-            <div class="col-sm-3">
-              {{input type="text" class="iteration-count" id="form-workflow-id" name="iterationCount" value=model.tunein.iterationCount}}
-            </div>
-
-            <div class="col-sm-3">
-              <button type="button" class="btn wf-button" action="sendRequest">Submit</button>
-            </div>
-          </div>
-        </div>
-      {{else}}
-        <hr class="horizontal-line">
-        No Parameters Suggested
-      {{/unless}}
-    </div>
-  {{/if}}
+      </div>
+    {{else}}
+      <hr class="horizontal-line">
+      No Parameters Suggested
+    {{/unless}}
+  </div>
 
   <div class="shadow summary-list-container">
     <div class="summary-list-header">Applications</div>

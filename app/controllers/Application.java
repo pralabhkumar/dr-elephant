@@ -1699,7 +1699,7 @@ public class Application extends Controller {
 
     try {
 
-      List<TuningParameter> parametersList = getTuningParametersListForJob("mapreduce");
+      List<TuningParameter> parametersList = getTuningParametersListForJob("");
       JobExecution jobExecution = JobExecution.find.select("*")
           .where()
           .eq(JobExecution.TABLE.jobExecId, jobId)
@@ -1722,7 +1722,7 @@ public class Application extends Controller {
           .desc(TuningJobDefinition.TABLE.createdTs)
           .findUnique();
 
-      String autoApply = tuningJobDefinition.autoApply ? "checked" : "unchecked";
+      Boolean autoApply = tuningJobDefinition.autoApply ? true : false;
 
       JobSuggestedParamSet jobSuggestedParamSet = JobSuggestedParamSet.find.select("*")
           .where()
@@ -1756,7 +1756,7 @@ public class Application extends Controller {
         logger.info("paramResult for execId: " + jobId + " and tpId: " + id + " " + suggestedParams.paramValue);
         JsonObject param = new JsonObject();
         param.addProperty("name", paramName);
-        param.addProperty("suggestedValue", suggestedParams.paramValue.intValue());
+        param.addProperty("suggestedValue",  Math.floor(suggestedParams.paramValue * 100) / 100);
         tuningParameters.add(param);
         logger.info("param: " + tuningParameters);
       }

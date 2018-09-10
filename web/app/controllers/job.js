@@ -17,6 +17,19 @@
 import Ember from 'ember';
 
 export default Ember.Controller.extend({
-    queryParams: ['jobid'],
-    jobid: null
+  queryParams: ['jobid'],
+  jobid: null,
+
+  actions: {
+    paramChange(tunein) {
+      console.log(tunein);
+    },
+    changeTuningAlgorithm(algorithm) {
+      this.set('model.tunein.tuningAlgorithm', algorithm)
+      console.log(this.get('model.tunein.tuningAlgorithm'));
+    },
+    autoTuningToggle(e) {
+      this.set('model.tunein.autoApply', e.target.checked);
+    }
+  }
 });
