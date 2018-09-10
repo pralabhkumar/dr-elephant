@@ -1,61 +1,38 @@
 package com.linkedin.drelephant.tuning.obt;
 
-import com.avaje.ebean.Expr;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.linkedin.drelephant.ElephantContext;
-import com.linkedin.drelephant.tuning.AbstractTuningTypeManager;
+import com.linkedin.drelephant.tuning.AbstractParameterGenerateManager;
 import com.linkedin.drelephant.tuning.JobTuningInfo;
 import com.linkedin.drelephant.tuning.Particle;
-import com.linkedin.drelephant.tuning.ExecutionEngine;
-import com.linkedin.drelephant.tuning.TuningHelper;
 import controllers.AutoTuningMetricsController;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import models.AppResult;
 import models.JobDefinition;
-import models.JobExecution;
 import models.JobSavedState;
 import models.JobSuggestedParamSet;
 import models.JobSuggestedParamValue;
 import models.TuningAlgorithm;
 import models.TuningJobDefinition;
 import models.TuningParameter;
-import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
 import play.libs.Json;
 import org.apache.hadoop.conf.Configuration;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import org.apache.commons.io.FileUtils;
 
+public abstract class ParameterGenerateManagerOBTAlgoPSO extends ParameterGenerateManagerOBT {
 
-public abstract class TuningTypeManagerOBT extends AbstractTuningTypeManager {
-
-  private static final String PARAMS_TO_TUNE_FIELD_NAME = "parametersToTune";
+  private final Logger logger = Logger.getLogger(getClass());
   private static final String PYTHON_PATH_CONF = "python.path";
   private static final String PSO_DIR_PATH_ENV_VARIABLE = "PSO_DIR_PATH";
   private static final String PYTHON_PATH_ENV_VARIABLE = "PYTHONPATH";
   private String PYTHON_PATH = null;
   private String TUNING_SCRIPT_PATH = null;
-  private final Logger logger = Logger.getLogger(getClass());
-
-
-  /*
-    Intialize any prequisite require for Optimizer
-    Calls once in lifetime of the flow
-   */
-  public abstract void initializePrerequisite(TuningAlgorithm tuningAlgorithm,
-      JobSuggestedParamSet jobSuggestedParamSet);
-
-  /*
-    Optimize search space
-    call after each execution of flow
-   */
-  public abstract void parameterOptimizer(List<AppResult> appResults, JobExecution jobExecution);
 
   /**
    * Swarm size specific to OBT
@@ -63,8 +40,7 @@ public abstract class TuningTypeManagerOBT extends AbstractTuningTypeManager {
    */
   protected abstract int getSwarmSize();
 
-  public TuningTypeManagerOBT() {
-    tuningType = "OBT";
+  public ParameterGenerateManagerOBTAlgoPSO() {
     Configuration configuration = ElephantContext.instance().getAutoTuningConf();
 
     PYTHON_PATH = configuration.get(PYTHON_PATH_CONF);
@@ -83,6 +59,7 @@ public abstract class TuningTypeManagerOBT extends AbstractTuningTypeManager {
     logger.info("Tuning script path: " + TUNING_SCRIPT_PATH);
     logger.info("Python path: " + PYTHON_PATH);
   }
+
 
   @Override
   protected void saveJobState(JobTuningInfo jobTuningInfo, JobDefinition job) {
@@ -233,7 +210,7 @@ public abstract class TuningTypeManagerOBT extends AbstractTuningTypeManager {
    *
    * @param jobTuningInfoList JobTuningInfo List
    */
-  protected Boolean updateDatabase(List<JobTuningInfo> jobTuningInfoList) {
+  protected boolean updateDatabase(List<JobTuningInfo> jobTuningInfoList) {
     logger.info("Updating new parameter suggestion in database");
     if (jobTuningInfoList == null) {
       logger.info("No new parameter suggestion to update");
@@ -402,7 +379,9 @@ public abstract class TuningTypeManagerOBT extends AbstractTuningTypeManager {
 
   @Override
   public String getManagerName() {
-    return "TuningTypeManagerOBT";
+    return "ParameterGenerateManagerOBTAlgoAbstractPSO";
   }
+
+
 
 }

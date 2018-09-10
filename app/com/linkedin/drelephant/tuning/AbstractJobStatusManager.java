@@ -20,7 +20,7 @@ public abstract class AbstractJobStatusManager implements Manager {
    * @param inProgressExecutionParamSet : Jobs for which status have to find out.
    * @return
    */
-  protected abstract Boolean analyzeCompletedJobsExecution(
+  protected abstract boolean analyzeCompletedJobsExecution(
       List<TuningJobExecutionParamSet> inProgressExecutionParamSet);
 
   protected List<TuningJobExecutionParamSet> detectJobsExecutionInProgress() {
@@ -37,7 +37,7 @@ public abstract class AbstractJobStatusManager implements Manager {
     return tuningJobExecutionParamSets;
   }
 
-  protected Boolean updateDataBase(List<TuningJobExecutionParamSet> jobs) {
+  protected boolean updateDataBase(List<TuningJobExecutionParamSet> jobs) {
     for (TuningJobExecutionParamSet job : jobs) {
       JobSuggestedParamSet jobSuggestedParamSet = job.jobSuggestedParamSet;
       JobExecution jobExecution = job.jobExecution;
@@ -62,7 +62,7 @@ public abstract class AbstractJobStatusManager implements Manager {
     }
   }
 
-  protected Boolean updateMetrics(List<TuningJobExecutionParamSet> completedJobs) {
+  protected boolean updateMetrics(List<TuningJobExecutionParamSet> completedJobs) {
     for (TuningJobExecutionParamSet completedJob : completedJobs) {
       JobExecution jobExecution = completedJob.jobExecution;
       if (jobExecution.executionState.equals(JobExecution.ExecutionState.SUCCEEDED)) {
@@ -75,9 +75,9 @@ public abstract class AbstractJobStatusManager implements Manager {
   }
 
   @Override
-  public final Boolean execute() {
+  public final boolean execute() {
     logger.info("Executing Job Status Manager");
-    Boolean calculateCompletedJobExDone = false, databaseUpdateDone = false, updateMetricsDone = false;
+    boolean calculateCompletedJobExDone = false, databaseUpdateDone = false, updateMetricsDone = false;
     List<TuningJobExecutionParamSet> tuningJobExecutionParamSet = detectJobsExecutionInProgress();
     if (tuningJobExecutionParamSet != null && tuningJobExecutionParamSet.size() >= 1) {
       logger.info("Calculating  Completed Jobs");

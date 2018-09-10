@@ -50,9 +50,9 @@ public abstract class AbstractBaselineManager implements Manager {
   4) Update the metrics .
    */
   @Override
-  public final Boolean execute() {
+  public final boolean execute() {
     logger.info("Executing BaseLine");
-    Boolean baseLineComputationDone = false, databaseUpdateDone = false, updateMetricsDone = false;
+    boolean baseLineComputationDone = false, databaseUpdateDone = false, updateMetricsDone = false;
     List<TuningJobDefinition> tuningJobDefinitions = detectJobsForBaseLineComputation();
     if (tuningJobDefinitions != null && tuningJobDefinitions.size() >= 1) {
       logger.info("Computing BaseLine");
@@ -83,7 +83,7 @@ public abstract class AbstractBaselineManager implements Manager {
    * @param tuningJobDefinitions Job for which baseline is to be computed
    */
 
-  protected Boolean calculateBaseLine(List<TuningJobDefinition> tuningJobDefinitions) {
+  protected boolean calculateBaseLine(List<TuningJobDefinition> tuningJobDefinitions) {
     for (TuningJobDefinition tuningJobDefinition : tuningJobDefinitions) {
       try {
         logger.info("Computing and updating baseline metric values for job: " + tuningJobDefinition.job.jobName);
@@ -131,7 +131,7 @@ public abstract class AbstractBaselineManager implements Manager {
    * This method update database  for auto tuning monitoring for baseline computation
    * @param tuningJobDefinitions
    */
-  protected Boolean updateDataBase(List<TuningJobDefinition> tuningJobDefinitions) {
+  protected boolean updateDataBase(List<TuningJobDefinition> tuningJobDefinitions) {
     try {
       for (TuningJobDefinition tuningJobDefinition : tuningJobDefinitions) {
         tuningJobDefinition.update();
@@ -149,7 +149,7 @@ public abstract class AbstractBaselineManager implements Manager {
    * @param tuningJobDefinitions
    */
 
-  protected Boolean updateMetrics(List<TuningJobDefinition> tuningJobDefinitions) {
+  protected boolean updateMetrics(List<TuningJobDefinition> tuningJobDefinitions) {
     try {
       int baselineComputeWaitJobs = 0;
       for (TuningJobDefinition tuningJobDefinition : tuningJobDefinitions) {

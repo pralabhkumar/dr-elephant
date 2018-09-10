@@ -37,7 +37,7 @@ public class AzkabanJobStatusManager extends AbstractJobStatusManager {
   }
 
   @Override
-  protected Boolean analyzeCompletedJobsExecution(List<TuningJobExecutionParamSet> inProgressExecutionParamSet) {
+  protected boolean analyzeCompletedJobsExecution(List<TuningJobExecutionParamSet> inProgressExecutionParamSet) {
     logger.info("Fetching the list of executions completed since last iteration");
     List<JobExecution> completedExecutions = new ArrayList<JobExecution>();
     try {
@@ -50,7 +50,7 @@ public class AzkabanJobStatusManager extends AbstractJobStatusManager {
       }
     } catch (Exception e) {
       logger.error("Error in fetching list of completed executions", e);
-      e.printStackTrace();
+      return false;
     }
     logger.info("Number of executions completed since last iteration: " + completedExecutions.size());
     return true;

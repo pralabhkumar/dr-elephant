@@ -21,8 +21,9 @@ import com.fasterxml.jackson.databind.node.JsonNodeType;
 import com.linkedin.drelephant.DrElephant;
 import com.linkedin.drelephant.ElephantContext;
 import com.linkedin.drelephant.tuning.engine.MRExecutionEngine;
-import com.linkedin.drelephant.tuning.obt.TuningTypeManagerOBT;
-import com.linkedin.drelephant.tuning.obt.TuningTypeManagerOBTAlgoPSO;
+import com.linkedin.drelephant.tuning.obt.ParameterGenerateManagerOBT;
+import com.linkedin.drelephant.tuning.obt.ParameterGenerateManagerOBTAlgoPSO;
+import com.linkedin.drelephant.tuning.obt.ParameterGenerateManagerOBTAlgoPSOImpl;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -111,7 +112,7 @@ public class PSOParamGeneratorTest {
         jobTuningInfo.setJobType(TuningAlgorithm.JobType.PIG);
 
         //PSOParamGenerator psoParamGenerator = new PSOParamGenerator();
-        TuningTypeManagerOBT tuningTypeManagerOBT = new TuningTypeManagerOBTAlgoPSO(new MRExecutionEngine());
+        ParameterGenerateManagerOBT tuningTypeManagerOBT = new ParameterGenerateManagerOBTAlgoPSOImpl(new MRExecutionEngine());
         //algorithmManagerOBT.generateParamSet()
 
         JobTuningInfo updatedJobTuningInfo = tuningTypeManagerOBT.generateParamSet(jobTuningInfo);
@@ -208,7 +209,7 @@ public class PSOParamGeneratorTest {
        /* PSOParamGenerator psoParamGenerator = new PSOParamGenerator();
         psoParamGenerator.getParams();*/
 
-        Manager manager = new TuningTypeManagerOBTAlgoPSO(new MRExecutionEngine());
+        Manager manager = new ParameterGenerateManagerOBTAlgoPSOImpl(new MRExecutionEngine());
         manager.execute();
 
         List<JobSuggestedParamSet> jobSuggestedParamSetList = JobSuggestedParamSet.find.where()

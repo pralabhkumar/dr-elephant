@@ -65,7 +65,7 @@ public abstract class AbstractFitnessManager implements Manager {
    */
   protected abstract void checkToDisableTuning(Set<JobDefinition> jobDefinitionSet);
 
-  protected Boolean calculateFitness(List<TuningJobExecutionParamSet> completedJobExecutionParamSets) {
+  protected boolean calculateFitness(List<TuningJobExecutionParamSet> completedJobExecutionParamSets) {
     for (TuningJobExecutionParamSet completedJobExecutionParamSet : completedJobExecutionParamSets) {
       JobExecution jobExecution = completedJobExecutionParamSet.jobExecution;
       JobSuggestedParamSet jobSuggestedParamSet = completedJobExecutionParamSet.jobSuggestedParamSet;
@@ -246,7 +246,7 @@ public abstract class AbstractFitnessManager implements Manager {
   /*
   Currently update in database is happening in calculate phase . It should be seperated out
    */
-  protected Boolean updateDataBase(List<TuningJobExecutionParamSet> jobExecutionParamSets) {
+  protected boolean updateDataBase(List<TuningJobExecutionParamSet> jobExecutionParamSets) {
     return true;
   }
 
@@ -254,7 +254,7 @@ public abstract class AbstractFitnessManager implements Manager {
    * This method update metrics for auto tuning monitoring for fitness compute daemon
    * @param completedJobExecutionParamSets List of completed tuning job executions
    */
-  private Boolean updateMetrics(List<TuningJobExecutionParamSet> completedJobExecutionParamSets) {
+  private boolean updateMetrics(List<TuningJobExecutionParamSet> completedJobExecutionParamSets) {
     int fitnessNotUpdated = 0;
     for (TuningJobExecutionParamSet completedJobExecutionParamSet : completedJobExecutionParamSets) {
       if (!completedJobExecutionParamSet.jobSuggestedParamSet.paramSetState.equals(
@@ -317,9 +317,9 @@ public abstract class AbstractFitnessManager implements Manager {
 
 
 
-  public final Boolean execute() {
+  public final boolean execute() {
     logger.info("Executing Fitness Manager");
-    Boolean calculateFitnessDone = false, databaseUpdateDone = false, updateMetricsDone = false;
+    boolean calculateFitnessDone = false, databaseUpdateDone = false, updateMetricsDone = false;
     List<TuningJobExecutionParamSet> tuningJobExecutionParamSet = detectJobsForFitnessComputation();
     if (tuningJobExecutionParamSet != null && tuningJobExecutionParamSet.size() >= 1) {
       logger.info("Calculating  Fitness");

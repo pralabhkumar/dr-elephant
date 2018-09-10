@@ -20,12 +20,11 @@ import play.libs.Json;
 /**
  * This class is used to generate/suggest parameters . Based on TuningType , Algorithm Type & execution engine.
  */
-public abstract class AbstractTuningTypeManager implements Manager {
+public abstract class AbstractParameterGenerateManager implements Manager {
   protected final String JSON_CURRENT_POPULATION_KEY = "current_population";
   private final Logger logger = Logger.getLogger(getClass());
   protected ExecutionEngine _executionEngine;
-  protected String tuningType = null;
-  protected String tuningAlgorithm = null;
+
 
   /**
    * This method will generate the Param Set and update in JobTuningInfo in saved state.
@@ -40,7 +39,7 @@ public abstract class AbstractTuningTypeManager implements Manager {
    * @return
    */
 
-  protected abstract Boolean updateDatabase(List<JobTuningInfo> tuningJobDefinitions);
+  protected abstract boolean updateDatabase(List<JobTuningInfo> tuningJobDefinitions);
 
   /**
    * Get pending jobs for which param generation cannot be done
@@ -139,10 +138,10 @@ public abstract class AbstractTuningTypeManager implements Manager {
     return updatedJobTuningInfoList;
   }
 
-  public final Boolean execute() {
+  public final boolean execute() {
     try {
       logger.info("Executing Tuning Algorithm");
-      Boolean parameterGenerationDone = false, databaseUpdateDone = false, updateMetricsDone = false;
+      boolean parameterGenerationDone = false, databaseUpdateDone = false, updateMetricsDone = false;
       List<JobTuningInfo> jobTuningInfo = detectJobsForParameterGeneration();
       if (jobTuningInfo != null && jobTuningInfo.size() >= 1) {
         logger.info("Generating Parameters ");

@@ -4,7 +4,7 @@ public interface Manager {
   /*
    Use to execute the logic of all the managers .
    */
-  Boolean execute();
+  boolean execute();
   /*
      Manager Name
    */

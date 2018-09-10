@@ -3,7 +3,6 @@ package com.linkedin.drelephant.tuning.obt;
 import com.avaje.ebean.Expr;
 import com.linkedin.drelephant.tuning.ExecutionEngine;
 import java.util.List;
-import java.util.Map;
 import models.AppResult;
 import models.JobDefinition;
 import models.JobExecution;
@@ -12,11 +11,11 @@ import models.JobSuggestedParamValue;
 import models.TuningAlgorithm;
 import models.TuningJobDefinition;
 import models.TuningParameter;
+import org.apache.log4j.Logger;
 
-
-public class TuningTypeManagerOBTAlgoPSO extends TuningTypeManagerOBT{
-  public TuningTypeManagerOBTAlgoPSO(ExecutionEngine executionEngine) {
-    tuningAlgorithm = TuningAlgorithm.OptimizationAlgo.PSO.name();
+public class ParameterGenerateManagerOBTAlgoPSOImpl extends ParameterGenerateManagerOBTAlgoPSO {
+  private final Logger logger = Logger.getLogger(getClass());
+  public ParameterGenerateManagerOBTAlgoPSOImpl(ExecutionEngine executionEngine) {
     this._executionEngine=executionEngine;
   }
 
@@ -66,6 +65,6 @@ public class TuningTypeManagerOBTAlgoPSO extends TuningTypeManagerOBT{
   }
 
   public String getManagerName() {
-    return "TuningTypeManagerOBTAlgoPSO" + this._executionEngine.getClass().getSimpleName();
+    return "ParameterGenerateManagerOBTAlgoPSOImpl" + this._executionEngine.getClass().getSimpleName();
   }
 }
