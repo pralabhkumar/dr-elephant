@@ -17,10 +17,10 @@ import DS from 'ember-data';
 
 export default DS.Model.extend({
   jobSuggestedParamSetId: DS.attr('string'),
-  tuningParameters: DS.attr(),
+  autoApply: DS.attr('boolean'),
   tuningAlgorithmId: DS.attr('number'),
   tuningAlgorithm: DS.attr('string'),
   tuningAlgorithms: DS.attr(),
   iterationCount: DS.attr('number'),
-  autoApply: DS.attr('boolean')
+  tuningParameters: DS.attr()
 });

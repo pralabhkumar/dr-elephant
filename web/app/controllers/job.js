@@ -21,9 +21,6 @@ export default Ember.Controller.extend({
   jobid: null,
 
   actions: {
-    paramChange(tunein) {
-      console.log(tunein);
-    },
     changeTuningAlgorithm(algorithm) {
       this.set('model.tunein.tuningAlgorithm', algorithm)
       console.log(this.get('model.tunein.tuningAlgorithm'));

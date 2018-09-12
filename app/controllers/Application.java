@@ -1724,10 +1724,21 @@ public class Application extends Controller {
 
       Boolean autoApply = tuningJobDefinition.autoApply ? true : false;
 
+      JobSuggestedParamSet manuallyOverridenParamSet = JobSuggestedParamSet.find.select("*")
+          .where()
+          .eq(JobSuggestedParamSet.TABLE.jobDefinition + "." + JobDefinition.TABLE.id , jobDefinitionId)
+          .eq(JobSuggestedParamSet.TABLE.isParamSetSuggested, true)
+          .eq(JobSuggestedParamSet.TABLE.isManuallyOverridenParameter, true)
+          .order()
+          .desc(JobSuggestedParamSet.TABLE.createdTs)
+          .setMaxRows(1)
+          .findUnique();
+
       JobSuggestedParamSet jobSuggestedParamSet = JobSuggestedParamSet.find.select("*")
           .where()
           .eq(JobSuggestedParamSet.TABLE.jobDefinition + "." + JobDefinition.TABLE.id , jobDefinitionId)
           .eq(JobSuggestedParamSet.TABLE.isParamSetSuggested, true)
+          .eq(JobSuggestedParamSet.TABLE.isManuallyOverridenParameter, false)
           .order()
           .desc(JobSuggestedParamSet.TABLE.createdTs)
           .setMaxRows(1)
@@ -1737,28 +1748,49 @@ public class Application extends Controller {
       TuningAlgorithm tuningAlgorithm = jobSuggestedParamSet.tuningAlgorithm;
 
       logger.info("Job Suggested Param Id:: " + jobSuggestedParamSet.id);
-
+      try {
+        logger.info("User Suggested Param Id:: " + manuallyOverridenParamSet.id);
+      } catch (Exception e) {
+        logger.info(e);
+      }
       for (TuningParameter tuningParam : parametersList) {
         String paramName = tuningParam.paramName;
         Integer id = tuningParam.id;
         logger.info("params:: " + paramName + " " + id + " " + tuningParam.paramName);
 
-        JobSuggestedParamValue suggestedParams = JobSuggestedParamValue.find.select("*")
+        JobSuggestedParamValue userSuggestedParam = null;
+        if(manuallyOverridenParamSet != null) {
+          userSuggestedParam = JobSuggestedParamValue.find.select("*")
+              .where()
+              .eq(JobSuggestedParamValue.TABLE.jobSuggestedParamSet + "." + JobSuggestedParamSet.TABLE.id,
+                  manuallyOverridenParamSet.id)
+              .eq(JobSuggestedParamValue.TABLE.tuningParameter + "." + TuningParameter.TABLE.id, id)
+              .findUnique();
+        }
+
+        JobSuggestedParamValue suggestedParam = JobSuggestedParamValue.find.select("*")
             .where()
             .eq(JobSuggestedParamValue.TABLE.jobSuggestedParamSet + "." + JobSuggestedParamSet.TABLE.id, jobSuggestedParamSet.id)
             .eq(JobSuggestedParamValue.TABLE.tuningParameter + "." + TuningParameter.TABLE.id, id)
             .findUnique();
 
-        if (suggestedParams == null) {
+        JsonObject param = new JsonObject();
+        if (suggestedParam == null) {
           continue;
         }
 
-        logger.info("paramResult for execId: " + jobId + " and tpId: " + id + " " + suggestedParams.paramValue);
-        JsonObject param = new JsonObject();
+        param.addProperty("paramId", id);
         param.addProperty("name", paramName);
-        param.addProperty("suggestedValue",  Math.floor(suggestedParams.paramValue * 100) / 100);
+        param.addProperty("jobSuggestedValue",  Math.floor(suggestedParam.paramValue * 100) / 100);
+
+        if(userSuggestedParam != null) {
+          param.addProperty("currentUserSuggestedValue", Math.floor(userSuggestedParam.paramValue * 100) / 100);
+          param.addProperty("newSuggestedUserValue", Math.floor(userSuggestedParam.paramValue * 100) / 100);
+        } else {
+          param.addProperty("currentUserSuggestedValue", Math.floor(suggestedParam.paramValue * 100) / 100);
+          param.addProperty("newSuggestedUserValue", Math.floor(suggestedParam.paramValue * 100) / 100);
+        }
         tuningParameters.add(param);
-        logger.info("param: " + tuningParameters);
       }
 
       String currentTuningAlgorithm = tuningAlgorithm.
@@ -1780,6 +1812,16 @@ public class Application extends Controller {
       parent.add("tunein", tuneIn);
       return ok(new Gson().toJson(parent));
     }
+  }
+
+
+
+  public static Result tuningParam() {
+    logger.info("checkpoint_1");
+    logger.info("Data: " + request().body().asJson().toString());
+    JsonObject parent = new JsonObject();
+    parent.addProperty("tunein", request().body().asText());
+    return ok(new Gson().toJson(parent));
   }
 
   /**

@@ -201,6 +201,10 @@
   margin: 10px 10px 10px 10px;
 }
 
+input[type="text"]:disabled {
+  background: #dddddd;
+}
+
 select#soflow {
   -webkit-appearance: button;
   -webkit-border-radius: 2px;
@@ -279,16 +283,17 @@ input:checked + .slider:before {
   color: white;
   display: block;
   position: absolute;
-  transform: translate(-50%,-50%);
+  transform: translate(-10%,-50%);
   top: 50%;
   left: 50%;
-  font-size: 11px;
+  font-size: 16px;
   font-family: Verdana, sans-serif;
 }
 
 input:checked + .slider:after
 {
   content:'ON';
+  left: 20%;
 }
 
 .param-value

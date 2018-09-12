@@ -110,9 +110,9 @@
         {{#each model.tunein.tuningParameters as |el|}}
           <tr>
             <td class="bold">{{el.name}}</td>
-            <td>{{el.suggestedValue}}</td>
+            <td>{{el.jobSuggestedValue}}</td>
             <td>
-              {{input type="text" class="param-value" name="tuneInParameter" value=el.suggestedValue}}
+              {{input type="text" class="param-value" disabled=(eq model.tunein.tuningAlgorithm "OBT") value=el.newSuggestedUserValue}}
             </td>
           </tr>
         {{/each}}
@@ -143,7 +143,7 @@
           </div>
 
           <div class="col-sm-3">
-            {{input type="text" class="iteration-count" id="form-workflow-id" name="iterationCount" value=model.tunein.iterationCount}}
+            {{input type="text" class="iteration-count" name="iterationCount" value=model.tunein.iterationCount}}
           </div>
 
           <div class="col-sm-3">
@@ -151,6 +151,9 @@
           </div>
         </div>
       </div>
+      {{#if (eq model.jobs.severity "None")}}
+        <h5 class="severity-None">All Heuristics Passed With Current Parameter Values</h5>
+      {{/if}}
     {{else}}
       <hr class="horizontal-line">
       No Parameters Suggested

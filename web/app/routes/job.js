@@ -17,6 +17,8 @@
 import Ember from 'ember';
 
 export default Ember.Route.extend({
+  ajax: Ember.inject.service(),
+
   beforeModel: function (transition) {
     this.jobid = transition.queryParams.jobid;
   },
@@ -27,6 +29,15 @@ export default Ember.Route.extend({
     });
   },
   actions: {
+    paramChange(tunein) {
+      console.log(this.get('model.jobs'))
+      return this.get('ajax').post('http://localhost:8080/rest/tunein', {
+        contentType: 'application/json',
+        data: JSON.stringify({
+          tunein: tunein
+        })
+      })
+    },
     error(error, transition) {
       if (error.errors[0].status == 404) {
         return this.transitionTo('not-found', { queryParams: {'previous': window.location.href}});
