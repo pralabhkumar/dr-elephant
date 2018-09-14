@@ -28,10 +28,15 @@ export default Ember.Route.extend({
       tunein: this.store.queryRecord('tunein', {id: this.get("jobid")})
     });
   },
+    setupController: function(controller, model) {
+      controller.set('model', model);
+      controller.set('currentAlgorithm', model.tunein.get('tuningAlgorithm')),
+      controller.set('currentIterationCount', model.tunein.get('iterationCount'))
+  },
   actions: {
     paramChange(tunein) {
       console.log(this.get('model.jobs'))
-      return this.get('ajax').post('http://localhost:8080/rest/tunein', {
+      return this.get('ajax').post('/rest/tunein', {
         contentType: 'application/json',
         data: JSON.stringify({
           tunein: tunein

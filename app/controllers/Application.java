@@ -29,6 +29,7 @@ import java.lang.reflect.Array;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.text.DecimalFormat;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -1753,6 +1754,7 @@ public class Application extends Controller {
       } catch (Exception e) {
         logger.info(e);
       }
+      DecimalFormat truncateUptoTwoDecimalFormat = new DecimalFormat(".##");
       for (TuningParameter tuningParam : parametersList) {
         String paramName = tuningParam.paramName;
         Integer id = tuningParam.id;
@@ -1781,14 +1783,14 @@ public class Application extends Controller {
 
         param.addProperty("paramId", id);
         param.addProperty("name", paramName);
-        param.addProperty("jobSuggestedValue",  Math.floor(suggestedParam.paramValue * 100) / 100);
+        param.addProperty("jobSuggestedValue",  truncateUptoTwoDecimalFormat.format(suggestedParam.paramValue));
 
         if(userSuggestedParam != null) {
-          param.addProperty("currentUserSuggestedValue", Math.floor(userSuggestedParam.paramValue * 100) / 100);
-          param.addProperty("newSuggestedUserValue", Math.floor(userSuggestedParam.paramValue * 100) / 100);
+          param.addProperty("currentParamValue", truncateUptoTwoDecimalFormat.format(userSuggestedParam.paramValue));
+          param.addProperty("userSuggestedValue", truncateUptoTwoDecimalFormat.format(userSuggestedParam.paramValue));
         } else {
-          param.addProperty("currentUserSuggestedValue", Math.floor(suggestedParam.paramValue * 100) / 100);
-          param.addProperty("newSuggestedUserValue", Math.floor(suggestedParam.paramValue * 100) / 100);
+          param.addProperty("currentParamValue", truncateUptoTwoDecimalFormat.format(suggestedParam.paramValue));
+          param.addProperty("userSuggestedValue", truncateUptoTwoDecimalFormat.format(suggestedParam.paramValue));
         }
         tuningParameters.add(param);
       }
@@ -1799,8 +1801,11 @@ public class Application extends Controller {
       tuneIn.addProperty("jobSuggestedParamSetId", jobSuggestedParamSet.id);
       tuneIn.addProperty("tuningAlgorithmId", tuningAlgorithm.id);
       tuneIn.addProperty("autoApply", autoApply);
+      tuneIn.addProperty("isAlgorithmTypeChanged", false);
+      tuneIn.addProperty("isIterationCountChanged", false);
+      tuneIn.addProperty("isAutoTuningChanged", false);
       tuneIn.addProperty("tuningAlgorithm", currentTuningAlgorithm);
-      tuneIn.add("tuningAlgorithms", tuningAlgorithms);
+      tuneIn.add("tuningAlgorithmList", tuningAlgorithms);
       tuneIn.addProperty("iterationCount",tuningJobDefinition.numberOfIterations);
       tuneIn.add("tuningParameters", tuningParameters);
       parent.add("tunein", tuneIn);
@@ -1817,6 +1822,9 @@ public class Application extends Controller {
 
 
   public static Result tuningParam() {
+
+    JsonNode requestBody = request().body().asJson();
+
     logger.info("checkpoint_1");
     logger.info("Data: " + request().body().asJson().toString());
     JsonObject parent = new JsonObject();

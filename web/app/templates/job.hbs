@@ -112,7 +112,7 @@
             <td class="bold">{{el.name}}</td>
             <td>{{el.jobSuggestedValue}}</td>
             <td>
-              {{input type="text" class="param-value" disabled=(eq model.tunein.tuningAlgorithm "OBT") value=el.newSuggestedUserValue}}
+              {{input type="text" class="param-value" disabled=(eq model.tunein.tuningAlgorithm "OBT") value=el.userSuggestedValue}}
             </td>
           </tr>
         {{/each}}
@@ -136,14 +136,14 @@
           </div>
           <div class="col-sm-3">
             <select id='soflow' onchange={{action "changeTuningAlgorithm" value="target.value"}}>
-              {{#each model.tunein.tuningAlgorithms as |algorithm|}}
+              {{#each model.tunein.tuningAlgorithmList as |algorithm|}}
                 <option value={{algorithm.name}} selected={{eq algorithm.name model.tunein.tuningAlgorithm}}>{{algorithm.name}}</option>
               {{/each}}
             </select>
           </div>
 
           <div class="col-sm-3">
-            {{input type="text" class="iteration-count" name="iterationCount" value=model.tunein.iterationCount}}
+            {{input type="text" class="iteration-count" name="iterationCount" value=model.tunein.iterationCount focus-out="iterationCountChange"}}
           </div>
 
           <div class="col-sm-3">

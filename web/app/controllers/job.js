@@ -19,14 +19,30 @@ import Ember from 'ember';
 export default Ember.Controller.extend({
   queryParams: ['jobid'],
   jobid: null,
+  currentAlgorithm: null,
+  currentIterationCount: null,
 
   actions: {
     changeTuningAlgorithm(algorithm) {
-      this.set('model.tunein.tuningAlgorithm', algorithm)
-      console.log(this.get('model.tunein.tuningAlgorithm'));
+      var currentAlgorithm = this.get('currentAlgorithm');
+      console.log(currentAlgorithm);
+      var isAlgorithmTypeChanged = (currentAlgorithm != algorithm) ? true : false;
+      this.set('model.tunein.tuningAlgorithm', algorithm),
+          this.set('model.tunein.isAlgorithmTypeChanged', isAlgorithmTypeChanged)
+      console.log(this.get('model.tunein.isAlgorithmTypeChanged'))
     },
     autoTuningToggle(e) {
+      var isAutoTuningChanged = this.get('model.tunein.isAutoTuningChanged');
       this.set('model.tunein.autoApply', e.target.checked);
+      this.set('model.tunein.isAutoTuningChanged', !isAutoTuningChanged);
+      console.log(this.get('model.tunein.isAutoTuningChanged'))
+    },
+    iterationCountChange() {
+      var currentIterationCount = this.get('currentIterationCount');
+      var isIterationCountChanged =
+          (currentIterationCount != this.get('model.tunein.iterationCount')) ? true : false;
+      this.set('model.tunein.isIterationCountChanged', isIterationCountChanged);
+      console.log(this.get('model.tunein.iterationCount'))
     }
   }
 });
