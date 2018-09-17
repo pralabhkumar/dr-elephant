@@ -1700,7 +1700,6 @@ public class Application extends Controller {
 
     try {
 
-      List<TuningParameter> parametersList = getTuningParametersListForJob("");
       JobExecution jobExecution = JobExecution.find.select("*")
           .where()
           .eq(JobExecution.TABLE.jobExecId, jobId)
@@ -1754,12 +1753,15 @@ public class Application extends Controller {
       } catch (Exception e) {
         logger.info(e);
       }
-      DecimalFormat truncateUptoTwoDecimalFormat = new DecimalFormat(".##");
+
+      List<TuningParameter> parametersList = getTuningParametersListForJob(tuningAlgorithm.id);
+
+
+
+      DecimalFormat truncateUptoTwoDecimalFormat = new DecimalFormat("#.##");
       for (TuningParameter tuningParam : parametersList) {
         String paramName = tuningParam.paramName;
         Integer id = tuningParam.id;
-        logger.info("params:: " + paramName + " " + id + " " + tuningParam.paramName);
-
         JobSuggestedParamValue userSuggestedParam = null;
         if(manuallyOverridenParamSet != null) {
           userSuggestedParam = JobSuggestedParamValue.find.select("*")
@@ -1799,6 +1801,7 @@ public class Application extends Controller {
           optimizationAlgo.name().contains("PSO") ? "OBT" : "HBT";
 
       tuneIn.addProperty("jobSuggestedParamSetId", jobSuggestedParamSet.id);
+      tuneIn.addProperty("jobDefinitionId", jobDefinitionId);
       tuneIn.addProperty("tuningAlgorithmId", tuningAlgorithm.id);
       tuneIn.addProperty("autoApply", autoApply);
       tuneIn.addProperty("isAlgorithmTypeChanged", false);
@@ -1823,10 +1826,67 @@ public class Application extends Controller {
 
   public static Result tuningParam() {
 
-    JsonNode requestBody = request().body().asJson();
+    JsonNode requestBodyRoot = request().body().asJson();
+    JsonNode tunein = requestBodyRoot.path("tunein");
+    JsonNode job = requestBodyRoot.path("job");
+    JsonNode tuningParameters = tunein.path("tuningParameters");
+    Integer jobDefinitionId = tunein.path("jobDefinitionId").asInt();
+    String jobType = job.path("jobtype").asText().toUpperCase();
+    logger.info("jobType: " + jobType);
+    String optimizationAlgo = tunein.path("tuningAlgorithm").asText().equals("OBT") ? "PSO" : "HBT";
+    Boolean isParamChanged = checktuningParameterModificaiton(tuningParameters);
 
-    logger.info("checkpoint_1");
-    logger.info("Data: " + request().body().asJson().toString());
+    logger.info("isParamChanged: " + isParamChanged);
+
+    if (isParamChanged) {
+      JobDefinition jobDefinition = JobDefinition.find.select("*").where().eq(JobDefinition.TABLE.id, jobDefinitionId).findUnique();
+
+      logger.info("jobDefinition :: " + jobDefinition.id);
+
+      TuningAlgorithm tuningAlgorithm = TuningAlgorithm.find.select("*")
+          .where()
+          .eq(TuningAlgorithm.TABLE.jobType, jobType)
+          .eq(TuningAlgorithm.TABLE.optimizationAlgo, optimizationAlgo)
+          .findUnique();
+
+      logger.info("tuningAlgoId: " + tuningAlgorithm.id);
+
+      JobSuggestedParamSet userSuggestedParamSet = new JobSuggestedParamSet();
+      userSuggestedParamSet.jobDefinition = jobDefinition;
+      userSuggestedParamSet.tuningAlgorithm = tuningAlgorithm;
+      userSuggestedParamSet.paramSetState = JobSuggestedParamSet.ParamSetStatus.CREATED;
+      userSuggestedParamSet.isParamSetDefault = false;
+      userSuggestedParamSet.isParamSetSuggested = true;
+      userSuggestedParamSet.isParamSetBest = false;
+      userSuggestedParamSet.areConstraintsViolated = false;
+      userSuggestedParamSet.isManuallyOverridenParameter = true;
+      userSuggestedParamSet.save();
+
+      JobSuggestedParamSet latestUserSuggestedParamSet = JobSuggestedParamSet.find.select("*")
+          .where()
+          .eq(JobSuggestedParamSet.TABLE.paramSetState, true)
+          .order().desc(JobSuggestedParamSet.TABLE.createdTs)
+          .findUnique();
+
+      List<JobSuggestedParamSet> jobSuggestedParamSetList = JobSuggestedParamSet.find.select("*")
+          .where()
+          .eq(JobSuggestedParamSet.TABLE.jobDefinition + "." + JobDefinition.TABLE.id, jobDefinitionId)
+          .ne(JobSuggestedParamSet.TABLE.id, latestUserSuggestedParamSet.id)
+          .findList();
+
+      logger.info("list size:: " + jobSuggestedParamSetList.size());
+
+      for (JobSuggestedParamSet paramSet : jobSuggestedParamSetList) {
+        logger.info("param set id: " + paramSet.id);
+        if (paramSet.id.equals(latestUserSuggestedParamSet.id)) {
+          continue;
+        }
+       // paramSet.paramSetState = JobSuggestedParamSet.ParamSetStatus.DISCARDED;
+        //paramSet.update();
+      }
+
+
+    }
     JsonObject parent = new JsonObject();
     parent.addProperty("tunein", request().body().asText());
     return ok(new Gson().toJson(parent));
@@ -1900,13 +1960,31 @@ public class Application extends Controller {
     return userResourceUsage.values();
   }
 
-  private static List<TuningParameter> getTuningParametersListForJob(String jobType) {
+  private static List<TuningParameter> getTuningParametersListForJob(Integer tuningAlgorithmId) {
     List<TuningParameter> parametersList =
         TuningParameter.find.select("*")
             .where()
-            .ilike(TuningParameter.TABLE.paramName, jobType + '%')
+            .eq(TuningParameter.TABLE.tuningAlgorithm + "." + TuningAlgorithm.TABLE.id, tuningAlgorithmId)
             .findList();
     logger.info("size of paramList " + parametersList.size());
     return parametersList;
+  }
+
+  private static Boolean checktuningParameterModificaiton(JsonNode tuningParameters) {
+    if (tuningParameters.isArray()) {
+      logger.info("tuning Parameter is an array");
+    }
+    Boolean isParamChanged = false;
+    for(JsonNode parameter: tuningParameters) {
+      Integer paramId = parameter.path("paramId").asInt();
+      String name = parameter.path("name").asText();
+      String currentValue = parameter.path("currentParamValue").asText();
+      String userValue = parameter.path("userSuggestedValue").asText();
+      if(!userValue.equals(currentValue) ) {
+        logger.info("True: " + name + " " + userValue + " " + currentValue);
+        isParamChanged = true;
+      }
+    }
+    return isParamChanged;
   }
 }

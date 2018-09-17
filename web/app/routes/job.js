@@ -34,12 +34,13 @@ export default Ember.Route.extend({
       controller.set('currentIterationCount', model.tunein.get('iterationCount'))
   },
   actions: {
-    paramChange(tunein) {
+    paramChange(tunein, jobs) {
       console.log(this.get('model.jobs'))
       return this.get('ajax').post('/rest/tunein', {
         contentType: 'application/json',
         data: JSON.stringify({
-          tunein: tunein
+          tunein: tunein,
+          job: jobs
         })
       })
     },
