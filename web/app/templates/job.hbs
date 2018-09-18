@@ -151,7 +151,7 @@
           </div>
         </div>
       </div>
-      {{#if (eq model.jobs.severity "None")}}
+      {{#if (or (eq model.jobs.severity "None") (eq model.jobs.severity "Low"))}}
         <h5 class="severity-None">All Heuristics Passed With Current Parameter Values</h5>
       {{/if}}
     {{else}}
