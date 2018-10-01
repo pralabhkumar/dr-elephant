@@ -40,7 +40,7 @@ public abstract class ParameterGenerateManagerOBT extends AbstractParameterGener
     Calls once in lifetime of the flow
    */
   public abstract void initializePrerequisite(TuningAlgorithm tuningAlgorithm,
-      JobSuggestedParamSet jobSuggestedParamSet);
+      JobDefinition job);
 
   /*
     Optimize search space

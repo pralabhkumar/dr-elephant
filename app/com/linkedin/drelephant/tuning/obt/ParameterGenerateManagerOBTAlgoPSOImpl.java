@@ -50,7 +50,7 @@ public class ParameterGenerateManagerOBTAlgoPSOImpl extends ParameterGenerateMan
   }
 
   @Override
-  public void initializePrerequisite(TuningAlgorithm tuningAlgorithm, JobSuggestedParamSet jobSuggestedParamSet) {
+  public void initializePrerequisite(TuningAlgorithm tuningAlgorithm, JobDefinition job) {
 
   }
 

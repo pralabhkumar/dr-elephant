@@ -22,7 +22,6 @@ public class ParameterGenerateManagerOBTAlgoPSOIPSOImpl extends ParameterGenerat
 
   private final Logger logger = Logger.getLogger(getClass());
 
-
   enum UsageCounterSchema {USED_PHYSICAL_MEMORY, USED_VIRTUAL_MEMORY, USED_HEAP_MEMORY}
 
   public ParameterGenerateManagerOBTAlgoPSOIPSOImpl(ExecutionEngine executionEngine) {
@@ -58,28 +57,38 @@ public class ParameterGenerateManagerOBTAlgoPSOIPSOImpl extends ParameterGenerat
   }
 
   @Override
-  public void initializePrerequisite(TuningAlgorithm tuningAlgorithm, JobSuggestedParamSet jobSuggestedParamSet) {
+  public void initializePrerequisite(TuningAlgorithm tuningAlgorithm, JobDefinition job) {
     logger.info(" Intialize Prerequisite ");
     try {
-      setDefaultParameterValues(tuningAlgorithm, jobSuggestedParamSet);
+      setDefaultParameterValues(tuningAlgorithm, job);
     } catch (Exception e) {
       logger.info("Cannot intialize parameter in IPSO " + e.getMessage());
     }
   }
 
-  private void setDefaultParameterValues(TuningAlgorithm tuningAlgorithm, JobSuggestedParamSet jobSuggestedParamSet)
-      throws Exception {
+  private void setDefaultParameterValues(TuningAlgorithm tuningAlgorithm, JobDefinition job) throws Exception{
     try {
       List<TuningParameter> tuningParameters =
           TuningParameter.find.where().eq(TuningParameter.TABLE.tuningAlgorithm, tuningAlgorithm).findList();
-      for (TuningParameter tuningParameter : tuningParameters) {
-        TuningParameterConstraint tuningParameterConstraint = new TuningParameterConstraint();
-        tuningParameterConstraint.jobDefinition = jobSuggestedParamSet.jobDefinition;
-        tuningParameterConstraint.tuningParameter = tuningParameter;
-        tuningParameterConstraint.lowerBound = tuningParameter.minValue;
-        tuningParameterConstraint.upperBound = tuningParameter.maxValue;
-        tuningParameterConstraint.constraintType = TuningParameterConstraint.ConstraintType.BOUNDARY;
-        tuningParameterConstraint.save();
+
+      List<TuningParameterConstraint> tuningParameterConstrains= TuningParameterConstraint.find.where()
+          .eq(TuningParameterConstraint.TABLE.jobDefinition + "." + JobDefinition.TABLE.id, job.id)
+          .findList();
+
+      if(tuningParameterConstrains== null || tuningParameterConstrains.size()==0) {
+        logger.info("Parameter constraints not added . Hence adding parameter constraint. ");
+        for (TuningParameter tuningParameter : tuningParameters) {
+          TuningParameterConstraint tuningParameterConstraint = new TuningParameterConstraint();
+          tuningParameterConstraint.jobDefinition = job;
+          tuningParameterConstraint.tuningParameter = tuningParameter;
+          tuningParameterConstraint.lowerBound = tuningParameter.minValue;
+          tuningParameterConstraint.upperBound = tuningParameter.maxValue;
+          tuningParameterConstraint.constraintType = TuningParameterConstraint.ConstraintType.BOUNDARY;
+          tuningParameterConstraint.save();
+        }
+      }
+      else{
+        logger.info(" Parameter constraints already added . Hence not adding them");
       }
     } catch (Exception e) {
       logger.info(

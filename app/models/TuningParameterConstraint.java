@@ -49,7 +49,7 @@ public class TuningParameterConstraint extends Model {
   public static class TABLE {
     public static final String TABLE_NAME = "tuning_parameter_constraint";
     public static final String id = "id";
-    public static final String jobDefinitionId = "jobDefinitionId";
+    public static final String jobDefinition = "jobDefinition";
     public static final String constraintType = "constraintType";
     public static final String tuningParameterId = "tuningParameterId";
     public static final String lowerBound = "lowerBound";

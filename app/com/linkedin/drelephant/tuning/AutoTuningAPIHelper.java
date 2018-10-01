@@ -363,10 +363,12 @@ public class AutoTuningAPIHelper {
     if (tuningJobDefinition == null) {
       tuningInput.setTuningAlgorithm(getTuningAlgorithmForfirstTime(tuningInput));
       logger.info(" Tuning Algorithm Type " + tuningInput.getTuningAlgorithm().optimizationAlgo.name());
+      initializeOptimizationAlgoPrerequisite(tuningInput);
       return processForFirstExecution(tuningInput, jobExecution);
     } else {
       tuningInput.setTuningAlgorithm(tuningJobDefinition.tuningAlgorithm);
       logger.info(" Tuning Algorithm Type " + tuningInput.getTuningAlgorithm().optimizationAlgo.name());
+      initializeOptimizationAlgoPrerequisite(tuningInput);
       return processForSubsequentExecutions(tuningJobDefinition, tuningInput, jobExecution);
     }
   } /*catch (Exception e) {
@@ -610,7 +612,6 @@ public class AutoTuningAPIHelper {
     jobSuggestedParamSet.isParamSetSuggested = false;
     jobSuggestedParamSet.save();
     insertParameterValues(jobSuggestedParamSet, paramValueMap, tuningAlgorithm);
-    initializeOptimizationAlgoPrerequisite(tuningAlgorithm, jobSuggestedParamSet);
     logger.debug("Default parameter set inserted for job: " + job.jobName);
   }
 
@@ -632,12 +633,20 @@ public class AutoTuningAPIHelper {
     }
   }
 
-  private void initializeOptimizationAlgoPrerequisite(TuningAlgorithm tuningAlgorithm,
-      JobSuggestedParamSet jobSuggestedParamSet) {
+  private void initializeOptimizationAlgoPrerequisite(TuningInput tuningInput) {
+    String jobDefId = tuningInput.getJobDefId();
+    TuningJobDefinition tuningJobDefinition = TuningJobDefinition.find.select("*")
+        .fetch(TuningJobDefinition.TABLE.job, "*")
+        .where()
+        .eq(TuningJobDefinition.TABLE.job + "." + JobDefinition.TABLE.jobDefId, jobDefId)
+        .setMaxRows(1)
+        .orderBy(TuningJobDefinition.TABLE.createdTs + " desc")
+        .findUnique();
+    TuningAlgorithm tuningAlgorithm = tuningInput.getTuningAlgorithm();
     logger.info("Inserting parameter constraint " + tuningAlgorithm.optimizationAlgo.name());
     ParameterGenerateManagerOBT manager = OptimizationAlgoFactory.getOptimizationAlogrithm(tuningAlgorithm);
     if (manager != null) {
-      manager.initializePrerequisite(tuningAlgorithm, jobSuggestedParamSet);
+      manager.initializePrerequisite(tuningAlgorithm, tuningJobDefinition.job);
     }
   }
 

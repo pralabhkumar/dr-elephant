@@ -57,4 +57,15 @@ public class TuningManagerTest {
   public void testFlowTestRunner(){
     running(testServer(TEST_SERVER_PORT, fakeApp), new FlowTestRunner());
   }
+
+
+  @Test
+  public void testBaselineManagerTestRunner(){
+    running(testServer(TEST_SERVER_PORT, fakeApp), new BaselineManagerTestRunner());
+  }
+
+  @Test
+  public void testJobStatusManagerTestRunner(){
+    running(testServer(TEST_SERVER_PORT, fakeApp), new JobStatusManagerTestRunner());
+  }
 }

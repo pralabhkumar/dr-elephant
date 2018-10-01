@@ -33,6 +33,11 @@ public class DBTestUtil {
     initDBUtil(TEST_BASELINE_DATA_FILE);
   }
 
+  public static void initDBAzkabanJobStatus() throws IOException, SQLException {
+    initDBUtil(TEST_JOB_STATUS_DATA_FILE);
+  }
+
+
   public static void initDBIPSO() throws IOException, SQLException {
     initDBUtil(TEST_IPSO_DATA_FILE);
   }
