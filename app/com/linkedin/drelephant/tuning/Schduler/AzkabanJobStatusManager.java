@@ -24,9 +24,10 @@ public class AzkabanJobStatusManager extends AbstractJobStatusManager {
   protected List<TuningJobExecutionParamSet> detectJobsExecutionInProgress() {
     logger.info("Fetching the executions which are in progress");
     List<TuningJobExecutionParamSet> tuningJobExecutionParamSets =
-        TuningJobExecutionParamSet.find.fetch(TuningJobExecutionParamSet.TABLE.jobExecution)
+        TuningJobExecutionParamSet.find.
+            fetch(TuningJobExecutionParamSet.TABLE.jobExecution)
             .fetch(TuningJobExecutionParamSet.TABLE.jobSuggestedParamSet)
-            .where()
+              .where()
             .eq(TuningJobExecutionParamSet.TABLE.jobExecution + '.' + JobExecution.TABLE.executionState,
                 JobExecution.ExecutionState.IN_PROGRESS)
             .findList();
@@ -46,7 +47,7 @@ public class AzkabanJobStatusManager extends AbstractJobStatusManager {
         JobExecution jobExecution = tuningJobExecutionParamSet.jobExecution;
         logger.info("Checking current status of started execution: " + jobExecution.jobExecId);
         assignAzkabanJobStatusUtil();
-        analyzeJobExecution(jobExecution,jobSuggestedParamSet);
+        return analyzeJobExecution(jobExecution,jobSuggestedParamSet);
       }
     } catch (Exception e) {
       logger.error("Error in fetching list of completed executions", e);
@@ -63,7 +64,7 @@ public class AzkabanJobStatusManager extends AbstractJobStatusManager {
     }
   }
 
-  private void analyzeJobExecution(JobExecution jobExecution,JobSuggestedParamSet jobSuggestedParamSet){
+  private boolean analyzeJobExecution(JobExecution jobExecution,JobSuggestedParamSet jobSuggestedParamSet){
     try {
       Map<String, String> jobStatus = _azkabanJobStatusUtil.getJobsFromFlow(jobExecution.flowExecution.flowExecId);
       if (jobStatus != null) {
@@ -75,10 +76,13 @@ public class AzkabanJobStatusManager extends AbstractJobStatusManager {
         }
       } else {
         logger.info("No jobs found for flow execution: " + jobExecution.flowExecution.flowExecId);
+        return false;
       }
     } catch (Exception e) {
       logger.error("Error in checking status of execution: " + jobExecution.jobExecId, e);
+      return false;
     }
+    return true;
   }
 
   private void updateJobExecutionMetrics(Map.Entry<String, String> job, JobSuggestedParamSet jobSuggestedParamSet,

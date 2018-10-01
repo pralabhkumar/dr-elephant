@@ -38,16 +38,21 @@ public abstract class AbstractJobStatusManager implements Manager {
   }
 
   protected boolean updateDataBase(List<TuningJobExecutionParamSet> jobs) {
-    for (TuningJobExecutionParamSet job : jobs) {
-      JobSuggestedParamSet jobSuggestedParamSet = job.jobSuggestedParamSet;
-      JobExecution jobExecution = job.jobExecution;
-      if (isJobCompleted(jobExecution)) {
-        jobExecution.update();
-        jobSuggestedParamSet.update();
-        logger.info("Execution " + jobExecution.jobExecId + " is completed");
-      } else {
-        logger.info("Execution " + jobExecution.jobExecId + " is still in running state");
+    try {
+      for (TuningJobExecutionParamSet job : jobs) {
+        JobSuggestedParamSet jobSuggestedParamSet = job.jobSuggestedParamSet;
+        JobExecution jobExecution = job.jobExecution;
+        if (isJobCompleted(jobExecution)) {
+          jobExecution.update();
+          jobSuggestedParamSet.update();
+          logger.info("Execution " + jobExecution.jobExecId + " is completed");
+        } else {
+          logger.info("Execution " + jobExecution.jobExecId + " is still in running state");
+        }
       }
+    }catch(Exception e){
+      logger.info ( "Exception occur while updating database " + e.getMessage());
+      return false;
     }
     return true;
   }
@@ -63,13 +68,18 @@ public abstract class AbstractJobStatusManager implements Manager {
   }
 
   protected boolean updateMetrics(List<TuningJobExecutionParamSet> completedJobs) {
-    for (TuningJobExecutionParamSet completedJob : completedJobs) {
-      JobExecution jobExecution = completedJob.jobExecution;
-      if (jobExecution.executionState.equals(JobExecution.ExecutionState.SUCCEEDED)) {
-        AutoTuningMetricsController.markSuccessfulJobs();
-      } else if (jobExecution.executionState.equals(JobExecution.ExecutionState.FAILED)) {
-        AutoTuningMetricsController.markFailedJobs();
+    try {
+      for (TuningJobExecutionParamSet completedJob : completedJobs) {
+        JobExecution jobExecution = completedJob.jobExecution;
+        if (jobExecution.executionState.equals(JobExecution.ExecutionState.SUCCEEDED)) {
+          AutoTuningMetricsController.markSuccessfulJobs();
+        } else if (jobExecution.executionState.equals(JobExecution.ExecutionState.FAILED)) {
+          AutoTuningMetricsController.markFailedJobs();
+        }
       }
+    }catch (Exception e){
+      logger.info(" Exception while updating Metrics to ingraph " + e.getMessage());
+      return false;
     }
     return true;
   }
