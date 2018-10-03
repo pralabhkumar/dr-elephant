@@ -68,4 +68,10 @@ public class TuningManagerTest {
   public void testJobStatusManagerTestRunner(){
     running(testServer(TEST_SERVER_PORT, fakeApp), new JobStatusManagerTestRunner());
   }
+
+
+  @Test
+  public void testFitnessManagerTestRunner(){
+    running(testServer(TEST_SERVER_PORT, fakeApp), new FitnessManagerTestRunner());
+  }
 }
