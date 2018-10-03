@@ -34,7 +34,7 @@ public class MRExecutionEngine implements ExecutionEngine {
   private final Logger logger = Logger.getLogger(getClass());
   boolean debugEnabled = logger.isDebugEnabled();
   enum UsageCounterSchema {USED_PHYSICAL_MEMORY, USED_VIRTUAL_MEMORY, USED_HEAP_MEMORY}
-
+  final static int MAX_MAP_MEM_SORT_MEM_DIFF = 768;
   private String functionTypes[] = {"map", "reduce"};
 
   @Override
@@ -126,7 +126,7 @@ public class MRExecutionEngine implements ExecutionEngine {
         }
         violations++;
       }
-      if (mrMapMemory - mrSortMemory < 768) {
+      if (mrMapMemory - mrSortMemory < MAX_MAP_MEM_SORT_MEM_DIFF) {
         if (debugEnabled) {
           logger.debug("Sort Memory " + mrSortMemory);
           logger.debug("Mapper Memory " + mrMapMemory);

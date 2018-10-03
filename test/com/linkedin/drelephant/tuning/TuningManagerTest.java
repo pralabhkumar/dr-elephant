@@ -74,4 +74,9 @@ public class TuningManagerTest {
   public void testFitnessManagerTestRunner(){
     running(testServer(TEST_SERVER_PORT, fakeApp), new FitnessManagerTestRunner());
   }
+
+  @Test
+  public void testParamGenerterTestRunner(){
+    running(testServer(TEST_SERVER_PORT, fakeApp), new ParameterGenerateManagerTestRunner());
+  }
 }
