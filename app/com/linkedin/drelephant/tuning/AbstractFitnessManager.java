@@ -78,10 +78,11 @@ public abstract class AbstractFitnessManager implements Manager {
         handleFitnessCalculation(jobExecution, results, tuningJobDefinition, jobSuggestedParamSet);
       } catch (Exception e) {
         logger.error("Error updating fitness of execution: " + jobExecution.id + "\n Stacktrace: ", e);
+        return false;
       }
     }
     logger.info("Execution metrics updated");
-    return false;
+    return true;
   }
 
   private TuningJobDefinition getTuningJobDefinition(JobDefinition job) {
