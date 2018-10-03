@@ -35,6 +35,12 @@ import javax.persistence.Table;
 import play.db.ebean.Model;
 
 
+/**
+ * This table contains information about suggested param set . This also contains state of param set,
+ * whether the param set is created , sent , executed , fitness_computed , discarded.
+ * . Table also have information about which parameter is best so far , which is default , and which is manually
+ * overridden.
+ */
 @Entity
 @Table(name = "job_suggested_param_set")
 public class JobSuggestedParamSet extends Model {

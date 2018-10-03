@@ -37,6 +37,10 @@ public class DBTestUtil {
     initDBUtil(TEST_FITNESS_CALCULATION_DATA_FILE);
   }
 
+  public static void initParamGenerater() throws IOException, SQLException {
+    initDBUtil(TEST_PARAM_GENERATE_DATA_FILE);
+  }
+
   public static void initDBAzkabanJobStatus() throws IOException, SQLException {
     initDBUtil(TEST_JOB_STATUS_DATA_FILE);
   }

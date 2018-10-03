@@ -34,6 +34,9 @@ import com.avaje.ebean.annotation.UpdatedTimestamp;
 import play.db.ebean.Model;
 
 
+/**
+ * This table have information about the exeuction of the job.
+ */
 @Entity
 @Table(name = "job_execution")
 public class JobExecution extends Model {

@@ -35,7 +35,11 @@ import com.avaje.ebean.annotation.UpdatedTimestamp;
 
 import play.db.ebean.Model;
 
-
+/**
+ * TuningParameterConstraint refers to the table tuning_parameter_constraint.
+ * This table will contain boundry constraint for each parameter. This table will be specifically
+ * use in IPSO
+ */
 @Entity
 @Table(name = "tuning_parameter_constraint")
 public class TuningParameterConstraint extends Model {

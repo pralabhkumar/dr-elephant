@@ -31,6 +31,9 @@ import com.avaje.ebean.annotation.UpdatedTimestamp;
 import play.db.ebean.Model;
 
 
+/**
+ * Table describe about the job which is for tuning. It have one entry per job .
+ */
 @Entity
 @Table(name = "tuning_job_definition")
 public class TuningJobDefinition extends Model {
