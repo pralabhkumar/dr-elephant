@@ -42,7 +42,7 @@ public class ParameterGenerateManagerHBT extends AbstractParameterGenerateManage
             TuningAlgorithm.OptimizationAlgo.HBT.name())
         // .eq(JobSuggestedParamSet.TABLE.isParamSetDefault, 0)
         .findList();
-    logger.info(
+    logger.debug(
         " Number of Pending Jobs for parameter suggestion " + this._executionEngine + " " + pendingParamSetList.size());
     return pendingParamSetList;
   }
@@ -54,7 +54,7 @@ public class ParameterGenerateManagerHBT extends AbstractParameterGenerateManage
             TuningAlgorithm.OptimizationAlgo.HBT.name())
         .findList();
 
-    logger.info(" Number of Total Jobs " + this._executionEngine + " " + totalJobs.size());
+    logger.debug(" Number of Total Jobs " + this._executionEngine + " " + totalJobs.size());
     return totalJobs;
   }
 
@@ -65,7 +65,7 @@ public class ParameterGenerateManagerHBT extends AbstractParameterGenerateManage
 
   @Override
   public JobTuningInfo generateParamSet(JobTuningInfo jobTuningInfo) {
-    logger.info("Generating param set for job: " + jobTuningInfo.getTuningJob().jobName);
+    logger.debug("Generating param set for job: " + jobTuningInfo.getTuningJob().jobName);
     String newTunedParameters = generateParamSet(jobTuningInfo.getParametersToTune(), jobTuningInfo.getTuningJob());
     jobTuningInfo.setTunerState(newTunedParameters);
     return jobTuningInfo;
@@ -79,16 +79,16 @@ public class ParameterGenerateManagerHBT extends AbstractParameterGenerateManage
         .desc(JobExecution.TABLE.updatedTs)
         .setMaxRows(1)
         .findUnique();
-    logger.info("Job Status " + jobExecution.executionState.name());
+    logger.debug("Job Status " + jobExecution.executionState.name());
     if (jobExecution.executionState.name().equals(JobExecution.ExecutionState.IN_PROGRESS.name())
         || jobExecution.executionState.name().equals(JobExecution.ExecutionState.NOT_STARTED.name())) {
-      logger.info(" Job is still running , cannot use for param generation ");
+      logger.debug(" Job is still running , cannot use for param generation ");
       return "";
     }
 
     List<AppResult> results = getAppResults(jobExecution);
     if (results == null) {
-      logger.info(
+      logger.debug(
           " Job is analyzing  , cannot use for param generation " + jobExecution.id + " " + jobExecution.job.id);
       return "";
     }
@@ -136,14 +136,14 @@ public class ParameterGenerateManagerHBT extends AbstractParameterGenerateManage
    * @param jobTuningInfoList JobTuningInfo List
    */
   protected boolean updateDatabase(List<JobTuningInfo> jobTuningInfoList) {
-    logger.info("Updating new parameter suggestion in database HBT");
+    logger.debug("Updating new parameter suggestion in database HBT");
     if (jobTuningInfoList == null) {
-      logger.info("No new parameter suggestion to update");
+      logger.debug("No new parameter suggestion to update");
       return false;
     }
 
     for (JobTuningInfo jobTuningInfo : jobTuningInfoList) {
-      logger.info("Updating new parameter suggestion for job:" + jobTuningInfo.getTuningJob().jobDefId);
+      logger.debug("Updating new parameter suggestion for job:" + jobTuningInfo.getTuningJob().jobDefId);
 
       JobDefinition job = jobTuningInfo.getTuningJob();
       List<TuningParameter> paramList = jobTuningInfo.getParametersToTune();
@@ -157,7 +157,7 @@ public class ParameterGenerateManagerHBT extends AbstractParameterGenerateManage
 
       List<TuningParameter> derivedParameterList = TuningHelper.getDerivedParameterList(tuningJobDefinition);
 
-      logger.info("No. of derived tuning params for job " + tuningJobDefinition.job.jobName + ": "
+      logger.debug("No. of derived tuning params for job " + tuningJobDefinition.job.jobName + ": "
           + derivedParameterList.size());
 
       List<JobSuggestedParamValue> jobSuggestedParamValueList = getParamValueList(stringTunerState);
@@ -171,7 +171,7 @@ public class ParameterGenerateManagerHBT extends AbstractParameterGenerateManage
       if (isParamConstraintViolated(jobSuggestedParamValueList)) {
         penaltyApplication(jobSuggestedParamSet, tuningJobDefinition);
       } else {
-        logger.info(" Parameters constraints not violeted ");
+        logger.debug(" Parameters constraints not violeted ");
         jobSuggestedParamSet.areConstraintsViolated = false;
         jobSuggestedParamSet.paramSetState = JobSuggestedParamSet.ParamSetStatus.CREATED;
         //processParamSetStatus(jobSuggestedParamSet);
@@ -181,46 +181,17 @@ public class ParameterGenerateManagerHBT extends AbstractParameterGenerateManage
       for (JobSuggestedParamValue jobSuggestedParamValue : jobSuggestedParamValueList) {
         jobSuggestedParamValue.jobSuggestedParamSet = jobSuggestedParamSet;
       }
-      logger.info(" Job Suggested list " + jobSuggestedParamValueList.size());
+      logger.debug(" Job Suggested list " + jobSuggestedParamValueList.size());
       saveSuggestedParams(jobSuggestedParamValueList);
     }
 
     return true;
   }
 
-  private void processParamSetStatus(JobSuggestedParamSet jobSuggestedParamSet) {
-    TuningJobDefinition tuningJobDefinition1 = TuningJobDefinition.find.select("*")
-        .where()
-        .eq(TuningJobDefinition.TABLE.job + "." + JobDefinition.TABLE.id, jobSuggestedParamSet.jobDefinition.id)
-        .setMaxRows(1)
-        .findUnique();
-    //jobSuggestedParamSet.paramSetState = JobSuggestedParamSet.ParamSetStatus.CREATED;
-    //handleDiscarding(tuningJobDefinition1, jobSuggestedParamSet);
-  }
-
- /* private void handleDiscarding(TuningJobDefinition tuningJobDefinition1, JobSuggestedParamSet jobSuggestedParamSet) {
-    if (tuningJobDefinition1.autoApply) {
-      jobSuggestedParamSet.paramSetState = JobSuggestedParamSet.ParamSetStatus.CREATED;
-    } else {
-      jobSuggestedParamSet.paramSetState = JobSuggestedParamSet.ParamSetStatus.DISCARDED;
-    }
-    List<JobSuggestedParamSet> tempJobSuggestedParamSet = JobSuggestedParamSet.find.select("*")
-        .where()
-        .eq(JobSuggestedParamSet.TABLE.jobDefinition + "." + JobDefinition.TABLE.id, tuningJobDefinition1.job.id)
-        .findList();
-    Boolean isManuallyOverriden = false;
-    for (JobSuggestedParamSet jobSuggestedParamSet1 : tempJobSuggestedParamSet) {
-      if (jobSuggestedParamSet1.isManuallyOverridenParameter) {
-        isManuallyOverriden = true;
-      }
-    }
-    if (isManuallyOverriden) {
-      jobSuggestedParamSet.paramSetState = JobSuggestedParamSet.ParamSetStatus.DISCARDED;
-    }
-  }*/
+  
 
   private void penaltyApplication(JobSuggestedParamSet jobSuggestedParamSet, TuningJobDefinition tuningJobDefinition) {
-    logger.info("Parameter constraint violated. Applying penalty.");
+    logger.debug("Parameter constraint violated. Applying penalty.");
     int penaltyConstant = 4;
     Double averageResourceUsagePerGBInput =
         tuningJobDefinition.averageResourceUsage * FileUtils.ONE_GB / tuningJobDefinition.averageInputSizeInBytes;
@@ -255,7 +226,7 @@ public class ParameterGenerateManagerHBT extends AbstractParameterGenerateManage
   private List<JobSuggestedParamValue> getParamValueList(String tunerState) {
     List<JobSuggestedParamValue> jobSuggestedParamValueList = new ArrayList<JobSuggestedParamValue>();
     for (String parameter : tunerState.split("\n")) {
-      logger.info(" Parameter values " + parameter);
+      logger.debug(" Parameter values " + parameter);
       String paramIDValues[] = parameter.split("\t");
       if (paramIDValues.length == 2) {
         JobSuggestedParamValue jobSuggestedParamValue = new JobSuggestedParamValue();
@@ -264,7 +235,7 @@ public class ParameterGenerateManagerHBT extends AbstractParameterGenerateManage
         jobSuggestedParamValueList.add(jobSuggestedParamValue);
       }
     }
-    logger.info(" Job Suggested Values " + jobSuggestedParamValueList.size());
+    logger.debug(" Job Suggested Values " + jobSuggestedParamValueList.size());
     return jobSuggestedParamValueList;
   }
 

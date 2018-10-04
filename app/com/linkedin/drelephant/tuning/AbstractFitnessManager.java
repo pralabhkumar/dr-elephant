@@ -34,14 +34,19 @@ import org.apache.log4j.Logger;
 
 public abstract class AbstractFitnessManager implements Manager {
   private final Logger logger = Logger.getLogger(getClass());
+  boolean debugEnabled = logger.isDebugEnabled();
   protected final String FITNESS_COMPUTE_WAIT_INTERVAL = "fitness.compute.wait_interval.ms";
   protected final String IGNORE_EXECUTION_WAIT_INTERVAL = "ignore.execution.wait.interval.ms";
   protected final String MAX_TUNING_EXECUTIONS = "max.tuning.executions";
   protected final String MIN_TUNING_EXECUTIONS = "min.tuning.executions";
+  private static final int MIN_TO_MS = (1000 * 60);
+  private static final int HOUR_TO_SEC = 3600;
+  //private stati
   protected int maxTuningExecutions;
   protected int minTuningExecutions;
   protected Long fitnessComputeWaitInterval;
   protected Long ignoreExecutionWaitInterval;
+  private Map<Integer, TuningJobDefinition> tuningDefintionCollection = new HashMap<Integer, TuningJobDefinition>();
 
   /**
    * Detects  & return the jobs for which fitness computation have to be done.
@@ -70,8 +75,7 @@ public abstract class AbstractFitnessManager implements Manager {
       JobExecution jobExecution = completedJobExecutionParamSet.jobExecution;
       JobSuggestedParamSet jobSuggestedParamSet = completedJobExecutionParamSet.jobSuggestedParamSet;
       JobDefinition job = jobExecution.job;
-
-      logger.info("Updating execution metrics and fitness for execution: " + jobExecution.jobExecId);
+      logger.debug("Updating execution metrics and fitness for execution: " + jobExecution.jobExecId);
       try {
         TuningJobDefinition tuningJobDefinition = getTuningJobDefinition(job);
         List<AppResult> results = getAppResults(jobExecution);
@@ -81,7 +85,8 @@ public abstract class AbstractFitnessManager implements Manager {
         return false;
       }
     }
-    logger.info("Execution metrics updated");
+
+    logger.debug("Execution metrics updated");
     return true;
   }
 
@@ -92,7 +97,9 @@ public abstract class AbstractFitnessManager implements Manager {
         .eq(TuningJobDefinition.TABLE.job + "." + JobDefinition.TABLE.id, job.id)
         .order()
         .desc(TuningJobDefinition.TABLE.createdTs)
+        .setMaxRows(1)
         .findUnique();
+    tuningDefintionCollection.put(tuningJobDefinition.job.id, tuningJobDefinition);
     return tuningJobDefinition;
   }
 
@@ -116,15 +123,13 @@ public abstract class AbstractFitnessManager implements Manager {
     }
   }
 
-
-
   protected void updateJobExecution(JobExecution jobExecution, Double totalResourceUsed, Double totalInputBytesInBytes,
       Long totalExecutionTime) {
-    jobExecution.executionTime = totalExecutionTime * 1.0 / (1000 * 60);
-    jobExecution.resourceUsage = totalResourceUsed * 1.0 / (1024 * 3600);
+    jobExecution.executionTime = totalExecutionTime * 1.0 / MIN_TO_MS;
+    jobExecution.resourceUsage = totalResourceUsed * 1.0 / (FileUtils.ONE_KB * HOUR_TO_SEC);
     jobExecution.inputSizeInBytes = totalInputBytesInBytes;
     jobExecution.update();
-    logger.info("Metric Values for execution " + jobExecution.jobExecId + ": Execution time = " + totalExecutionTime
+    logger.debug("Metric Values for execution " + jobExecution.jobExecId + ": Execution time = " + totalExecutionTime
         + ", Resource usage = " + totalResourceUsed + " and total input size = " + totalInputBytesInBytes);
   }
 
@@ -140,7 +145,7 @@ public abstract class AbstractFitnessManager implements Manager {
     logger.debug("Current Time in millis: " + System.currentTimeMillis() + ", job execution last updated time "
         + jobExecution.updatedTs.getTime());
     if (diff > ignoreExecutionWaitInterval) {
-      logger.info(
+      logger.debug(
           "Fitness of param set " + jobSuggestedParamSet.id + " corresponding to execution id: " + jobExecution.id
               + " not computed for more than the maximum duration specified to compute fitness. "
               + "Resetting the param set to CREATED state");
@@ -177,7 +182,7 @@ public abstract class AbstractFitnessManager implements Manager {
    */
   protected void resetParamSetToCreated(JobSuggestedParamSet jobSuggestedParamSet) {
     if (!jobSuggestedParamSet.paramSetState.equals(JobSuggestedParamSet.ParamSetStatus.FITNESS_COMPUTED)) {
-      logger.info("Resetting parameter set to created: " + jobSuggestedParamSet.id);
+      logger.debug("Resetting parameter set to created: " + jobSuggestedParamSet.id);
       jobSuggestedParamSet.paramSetState = JobSuggestedParamSet.ParamSetStatus.CREATED;
       jobSuggestedParamSet.save();
     }
@@ -205,7 +210,7 @@ public abstract class AbstractFitnessManager implements Manager {
 
     if (resourceUsagePerGBInput > maxDesiredResourceUsagePerGBInput
         || executionTimePerGBInput > maxDesiredExecutionTimePerGBInput) {
-      logger.info("Execution " + jobExecution.jobExecId + " violates constraint on resource usage per GB input");
+      logger.debug("Execution " + jobExecution.jobExecId + " violates constraint on resource usage per GB input");
       jobSuggestedParamSet.fitness = penaltyConstant * maxDesiredResourceUsagePerGBInput;
     } else {
       jobSuggestedParamSet.fitness = resourceUsagePerGBInput;
@@ -222,7 +227,7 @@ public abstract class AbstractFitnessManager implements Manager {
    * @param jobSuggestedParamSet JobSuggestedParamSet
    */
   protected JobSuggestedParamSet updateBestJobSuggestedParamSet(JobSuggestedParamSet jobSuggestedParamSet) {
-    logger.info("Checking if a new best param set is found for job: " + jobSuggestedParamSet.jobDefinition.jobDefId);
+    logger.debug("Checking if a new best param set is found for job: " + jobSuggestedParamSet.jobDefinition.jobDefId);
     JobSuggestedParamSet currentBestJobSuggestedParamSet = JobSuggestedParamSet.find.where()
         .eq(JobSuggestedParamSet.TABLE.jobDefinition + "." + JobDefinition.TABLE.id,
             jobSuggestedParamSet.jobDefinition.id)
@@ -230,14 +235,14 @@ public abstract class AbstractFitnessManager implements Manager {
         .findUnique();
     if (currentBestJobSuggestedParamSet != null) {
       if (currentBestJobSuggestedParamSet.fitness > jobSuggestedParamSet.fitness) {
-        logger.info("Param set: " + jobSuggestedParamSet.id + " is the new best param set for job: "
+        logger.debug("Param set: " + jobSuggestedParamSet.id + " is the new best param set for job: "
             + jobSuggestedParamSet.jobDefinition.jobDefId);
         currentBestJobSuggestedParamSet.isParamSetBest = false;
         jobSuggestedParamSet.isParamSetBest = true;
         currentBestJobSuggestedParamSet.save();
       }
     } else {
-      logger.info("No best param set found for job: " + jobSuggestedParamSet.jobDefinition.jobDefId
+      logger.debug("No best param set found for job: " + jobSuggestedParamSet.jobDefinition.jobDefId
           + ". Marking current param set " + jobSuggestedParamSet.id + " as best");
       jobSuggestedParamSet.isParamSetBest = true;
     }
@@ -270,24 +275,22 @@ public abstract class AbstractFitnessManager implements Manager {
   }
 
   private boolean isTuningEnabled(Integer jobDefinitionId) {
-    TuningJobDefinition tuningJobDefinition = TuningJobDefinition.find.where()
-        .eq(TuningJobDefinition.TABLE.job + '.' + JobDefinition.TABLE.id, jobDefinitionId)
-        .order()
-        // There can be multiple entries in tuningJobDefinition if the job is switch on/off multiple times.
-        // The latest entry gives the information regarding whether tuning is enabled or not
-        .desc(TuningJobDefinition.TABLE.createdTs)
-        .setMaxRows(1)
-        .findUnique();
+    TuningJobDefinition tuningJobDefinition = tuningDefintionCollection.get(jobDefinitionId);
+    if (tuningJobDefinition == null) {
+      TuningJobDefinition tuningJobDefinitionNew = TuningJobDefinition.find.where()
+          .eq(TuningJobDefinition.TABLE.job + '.' + JobDefinition.TABLE.id, jobDefinitionId)
+          .order()
+          // There can be multiple entries in tuningJobDefinition if the job is switch on/off multiple times.
+          // The latest entry gives the information regarding whether tuning is enabled or not
+          .desc(TuningJobDefinition.TABLE.createdTs)
+          .setMaxRows(1)
+          .findUnique();
 
-    return tuningJobDefinition != null && tuningJobDefinition.tuningEnabled;
+      return tuningJobDefinitionNew != null && tuningJobDefinitionNew.tuningEnabled;
+    } else {
+      return tuningJobDefinition != null && tuningJobDefinition.tuningEnabled;
+    }
   }
-
-
-
-
-
-
-
 
   public boolean reachToNumberOfThresholdIterations(List<TuningJobExecutionParamSet> tuningJobExecutionParamSets,
       JobDefinition jobDefinition) {
@@ -316,8 +319,6 @@ public abstract class AbstractFitnessManager implements Manager {
     }
   }
 
-
-
   public final boolean execute() {
     logger.info("Executing Fitness Manager");
     boolean calculateFitnessDone = false, databaseUpdateDone = false, updateMetricsDone = false;
@@ -337,7 +338,8 @@ public abstract class AbstractFitnessManager implements Manager {
       logger.info("Updating Metrics");
       updateMetricsDone = updateMetrics(tuningJobExecutionParamSet);
     }
-    logger.info("Disable Tuning if Required");
+    logger.info(
+        "Disable Tuning if Required . Disabled based on number of iteration reached or other terminating conditions for algorithms");
     if (tuningJobExecutionParamSet != null && tuningJobExecutionParamSet.size() >= 1) {
       Set<JobDefinition> jobDefinitionSet = new HashSet<JobDefinition>();
       for (TuningJobExecutionParamSet completedJobExecutionParamSet : tuningJobExecutionParamSet) {
@@ -357,16 +359,16 @@ public abstract class AbstractFitnessManager implements Manager {
     for (TuningJobExecutionParamSet tuningJobExecutionParamSet : tuningJobExecutionParamSets) {
       JobExecution jobExecution = tuningJobExecutionParamSet.jobExecution;
       long diff = System.currentTimeMillis() - jobExecution.updatedTs.getTime();
-      logger.info("Current Time in millis: " + System.currentTimeMillis() + ", Job execution last updated time "
+      logger.debug("Current Time in millis: " + System.currentTimeMillis() + ", Job execution last updated time "
           + jobExecution.updatedTs.getTime());
       if (diff < fitnessComputeWaitInterval) {
-        logger.info("Delaying fitness compute for execution: " + jobExecution.jobExecId);
+        logger.debug("Delaying fitness compute for execution: " + jobExecution.jobExecId);
       } else {
-        logger.info("Adding execution " + jobExecution.jobExecId + " to fitness computation queue");
+        logger.debug("Adding execution " + jobExecution.jobExecId + " to fitness computation queue");
         completedJobExecutionParamSet.add(tuningJobExecutionParamSet);
       }
     }
-    logger.info(
+    logger.debug(
         "Number of completed execution fetched for fitness computation: " + completedJobExecutionParamSet.size());
   }
 }

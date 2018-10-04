@@ -22,7 +22,7 @@ public class BaselineManagerOBT extends AbstractBaselineManager {
 
   @Override
   protected List<TuningJobDefinition> detectJobsForBaseLineComputation() {
-    logger.info("Fetching jobs for which baseline metrics need to be computed");
+    logger.debug("Fetching jobs for which baseline metrics need to be computed");
     List<TuningJobDefinition> tuningJobDefinitions = TuningJobDefinition.find.where()
         .eq(TuningJobDefinition.TABLE.averageResourceUsage, null)
         .or(Expr.eq(TuningJobDefinition.TABLE.tuningAlgorithm + "." + TuningAlgorithm.TABLE.optimizationAlgo,
@@ -31,7 +31,7 @@ public class BaselineManagerOBT extends AbstractBaselineManager {
                 TuningAlgorithm.OptimizationAlgo.PSO_IPSO.name()))
         .findList();
     if(tuningJobDefinitions!=null){
-      logger.info("Total jobs for Baseline Computation in OBT");
+      logger.debug("Total jobs for Baseline Computation in OBT");
     }
     return tuningJobDefinitions;
   }

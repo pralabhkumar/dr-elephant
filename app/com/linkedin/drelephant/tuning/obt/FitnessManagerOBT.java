@@ -118,13 +118,13 @@ public abstract class FitnessManagerOBT extends AbstractFitnessManager {
       }
       if (tuningJobExecutionParamSets.size() >= minTuningExecutions) {
         if (didParameterSetConverge(tuningJobExecutionParamSets)) {
-          logger.info("Parameters converged. Disabling tuning for job: " + jobDefinition.jobName);
+          logger.debug("Parameters converged. Disabling tuning for job: " + jobDefinition.jobName);
           disableTuning(jobDefinition, "Parameters converged");
         } else if (isMedianGainNegative(tuningJobExecutionParamSets)) {
-          logger.info("Unable to get gain while tuning. Disabling tuning for job: " + jobDefinition.jobName);
+          logger.debug("Unable to get gain while tuning. Disabling tuning for job: " + jobDefinition.jobName);
           disableTuning(jobDefinition, "Unable to get gain");
         } else if (tuningJobExecutionParamSets.size() >= maxTuningExecutions) {
-          logger.info("Maximum tuning executions limit reached. Disabling tuning for job: " + jobDefinition.jobName);
+          logger.debug("Maximum tuning executions limit reached. Disabling tuning for job: " + jobDefinition.jobName);
           disableTuning(jobDefinition, "Maximum executions reached");
         }
       }
@@ -193,7 +193,7 @@ public abstract class FitnessManagerOBT extends AbstractFitnessManager {
     }
 
     if (result) {
-      logger.info("Switching off tuning for job: " + tuningJobExecutionParamSets.get(
+      logger.debug("Switching off tuning for job: " + tuningJobExecutionParamSets.get(
           0).jobSuggestedParamSet.jobDefinition.jobName + " Reason: parameter set converged");
     }
     return result;
@@ -243,7 +243,7 @@ public abstract class FitnessManagerOBT extends AbstractFitnessManager {
         tuningJobDefinition.averageResourceUsage * FileUtils.ONE_GB / tuningJobDefinition.averageInputSizeInBytes;
 
     if (medianFitness > baselineFitness) {
-      logger.info("Switching off tuning for job: " + jobDefinition.jobName + " Reason: unable to tune enough");
+      logger.debug("Switching off tuning for job: " + jobDefinition.jobName + " Reason: unable to tune enough");
       return true;
     } else {
       return false;

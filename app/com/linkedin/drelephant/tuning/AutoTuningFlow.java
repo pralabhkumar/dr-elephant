@@ -14,11 +14,11 @@ import org.apache.log4j.Logger;
  *  TuningTypeManager : This will have Combinations of TuningType , AlgorithmType and execution engine. for e.g
  *  TuningTypeManagerOBTAlgoIPSO for Map Reduce and Spark ...
  */
-public class Flow {
+public class AutoTuningFlow {
   List<List<Manager>> pipelines = null;
-  private static final Logger logger = Logger.getLogger(Flow.class);
+  private static final Logger logger = Logger.getLogger(AutoTuningFlow.class);
 
-  public Flow() {
+  public AutoTuningFlow() {
     pipelines = new ArrayList<List<Manager>>();
     createBaseLineManagersPipeline();
     createJobStatusManagersPipeline();
@@ -35,10 +35,10 @@ public class Flow {
       Thread t1 = new Thread(new Runnable() {
         @Override
         public void run() {
-          for (Manager manager : pipelineType) {
-              logger.info(" Manager execution Status  " + manager.getManagerName());
+            for (Manager manager : pipelineType) {
+              logger.info(" Starting Manager  " + manager.getManagerName());
               Boolean execute = manager.execute();
-             logger.info(" Manager execution Status " + execute + " " + manager.getManagerName());
+             logger.info(" Ending Manager " + execute + " " + manager.getManagerName());
           }
         }
       });
@@ -71,15 +71,12 @@ public class Flow {
         Manager manager = ManagerFactory.getManager(tuningType.name(), algotihmType.name(), null,
             AbstractFitnessManager.class.getSimpleName());
         if (manager != null) {
-          logger.info(manager.getManagerName());
+          logger.info("Loading " + manager.getManagerName());
           fitnessManagers.add(manager);
         }
       }
     }
-    /*fitnessManagers.add(new FitnessManagerHBT());
-    fitnessManagers.add(new FitnessManagerOBTAlgoIPSO());
-    fitnessManagers.add(new FitnessManagerOBTAlgoPSO());*/
-    //this.pipelines.add(new FitnessManagerHBT())
+
     this.pipelines.add(fitnessManagers);
   }
 
@@ -92,19 +89,12 @@ public class Flow {
               ManagerFactory.getManager(tuningType.name(), algotihmType.name(), executionEngineTypes.name(),
                   AbstractParameterGenerateManager.class.getSimpleName());
           if (manager != null) {
-            logger.info(manager.getManagerName());
+            logger.info("Loading " + manager.getManagerName());
             algorithmManagers.add(manager);
           }
         }
       }
     }
-    /*algorithmManagers.add(new TuningTypeManagerHBT(new MRExecutionEngine()));
-    algorithmManagers.add(new TuningTypeManagerHBT(new SparkExecutionEngine()));
-    algorithmManagers.add(new TuningTypeManagerOBTAlgoPSO(new MRExecutionEngine()));
-    algorithmManagers.add(new TuningTypeManagerOBTAlgoPSO(new SparkExecutionEngine()));
-    algorithmManagers.add(new TuningTypeManagerOBTAlgoIPSO(new MRExecutionEngine()));
-    algorithmManagers.add(new TuningTypeManagerOBTAlgoIPSO(new SparkExecutionEngine()));
-*/
     this.pipelines.add(algorithmManagers);
   }
 

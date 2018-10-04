@@ -58,11 +58,11 @@ public class ParameterGenerateManagerOBTAlgoPSOIPSOImpl extends ParameterGenerat
 
   @Override
   public void initializePrerequisite(TuningAlgorithm tuningAlgorithm, JobDefinition job) {
-    logger.info(" Intialize Prerequisite ");
+    logger.debug(" Intialize Prerequisite ");
     try {
       setDefaultParameterValues(tuningAlgorithm, job);
     } catch (Exception e) {
-      logger.info("Cannot intialize parameter in IPSO " + e.getMessage());
+      logger.debug("Cannot intialize parameter in IPSO " + e.getMessage());
     }
   }
 
@@ -76,7 +76,7 @@ public class ParameterGenerateManagerOBTAlgoPSOIPSOImpl extends ParameterGenerat
           .findList();
 
       if(tuningParameterConstrains== null || tuningParameterConstrains.size()==0) {
-        logger.info("Parameter constraints not added . Hence adding parameter constraint. ");
+        logger.debug("Parameter constraints not added . Hence adding parameter constraint. ");
         for (TuningParameter tuningParameter : tuningParameters) {
           TuningParameterConstraint tuningParameterConstraint = new TuningParameterConstraint();
           tuningParameterConstraint.jobDefinition = job;
@@ -88,11 +88,11 @@ public class ParameterGenerateManagerOBTAlgoPSOIPSOImpl extends ParameterGenerat
         }
       }
       else{
-        logger.info(" Parameter constraints already added . Hence not adding them");
+        logger.debug(" Parameter constraints already added . Hence not adding them");
       }
     } catch (Exception e) {
-      logger.info(
-          " Error in setting up intial parameter constraint . IPSO will not work in this case ." + e.getMessage());
+      logger.debug(
+          " Error in setting up intial parameter constraint . IPSO will not work in this case ." + e.getMessage(),e);
       throw e;
     }
   }
@@ -104,7 +104,7 @@ public class ParameterGenerateManagerOBTAlgoPSOIPSOImpl extends ParameterGenerat
   }
 
   public void applyIntelligenceOnParameter(List<TuningParameter> tuningParameterList, JobDefinition job) {
-    logger.info(" Apply Intelligence");
+    logger.debug(" Apply Intelligence");
     List<TuningParameterConstraint> tuningParameterConstraintList = new ArrayList<TuningParameterConstraint>();
     tuningParameterConstraintList = TuningParameterConstraint.find.where()
         .eq("job_definition_id", job.id)
@@ -119,7 +119,7 @@ public class ParameterGenerateManagerOBTAlgoPSOIPSOImpl extends ParameterGenerat
         i += 1;
       }
     } else {
-      logger.info("No boundary constraints found for job: " + job.jobName);
+      logger.debug("No boundary constraints found for job: " + job.jobName);
     }
 
     for (TuningParameter tuningParameter : tuningParameterList) {

@@ -44,7 +44,7 @@ public class FitnessManagerHBT extends AbstractFitnessManager {
 
   @Override
   protected List<TuningJobExecutionParamSet> detectJobsForFitnessComputation() {
-    logger.info("Fetching completed executions whose fitness are yet to be computed");
+    logger.debug("Fetching completed executions whose fitness are yet to be computed");
     List<TuningJobExecutionParamSet> completedJobExecutionParamSet = new ArrayList<TuningJobExecutionParamSet>();
 
     List<TuningJobExecutionParamSet> tuningJobExecutionParamSets = TuningJobExecutionParamSet.find.select("*")
@@ -62,7 +62,7 @@ public class FitnessManagerHBT extends AbstractFitnessManager {
             + "." + TuningAlgorithm.TABLE.optimizationAlgo, TuningAlgorithm.OptimizationAlgo.HBT.name())
         .findList();
 
-    logger.info("#completed executions whose metrics are not computed: " + tuningJobExecutionParamSets.size());
+    logger.debug("#completed executions whose metrics are not computed: " + tuningJobExecutionParamSets.size());
 
     getCompletedExecution(tuningJobExecutionParamSets, completedJobExecutionParamSet);
 
@@ -72,7 +72,7 @@ public class FitnessManagerHBT extends AbstractFitnessManager {
   @Override
   protected void calculateAndUpdateFitness(JobExecution jobExecution, List<AppResult> results,
       TuningJobDefinition tuningJobDefinition, JobSuggestedParamSet jobSuggestedParamSet) {
-    logger.info("calculateAndUpdateFitness");
+    logger.debug("calculateAndUpdateFitness");
     Double totalResourceUsed = 0D;
     Double totalInputBytesInBytes = 0D;
     Double score=0D;
@@ -104,7 +104,7 @@ public class FitnessManagerHBT extends AbstractFitnessManager {
     if (!jobSuggestedParamSet.paramSetState.equals(JobSuggestedParamSet.ParamSetStatus.FITNESS_COMPUTED)
         || !jobSuggestedParamSet.paramSetState.equals(JobSuggestedParamSet.ParamSetStatus.DISCARDED)) {
       if (jobExecution.executionState.equals(JobExecution.ExecutionState.SUCCEEDED)) {
-        logger.info("Execution id: " + jobExecution.id + " succeeded");
+        logger.debug("Execution id: " + jobExecution.id + " succeeded");
         updateJobSuggestedParamSetSucceededExecution(jobExecution, jobSuggestedParamSet, tuningJobDefinition);
       } else {
         // Resetting param set to created state because this case captures the scenarios when
@@ -112,7 +112,7 @@ public class FitnessManagerHBT extends AbstractFitnessManager {
         // In all the above scenarios, fitness cannot be computed for the param set correctly.
         // Note that the penalty on failures caused by auto tuning is applied when the job execution is retried
         // after failure.
-        logger.info("HBT Execution id: " + jobExecution.id + " was not successful for reason other than tuning."
+        logger.debug("HBT Execution id: " + jobExecution.id + " was not successful for reason other than tuning."
             + "Resetting param set: " + jobSuggestedParamSet.id + " to CREATED state");
         resetParamSetToCreated(jobSuggestedParamSet);
       }
@@ -140,7 +140,7 @@ public class FitnessManagerHBT extends AbstractFitnessManager {
   protected void resetParamSetToCreated(JobSuggestedParamSet jobSuggestedParamSet) {
     if (!jobSuggestedParamSet.paramSetState.equals(JobSuggestedParamSet.ParamSetStatus.FITNESS_COMPUTED)
         && !jobSuggestedParamSet.paramSetState.equals(JobSuggestedParamSet.ParamSetStatus.DISCARDED)) {
-      logger.info("Resetting parameter set to created: " + jobSuggestedParamSet.id);
+      logger.debug("Resetting parameter set to created: " + jobSuggestedParamSet.id);
       jobSuggestedParamSet.paramSetState = JobSuggestedParamSet.ParamSetStatus.CREATED;
       jobSuggestedParamSet.save();
     }
@@ -148,6 +148,7 @@ public class FitnessManagerHBT extends AbstractFitnessManager {
 
   @Override
   protected void checkToDisableTuning(Set<JobDefinition> jobDefinitionSet) {
+    Long currentTimeBefore = System.currentTimeMillis();
     for (JobDefinition jobDefinition : jobDefinitionSet) {
       List<TuningJobExecutionParamSet> tuningJobExecutionParamSets =
           TuningJobExecutionParamSet.find.fetch(TuningJobExecutionParamSet.TABLE.jobSuggestedParamSet, "*")
@@ -166,24 +167,26 @@ public class FitnessManagerHBT extends AbstractFitnessManager {
         disableTuning(jobDefinition, "All Heuristics Passed1");
       }
     }
+    Long currentTimeAfter= System.currentTimeMillis();
+    logger.info(" Total time taken by disable tuning " + (currentTimeAfter-currentTimeBefore));
   }
 
   private boolean areHeuristicsPassed(List<TuningJobExecutionParamSet> tuningJobExecutionParamSets) {
-    logger.info(" Testing All Heuristics ");
+    logger.debug(" Testing All Heuristics ");
     if (tuningJobExecutionParamSets != null && tuningJobExecutionParamSets.size() >= 1) {
-      logger.info("tuningJobExecutionParamSets have some values");
+      logger.debug("tuningJobExecutionParamSets have some values");
       TuningJobExecutionParamSet tuningJobExecutionParamSet = tuningJobExecutionParamSets.get(0);
       JobExecution jobExecution = tuningJobExecutionParamSet.jobExecution;
       List<AppResult> results = getAppResult(jobExecution);
       if (results != null) {
-        logger.info(" Results are not null ");
+        logger.debug(" Results are not null ");
         return areAppResultsHaveSeverity(results);
       } else {
-        logger.info(" App Results are null ");
+        logger.debug(" App Results are null ");
         return false;
       }
     } else {
-      logger.info(" Tuning Job Execution Param Set is null ");
+      logger.debug(" Tuning Job Execution Param Set is null ");
       return false;
     }
   }
@@ -200,7 +203,7 @@ public class FitnessManagerHBT extends AbstractFitnessManager {
           }
         }
       } else {
-        logger.info(appResult.id + " " + appResult.jobDefId + " have yarn app result null ");
+        logger.debug(appResult.id + " " + appResult.jobDefId + " have yarn app result null ");
         return true;
       }
     }
@@ -209,11 +212,11 @@ public class FitnessManagerHBT extends AbstractFitnessManager {
 
   private boolean checkHeuriticsforSeverity(List<String> heuristicsWithHighSeverity) {
     if (heuristicsWithHighSeverity.size() == 0) {
-      logger.info(" No sever heursitics ");
+      logger.debug(" No severe heursitics ");
       return true;
     } else {
       for (String failedHeuristics : heuristicsWithHighSeverity) {
-        logger.info(failedHeuristics);
+        logger.debug(failedHeuristics);
       }
       return false;
     }
