@@ -35,6 +35,7 @@ public abstract class AbstractBaselineManager implements Manager {
       + "AND yahrd.name='" + CommonConstantsHeuristic.TOTAL_INPUT_SIZE_IN_MB + "' "
       + "GROUP BY job_exec_id ORDER BY start_time DESC LIMIT :num ) temp";
   private final Logger logger = Logger.getLogger(getClass());
+  boolean debugEnabled = logger.isDebugEnabled();
   protected Integer _numJobsForBaseline = null;
   protected Configuration configuration = null;
 
@@ -51,23 +52,28 @@ public abstract class AbstractBaselineManager implements Manager {
    */
   @Override
   public final boolean execute() {
-    logger.info("Executing BaseLine");
-    boolean baseLineComputationDone = false, databaseUpdateDone = false, updateMetricsDone = false;
-    List<TuningJobDefinition> tuningJobDefinitions = detectJobsForBaseLineComputation();
-    if (tuningJobDefinitions != null && tuningJobDefinitions.size() >= 1) {
-      logger.info("Computing BaseLine");
-      baseLineComputationDone = calculateBaseLine(tuningJobDefinitions);
+    try {
+      logger.info("Executing BaseLine");
+      boolean baseLineComputationDone = false, databaseUpdateDone = false, updateMetricsDone = false;
+      List<TuningJobDefinition> tuningJobDefinitions = detectJobsForBaseLineComputation();
+      if (tuningJobDefinitions != null && tuningJobDefinitions.size() >= 1) {
+        logger.info("Computing BaseLine");
+        baseLineComputationDone = calculateBaseLine(tuningJobDefinitions);
+      }
+      if (baseLineComputationDone) {
+        logger.info("Updating Database");
+        databaseUpdateDone = updateDataBase(tuningJobDefinitions);
+      }
+      if (databaseUpdateDone) {
+        logger.info("Updating Metrics");
+        updateMetricsDone = updateMetrics(tuningJobDefinitions);
+      }
+      logger.info("Baseline Done ");
+      return updateMetricsDone;
+    } catch (Exception e) {
+      logger.error(" Execution of the base line manager is failed " + e.getMessage(),e);
+      return false;
     }
-    if (baseLineComputationDone) {
-      logger.info("Updating Database");
-      databaseUpdateDone = updateDataBase(tuningJobDefinitions);
-    }
-    if (databaseUpdateDone) {
-      logger.info("Updating Metrics");
-      updateMetricsDone = updateMetrics(tuningJobDefinitions);
-    }
-    logger.info("Baseline Done ");
-    return updateMetricsDone;
   }
 
   /**
@@ -86,8 +92,10 @@ public abstract class AbstractBaselineManager implements Manager {
   protected boolean calculateBaseLine(List<TuningJobDefinition> tuningJobDefinitions) {
     for (TuningJobDefinition tuningJobDefinition : tuningJobDefinitions) {
       try {
-        logger.info("Computing and updating baseline metric values for job: " + tuningJobDefinition.job.jobName);
-        logger.debug("Running query for baseline computation " + baseLineCalculationSQL);
+        if(debugEnabled) {
+          logger.debug("Computing and updating baseline metric values for job: " + tuningJobDefinition.job.jobName);
+          logger.debug("Running query for baseline computation " + baseLineCalculationSQL);
+        }
         SqlRow baseline = Ebean.createSqlQuery(baseLineCalculationSQL)
             .setParameter("jobDefId", tuningJobDefinition.job.jobDefId)
             .setParameter("num", _numJobsForBaseline)
@@ -135,7 +143,7 @@ public abstract class AbstractBaselineManager implements Manager {
     try {
       for (TuningJobDefinition tuningJobDefinition : tuningJobDefinitions) {
         tuningJobDefinition.update();
-        logger.info("Updated baseline metric value for job: " + tuningJobDefinition.job.jobName);
+          logger.debug("Updated baseline metric value for job: " + tuningJobDefinition.job.jobName);
       }
     } catch (Exception e) {
       logger.error(" Error Updating Database " + e.getMessage());
@@ -161,7 +169,7 @@ public abstract class AbstractBaselineManager implements Manager {
       }
       AutoTuningMetricsController.setBaselineComputeWaitJobs(baselineComputeWaitJobs);
     } catch (Exception e) {
-      logger.error(" Error Updating Metrics in Ingraph" + e.getMessage());
+      logger.error(" Error Updating Metrics in Ingraph" + e.getMessage(),e);
       return false;
     }
     return true;

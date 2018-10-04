@@ -26,7 +26,7 @@ public class FitnessManagerOBTAlgoPSO extends FitnessManagerOBT {
 
   @Override
   protected List<TuningJobExecutionParamSet> detectJobsForFitnessComputation() {
-    logger.info("Fetching completed executions whose fitness are yet to be computed");
+    logger.debug("Fetching completed executions whose fitness are yet to be computed");
     List<TuningJobExecutionParamSet> completedJobExecutionParamSet = new ArrayList<TuningJobExecutionParamSet>();
 
     List<TuningJobExecutionParamSet> tuningJobExecutionParamSets = TuningJobExecutionParamSet.find.select("*")
@@ -44,7 +44,7 @@ public class FitnessManagerOBTAlgoPSO extends FitnessManagerOBT {
             + "." + TuningAlgorithm.TABLE.optimizationAlgo, TuningAlgorithm.OptimizationAlgo.PSO.name())
         .findList();
 
-    logger.info("#completed executions whose metrics are not computed: " + tuningJobExecutionParamSets.size());
+    logger.debug("#completed executions whose metrics are not computed: " + tuningJobExecutionParamSets.size());
 
     getCompletedExecution(tuningJobExecutionParamSets,completedJobExecutionParamSet);
 
@@ -56,7 +56,7 @@ public class FitnessManagerOBTAlgoPSO extends FitnessManagerOBT {
       TuningJobDefinition tuningJobDefinition, List<AppResult> results) {
     if (!jobSuggestedParamSet.paramSetState.equals(JobSuggestedParamSet.ParamSetStatus.FITNESS_COMPUTED)) {
       if (jobExecution.executionState.equals(JobExecution.ExecutionState.SUCCEEDED)) {
-        logger.info("Execution id: " + jobExecution.id + " succeeded");
+        logger.debug("Execution id: " + jobExecution.id + " succeeded");
         updateJobSuggestedParamSetSucceededExecution(jobExecution, jobSuggestedParamSet, tuningJobDefinition);
       } else {
         // Resetting param set to created state because this case captures the scenarios when
@@ -64,7 +64,7 @@ public class FitnessManagerOBTAlgoPSO extends FitnessManagerOBT {
         // In all the above scenarios, fitness cannot be computed for the param set correctly.
         // Note that the penalty on failures caused by auto tuning is applied when the job execution is retried
         // after failure.
-        logger.info("Execution id: " + jobExecution.id + " was not successful for reason other than tuning."
+        logger.debug("Execution id: " + jobExecution.id + " was not successful for reason other than tuning."
             + "Resetting param set: " + jobSuggestedParamSet.id + " to CREATED state");
         resetParamSetToCreated(jobSuggestedParamSet);
       }

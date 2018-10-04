@@ -33,7 +33,7 @@ public abstract class ParameterGenerateManagerOBTAlgoPSO extends ParameterGenera
   private static final String PYTHON_PATH_ENV_VARIABLE = "PYTHONPATH";
   private String PYTHON_PATH = null;
   private String TUNING_SCRIPT_PATH = null;
-
+  boolean debugEnabled = logger.isDebugEnabled();
   /**
    * Swarm size specific to OBT
    * @return
@@ -56,8 +56,10 @@ public abstract class ParameterGenerateManagerOBTAlgoPSO extends ParameterGenera
       PYTHON_PATH = "python";
     }
     TUNING_SCRIPT_PATH = PSO_DIR_PATH + "/pso_param_generation.py";
-    logger.info("Tuning script path: " + TUNING_SCRIPT_PATH);
-    logger.info("Python path: " + PYTHON_PATH);
+    if(debugEnabled) {
+      logger.debug("Tuning script path: " + TUNING_SCRIPT_PATH);
+      logger.debug("Python path: " + PYTHON_PATH);
+    }
   }
 
 
@@ -73,7 +75,7 @@ public abstract class ParameterGenerateManagerOBTAlgoPSO extends ParameterGenera
       for (Particle particle : currentPopulation) {
         Long paramSetId = particle.getParamSetId();
 
-        logger.info("Param set id: " + paramSetId.toString());
+        logger.debug("Param set id: " + paramSetId.toString());
         JobSuggestedParamSet jobSuggestedParamSet =
             JobSuggestedParamSet.find.select("*").where().eq(JobSuggestedParamSet.TABLE.id, paramSetId).findUnique();
 
@@ -94,7 +96,7 @@ public abstract class ParameterGenerateManagerOBTAlgoPSO extends ParameterGenera
         jobTuningInfo.setTunerState(savedState);
       }
     } else {
-      logger.info("Saved state empty for job: " + job.jobDefId);
+      logger.debug("Saved state empty for job: " + job.jobDefId);
       validSavedState = false;
     }
 
@@ -112,7 +114,7 @@ public abstract class ParameterGenerateManagerOBTAlgoPSO extends ParameterGenera
 
     List<Particle> particleList = new ArrayList<Particle>();
     if (jsonParticleList == null) {
-      logger.info("Null json, empty particle list returned");
+      logger.debug("Null json, empty particle list returned");
     } else {
       for (JsonNode jsonParticle : jsonParticleList) {
         Particle particle;
@@ -135,7 +137,7 @@ public abstract class ParameterGenerateManagerOBTAlgoPSO extends ParameterGenera
 
     if (particleList == null) {
       jsonNode = JsonNodeFactory.instance.objectNode();
-      logger.info("Null particleList, returning empty json");
+      logger.debug("Null particleList, returning empty json");
     } else {
       jsonNode = Json.toJson(particleList);
     }
@@ -150,7 +152,7 @@ public abstract class ParameterGenerateManagerOBTAlgoPSO extends ParameterGenera
 
   @Override
   public JobTuningInfo generateParamSet(JobTuningInfo jobTuningInfo) {
-    logger.info("Generating param set for job: " + jobTuningInfo.getTuningJob().jobName);
+    logger.debug("Generating param set for job: " + jobTuningInfo.getTuningJob().jobName);
 
     JobTuningInfo newJobTuningInfo = new JobTuningInfo();
     newJobTuningInfo.setTuningJob(jobTuningInfo.getTuningJob());
@@ -163,7 +165,7 @@ public abstract class ParameterGenerateManagerOBTAlgoPSO extends ParameterGenera
     stringTunerState = stringTunerState.replaceAll("\\s+", "");
     String jobType = jobTuningInfo.getJobType().toString();
 
-    logger.info(" ID " + jobTuningInfo.getTuningJob().id);
+    logger.debug(" ID " + jobTuningInfo.getTuningJob().id);
 
     int swarmSize = getSwarmSize();
 
@@ -181,7 +183,7 @@ public abstract class ParameterGenerateManagerOBTAlgoPSO extends ParameterGenera
       BufferedReader inputStream = new BufferedReader(new InputStreamReader(p.getInputStream()));
       BufferedReader errorStream = new BufferedReader(new InputStreamReader(p.getErrorStream()));
       String updatedStringTunerState = inputStream.readLine();
-      logger.info("Param  Generator Testing" + updatedStringTunerState);
+      logger.debug("Param  Generator Testing" + updatedStringTunerState);
       newJobTuningInfo.setTunerState(updatedStringTunerState);
       String errorLine;
       while ((errorLine = errorStream.readLine()) != null) {
@@ -211,16 +213,16 @@ public abstract class ParameterGenerateManagerOBTAlgoPSO extends ParameterGenera
    * @param jobTuningInfoList JobTuningInfo List
    */
   protected boolean updateDatabase(List<JobTuningInfo> jobTuningInfoList) {
-    logger.info("Updating new parameter suggestion in database");
+    logger.debug("Updating new parameter suggestion in database");
     if (jobTuningInfoList == null) {
-      logger.info("No new parameter suggestion to update");
+      logger.debug("No new parameter suggestion to update");
       return false;
     }
 
     int paramSetNotGeneratedJobs = jobTuningInfoList.size();
 
     for (JobTuningInfo jobTuningInfo : jobTuningInfoList) {
-      logger.info("Updating new parameter suggestion for job:" + jobTuningInfo.getTuningJob().jobDefId);
+      logger.debug("Updating new parameter suggestion for job:" + jobTuningInfo.getTuningJob().jobDefId);
 
       JobDefinition job = jobTuningInfo.getTuningJob();
       List<TuningParameter> paramList = jobTuningInfo.getParametersToTune();
@@ -244,7 +246,7 @@ public abstract class ParameterGenerateManagerOBTAlgoPSO extends ParameterGenera
           .eq(TuningParameter.TABLE.isDerived, 1)
           .findList();
 
-      logger.info("No. of derived tuning params for job " + tuningJobDefinition.job.jobName + ": "
+      logger.debug("No. of derived tuning params for job " + tuningJobDefinition.job.jobName + ": "
           + derivedParameterList.size());
 
       JsonNode jsonTunerState = Json.parse(stringTunerState);
@@ -321,7 +323,7 @@ public abstract class ParameterGenerateManagerOBTAlgoPSO extends ParameterGenera
       if (candidate != null) {
         logger.debug("Candidate is:" + Json.toJson(candidate));
         for (int i = 0; i < candidate.size() && i < paramList.size(); i++) {
-          logger.info("Candidate is " + candidate);
+          logger.debug("Candidate is " + candidate);
 
           JobSuggestedParamValue jobSuggestedParamValue = new JobSuggestedParamValue();
           int paramId = paramList.get(i).id;
@@ -330,10 +332,10 @@ public abstract class ParameterGenerateManagerOBTAlgoPSO extends ParameterGenera
           jobSuggestedParamValueList.add(jobSuggestedParamValue);
         }
       } else {
-        logger.info("Candidate is null");
+        logger.debug("Candidate is null");
       }
     } else {
-      logger.info("Particle null");
+      logger.debug("Particle null");
     }
     return jobSuggestedParamValueList;
   }

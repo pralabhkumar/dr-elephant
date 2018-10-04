@@ -16,7 +16,7 @@
 
 package com.linkedin.drelephant;
 
-import com.linkedin.drelephant.tuning.Flow;
+import com.linkedin.drelephant.tuning.AutoTuningFlow;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.log4j.Logger;
 
@@ -50,7 +50,7 @@ public class AutoTuner implements Runnable {
         Utils.getNonNegativeLong(configuration, AUTO_TUNING_DAEMON_WAIT_INTERVAL, DEFAULT_METRICS_COMPUTATION_INTERVAL);
     try {
       AutoTuningMetricsController.init();
-      Flow autoTuningFlow= new Flow();
+      AutoTuningFlow autoTuningFlow= new AutoTuningFlow();
       while (!Thread.currentThread().isInterrupted()) {
         try {
           autoTuningFlow.executeFlow();
