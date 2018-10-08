@@ -14,4 +14,7 @@ public class SparkConfigurationConstants {
   public final static String SPARK_DYNAMIC_ALLOCATION_MAX_EXECUTORS = "spark.dynamicAllocation.maxExecutors";
   public final static String SPARK_YARN_JARS = "spark.yarn.secondary.jars";
   public final static String SPARK_YARN_EXECUTOR_MEMORY_OVERHEAD = "spark.yarn.executor.memoryOverhead";
+  public final static String SPARK_EXECUTOR_MEMORY_OVERHEAD = "spark.executor.memoryOverhead";
+  public final static String SPARK_DRIVER_CORES = "spark.driver.cores";
+
 }

@@ -84,8 +84,8 @@ public class SparkExecutionEngine implements ExecutionEngine {
               .append(suggestedParameters.get(tuningParameter.paramName));
           idParameters.append("\n");
         }
-        return idParameters.toString();
       }
+      return idParameters.toString();
     }
     return null;
   }
