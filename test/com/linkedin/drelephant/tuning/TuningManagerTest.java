@@ -1,5 +1,6 @@
 package com.linkedin.drelephant.tuning;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.linkedin.drelephant.DrElephant;
 import com.linkedin.drelephant.ElephantContext;
 import java.util.HashMap;
@@ -8,9 +9,11 @@ import java.util.Map;
 import static common.DBTestUtil.*;
 import static common.TestConstants.*;
 
+import models.TuningAlgorithm;
 import org.slf4j.LoggerFactory;
 import play.Application;
 import play.GlobalSettings;
+import controllers.*;
 import play.test.FakeApplication;
 import org.apache.hadoop.conf.Configuration;
 
@@ -78,5 +81,15 @@ public class TuningManagerTest {
   @Test
   public void testParamGenerterTestRunner(){
     running(testServer(TEST_SERVER_PORT, fakeApp), new ParameterGenerateManagerTestRunner());
+  }
+
+  @Test
+  public void testAlgoBasedOnVersion(){
+    assertTrue("Alorithm Based on Version Test", controllers.Application.getAlgoBasedOnVersion(1).equals(
+        TuningAlgorithm.OptimizationAlgo.PSO_IPSO.name()));
+    assertTrue("Alorithm Based on Version Test", controllers.Application.getAlgoBasedOnVersion(2).equals(
+        TuningAlgorithm.OptimizationAlgo.HBT.name()));
+    assertTrue("Alorithm Based on Version Test", controllers.Application.getAlgoBasedOnVersion(3).equals(
+        TuningAlgorithm.OptimizationAlgo.HBT.name()));
   }
 }

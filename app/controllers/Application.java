@@ -943,6 +943,11 @@ public class Application extends Controller {
       if (paramValueMap.containsKey("allowedMaxExecutionTimePercent")) {
         allowedMaxExecutionTimePercent = Double.parseDouble(paramValueMap.get("allowedMaxExecutionTimePercent"));
       }
+      /*
+       This logic is for backward compatailbity. Ideally we should remove this logic in next release
+       because HBT should be the default optimization algorithm for all the jobs.
+       */
+      optimizationAlgo = getAlgoBasedOnVersion(version);
       tuningInput.setFlowDefId(flowDefId);
       tuningInput.setJobDefId(jobDefId);
       tuningInput.setFlowDefUrl(flowDefUrl);
@@ -974,6 +979,15 @@ public class Application extends Controller {
       if (context != null) {
         context.stop();
       }
+    }
+  }
+
+  public static String getAlgoBasedOnVersion(int version){
+    if(version == 1){
+      return TuningAlgorithm.OptimizationAlgo.PSO_IPSO.name();
+    }
+    else{
+      return TuningAlgorithm.OptimizationAlgo.HBT.name();
     }
   }
 

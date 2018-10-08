@@ -137,6 +137,6 @@ public class ParameterGenerateManagerOBTAlgoPSOIPSOImpl extends ParameterGenerat
   }
 
   public String getManagerName() {
-    return "TuningTypeManagerOBTAlgoIPSO" + this._executionEngine.getClass().getSimpleName();
+    return "ParameterGenerateManagerOBTAlgoPSOIPSOImpl" + this._executionEngine.getClass().getSimpleName();
   }
 }
