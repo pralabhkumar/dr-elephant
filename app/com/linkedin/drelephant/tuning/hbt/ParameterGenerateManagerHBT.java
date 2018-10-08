@@ -188,7 +188,7 @@ public class ParameterGenerateManagerHBT extends AbstractParameterGenerateManage
     return true;
   }
 
-  
+
 
   private void penaltyApplication(JobSuggestedParamSet jobSuggestedParamSet, TuningJobDefinition tuningJobDefinition) {
     logger.debug("Parameter constraint violated. Applying penalty.");
@@ -252,6 +252,6 @@ public class ParameterGenerateManagerHBT extends AbstractParameterGenerateManage
 
   @Override
   public String getManagerName() {
-    return "TuningTypeManagerHBT";
+    return "ParameterGenerateManagerHBT";
   }
 }

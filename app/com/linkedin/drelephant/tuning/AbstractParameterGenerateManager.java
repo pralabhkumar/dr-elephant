@@ -153,8 +153,8 @@ public abstract class AbstractParameterGenerateManager implements Manager {
       return databaseUpdateDone;
     } catch (Exception e) {
       logger.info("Exception in generating parameters ", e);
+      return false;
     }
-    return false;
   }
 
   /**

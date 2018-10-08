@@ -258,12 +258,13 @@ public class AutoTuningAPIHelper {
   }
 
   private TuningAlgorithm getTuningAlgorithmForfirstTime(TuningInput tuningInput) {
-    logger.info(" Since its new job . Algorithm type is HBT ");
+    logger.info("Version "+tuningInput.getVersion() + "\t" + tuningInput.getOptimizationAlgo());
     TuningAlgorithm tuningAlgorithm = TuningAlgorithm.find.select("*")
         .where()
         .eq(TuningAlgorithm.TABLE.jobType, tuningInput.getJobType())
         .eq(TuningAlgorithm.TABLE.optimizationMetric, "RESOURCE")
-        .eq(TuningAlgorithm.TABLE.optimizationAlgo, "HBT")
+       // .eq(TuningAlgorithm.TABLE.optimizationAlgo, "HBT")
+       .eq(TuningAlgorithm.TABLE.optimizationAlgo,tuningInput.getOptimizationAlgo())
         .findUnique();
     if (tuningAlgorithm == null) {
       throw new IllegalArgumentException("Wrong job type " + tuningInput.getJobType());
