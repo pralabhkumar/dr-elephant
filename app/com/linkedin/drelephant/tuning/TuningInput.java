@@ -25,7 +25,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.spark.network.util.ByteUnit;
 import org.apache.spark.network.util.JavaUtils;
 
 import models.TuningAlgorithm;
@@ -337,41 +336,47 @@ public class TuningInput {
     return paramValueMap;
   }
 
+  @SuppressWarnings("unchecked")
   public Map<String, Double> getSparkDefaultParams() throws JsonParseException, JsonMappingException, IOException{
+
     ObjectMapper mapper = new ObjectMapper();
     Map<String, Double> paramValueMap = new HashMap<String, Double>();
-    Map<String, String> paramsStringMap = (Map<String, String>) mapper.readValue(this._defaultParams, Map.class);
-    for (Map.Entry<String, String> entry : paramsStringMap.entrySet()) {
-      String confKey = entry.getKey();
-      String confVal = entry.getValue();
-      Double confValDouble = null;
-      try {
-        if (confKey.equals(SparkConfigurationConstants.SPARK_EXECUTOR_CORES_KEY)) {
-          paramValueMap.put(SparkConfigurationConstants.SPARK_EXECUTOR_CORES_KEY, Double.parseDouble(confVal));
-        } else if (confKey.equals(SparkConfigurationConstants.SPARK_DRIVER_CORES)) {
-          paramValueMap.put(SparkConfigurationConstants.SPARK_DRIVER_CORES, Double.parseDouble(confVal));
-        } else if (confKey.equals(SparkConfigurationConstants.SPARK_EXECUTOR_INSTANCES_KEY)) {
-          paramValueMap.put(SparkConfigurationConstants.SPARK_EXECUTOR_INSTANCES_KEY, Double.parseDouble(confVal));
-        } else if (confKey.equals(SparkConfigurationConstants.SPARK_EXECUTOR_MEMORY_KEY)) {
-          long memoryMb = JavaUtils.byteStringAsMb(confVal);
-          paramValueMap.put(SparkConfigurationConstants.SPARK_EXECUTOR_MEMORY_KEY, new Double(memoryMb));
-        } else if (confKey.equals(SparkConfigurationConstants.SPARK_EXECUTOR_MEMORY_OVERHEAD)) {
-          long memoryMb = JavaUtils.byteStringAsMb(confVal);
-          paramValueMap.put(SparkConfigurationConstants.SPARK_EXECUTOR_MEMORY_OVERHEAD, new Double(memoryMb));
-        } else if (confKey.equals(SparkConfigurationConstants.SPARK_YARN_EXECUTOR_MEMORY_OVERHEAD)) {
-          long memoryMb = JavaUtils.byteStringAsMb(confVal);
-          paramValueMap.put(SparkConfigurationConstants.SPARK_YARN_EXECUTOR_MEMORY_OVERHEAD, new Double(memoryMb));
-        } else if (confKey.equals(SparkConfigurationConstants.SPARK_DRIVER_MEMORY_KEY)) {
-          long memoryMb = JavaUtils.byteStringAsMb(confVal);
-          paramValueMap.put(SparkConfigurationConstants.SPARK_DRIVER_MEMORY_KEY, new Double(memoryMb));
-        } else if (confVal != null) {
-          confValDouble = Double.parseDouble(confVal);
+    if (version == 1) {
+      paramValueMap = (Map<String, Double>) mapper.readValue(this._defaultParams, Map.class);
+    } else {
+      Map<String, String> paramsStringMap = (Map<String, String>) mapper.readValue(this._defaultParams, Map.class);
+      for (Map.Entry<String, String> entry : paramsStringMap.entrySet()) {
+        String confKey = entry.getKey();
+        String confVal = entry.getValue();
+        Double confValDouble = null;
+        try {
+          if (confKey.equals(SparkConfigurationConstants.SPARK_EXECUTOR_CORES_KEY)) {
+            paramValueMap.put(SparkConfigurationConstants.SPARK_EXECUTOR_CORES_KEY, Double.parseDouble(confVal));
+          } else if (confKey.equals(SparkConfigurationConstants.SPARK_DRIVER_CORES)) {
+            paramValueMap.put(SparkConfigurationConstants.SPARK_DRIVER_CORES, Double.parseDouble(confVal));
+          } else if (confKey.equals(SparkConfigurationConstants.SPARK_EXECUTOR_INSTANCES_KEY)) {
+            paramValueMap.put(SparkConfigurationConstants.SPARK_EXECUTOR_INSTANCES_KEY, Double.parseDouble(confVal));
+          } else if (confKey.equals(SparkConfigurationConstants.SPARK_EXECUTOR_MEMORY_KEY)) {
+            long memoryMb = JavaUtils.byteStringAsMb(confVal);
+            paramValueMap.put(SparkConfigurationConstants.SPARK_EXECUTOR_MEMORY_KEY, new Double(memoryMb));
+          } else if (confKey.equals(SparkConfigurationConstants.SPARK_EXECUTOR_MEMORY_OVERHEAD)) {
+            long memoryMb = JavaUtils.byteStringAsMb(confVal);
+            paramValueMap.put(SparkConfigurationConstants.SPARK_EXECUTOR_MEMORY_OVERHEAD, new Double(memoryMb));
+          } else if (confKey.equals(SparkConfigurationConstants.SPARK_YARN_EXECUTOR_MEMORY_OVERHEAD)) {
+            long memoryMb = JavaUtils.byteStringAsMb(confVal);
+            paramValueMap.put(SparkConfigurationConstants.SPARK_YARN_EXECUTOR_MEMORY_OVERHEAD, new Double(memoryMb));
+          } else if (confKey.equals(SparkConfigurationConstants.SPARK_DRIVER_MEMORY_KEY)) {
+            long memoryMb = JavaUtils.byteStringAsMb(confVal);
+            paramValueMap.put(SparkConfigurationConstants.SPARK_DRIVER_MEMORY_KEY, new Double(memoryMb));
+          } else if (confVal != null) {
+            confValDouble = Double.parseDouble(confVal);
+          }
+        } catch (NumberFormatException nfe) {
+          //Do Nothing
         }
-      } catch (NumberFormatException nfe) {
-        //Do Nothing
-      }
-      if (confValDouble != null) {
-        paramValueMap.put(confKey, confValDouble);
+        if (confValDouble != null) {
+          paramValueMap.put(confKey, confValDouble);
+        }
       }
     }
     return paramValueMap;
