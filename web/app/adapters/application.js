@@ -24,6 +24,11 @@ export default DS.JSONAPIAdapter.extend({
 export default DS.RESTAdapter.extend({
   namespace: 'rest',
   pathForType: function (type) {
-    return  Ember.String.pluralize(type);
+    if (type == "tunein") {
+      return type
+    }
+    else {
+      return Ember.String.pluralize(type);
+    }
   }
 });
