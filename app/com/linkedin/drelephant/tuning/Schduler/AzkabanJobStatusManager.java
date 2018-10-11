@@ -41,20 +41,24 @@ public class AzkabanJobStatusManager extends AbstractJobStatusManager {
   protected boolean analyzeCompletedJobsExecution(List<TuningJobExecutionParamSet> inProgressExecutionParamSet) {
     logger.info("Fetching the list of executions completed since last iteration");
     List<JobExecution> completedExecutions = new ArrayList<JobExecution>();
+    boolean isAnalyzeDone = true;
     try {
       for (TuningJobExecutionParamSet tuningJobExecutionParamSet : inProgressExecutionParamSet) {
         JobSuggestedParamSet jobSuggestedParamSet = tuningJobExecutionParamSet.jobSuggestedParamSet;
         JobExecution jobExecution = tuningJobExecutionParamSet.jobExecution;
         logger.info("Checking current status of started execution: " + jobExecution.jobExecId);
         assignAzkabanJobStatusUtil();
-        return analyzeJobExecution(jobExecution,jobSuggestedParamSet);
+        isAnalyzeDone = analyzeJobExecution(jobExecution,jobSuggestedParamSet);
+        if(isAnalyzeDone) {
+          completedExecutions.add(jobExecution);
+        }
       }
     } catch (Exception e) {
       logger.error("Error in fetching list of completed executions", e);
       return false;
     }
     logger.info("Number of executions completed since last iteration: " + completedExecutions.size());
-    return true;
+    return inProgressExecutionParamSet.size()==completedExecutions.size();
   }
 
   private void assignAzkabanJobStatusUtil() {
@@ -71,6 +75,7 @@ public class AzkabanJobStatusManager extends AbstractJobStatusManager {
         for (Map.Entry<String, String> job : jobStatus.entrySet()) {
           logger.info("Job Found:" + job.getKey() + ". Status: " + job.getValue());
           if (job.getKey().equals(jobExecution.job.jobName)) {
+            logger.info(" Job Updated " + jobExecution.job.jobName);
             updateJobExecutionMetrics(job, jobSuggestedParamSet, jobExecution);
           }
         }

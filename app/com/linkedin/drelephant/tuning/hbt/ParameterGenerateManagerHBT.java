@@ -87,7 +87,7 @@ public class ParameterGenerateManagerHBT extends AbstractParameterGenerateManage
     }
 
     List<AppResult> results = getAppResults(jobExecution);
-    if (results == null) {
+    if (results == null || results.size()==0 ) {
       logger.debug(
           " Job is analyzing  , cannot use for param generation " + jobExecution.id + " " + jobExecution.job.id);
       return "";
