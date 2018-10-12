@@ -73,14 +73,14 @@ public class AzkabanJobStatusManager extends AbstractJobStatusManager {
       Map<String, String> jobStatus = _azkabanJobStatusUtil.getJobsFromFlow(jobExecution.flowExecution.flowExecId);
       if (jobStatus != null) {
         for (Map.Entry<String, String> job : jobStatus.entrySet()) {
-          logger.info("Job Found:" + job.getKey() + ". Status: " + job.getValue());
+          logger.debug("Job Found:" + job.getKey() + ". Status: " + job.getValue());
           if (job.getKey().equals(jobExecution.job.jobName)) {
-            logger.info(" Job Updated " + jobExecution.job.jobName);
+            logger.debug(" Job Updated " + jobExecution.job.jobName);
             updateJobExecutionMetrics(job, jobSuggestedParamSet, jobExecution);
           }
         }
       } else {
-        logger.info("No jobs found for flow execution: " + jobExecution.flowExecution.flowExecId);
+        logger.debug("No jobs found for flow execution: " + jobExecution.flowExecution.flowExecId);
         return false;
       }
     } catch (Exception e) {
