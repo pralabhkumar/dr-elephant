@@ -141,6 +141,14 @@ public class Application extends Controller {
     return ok(index.render());
   }
 
+  public static Result preflight(String all) {
+    response().setHeader("Access-Control-Allow-Origin", "*");
+    response().setHeader("Allow", "*");
+    response().setHeader("Access-Control-Allow-Methods", "POST, GET, PUT, DELETE, OPTIONS");
+    response().setHeader("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Referer, User-Agent");
+    return ok();
+  }
+
   /**
    * Controls the Home page of Dr. Elephant.
    *
@@ -1128,10 +1136,6 @@ public class Application extends Controller {
     return ok(Json.toJson(resMap));
   }
 
-
-
-
-
   /**
    * The Rest API for Search Feature
    *
@@ -1817,6 +1821,15 @@ public class Application extends Controller {
       return ok(new Gson().toJson(parent));
     }
   }
+
+  public static Result tuneinTest() {
+    JsonNode requestBody = request().body().asJson();
+    JsonNode tunein = requestBody.path("tunein");
+    return ok();
+  }
+
+
+
 
   /**
    * Returns a list of AppResults after quering the FLOW_EXEC_ID from the database

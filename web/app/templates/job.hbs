@@ -88,8 +88,8 @@
     </table>
   </div>
   {{#unless (eq model.tunein.jobSuggestedParamSetId "null")}}
-  <div class="shadow details-container box">
-    <h4>TuneIn Recommended Parameters</h4>
+    <div class="shadow details-container box">
+      <h4>TuneIn Recommended Parameters</h4>
       <hr class="bold-horizontal-line">
       <table class="table info borderless">
         <tbody>
@@ -103,7 +103,7 @@
             <td class="bold">{{tuningParam.name}}</td>
             <td>{{tuningParam.jobSuggestedParamValue}}</td>
             <td>
-              {{input type="text" class="param-value" value=tuningParam.userSuggestedParamValue disabled=true}}
+              {{input type="text" class="param-value" value=tuningParam.userSuggestedParamValue disabled=false}}
             </td>
           </tr>
         {{/each}}
@@ -122,12 +122,12 @@
         <div class="row">
           <div class="col-sm-3">
             <label class="switch">
-              {{input type="checkbox" checked=model.tunein.autoApply disabled=true}}
+              {{input type="checkbox" checked=model.tunein.autoApply change=(action "autoTuningToggle") disabled=false}}
               <div class="slider round"></div>
             </label>
           </div>
           <div class="col-sm-3">
-            <select id='soflow' disabled>
+            <select id='soflow' onchange={{action "changeTuningAlgorithm" value="target.value"}}>
               {{#each model.tunein.tuningAlgorithmList as |algorithm|}}
                 <option value={{algorithm.name}} selected={{eq algorithm.name model.tunein.tuningAlgorithm}}>{{algorithm.name}}</option>
               {{/each}}
@@ -135,11 +135,11 @@
           </div>
 
           <div class="col-sm-3">
-            {{input type="text" class="iteration-count" id="form-workflow-id" name="iterationCount" value=model.tunein.iterationCount disabled=true}}
+            {{input type="text" class="iteration-count" id="form-workflow-id" name="iterationCount" value=model.tunein.iterationCount focus-out=(action "iterationCountChange")}}
           </div>
 
           <div class="col-sm-3">
-            <button type="submit" class="btn wf-button" disabled title="This will be available in the next release"> Submit</button>
+            <button type="submit" class="btn wf-button" {{action "sendUserSuggestedParameters" model.tunein}}> Submit</button>
           </div>
         </div>
         <div class="severity-Critical">Above shown features will be enabled in the next release</div>
@@ -147,7 +147,7 @@
       {{#if (eq model.jobs.severity "None")}}
         <div class="severity-None">All Heuristics Passed with the above mentioned parameters</div>
       {{/if}}
-   </div>
+    </div>
   {{/unless}}
 
 

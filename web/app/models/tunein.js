@@ -17,7 +17,6 @@ import DS from 'ember-data';
 
 export default DS.Model.extend({
   jobSuggestedParamSetId: DS.attr('string'),
-  jobDefinitionId: DS.attr('string'),
   autoApply: DS.attr('boolean'),
   isAlgorithmTypeChanged: DS.attr('boolean'),
   isIterationCountChanged: DS.attr('boolean'),

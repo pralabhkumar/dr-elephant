@@ -20,13 +20,29 @@ export default Ember.Route.extend({
   beforeModel: function (transition) {
     this.jobid = transition.queryParams.jobid;
   },
+  ajax: Ember.inject.service(),
   model(){
     return Ember.RSVP.hash({
       jobs:   this.store.queryRecord('job', {jobid: this.get("jobid")}),
       tunein: this.store.queryRecord('tunein', {id: this.get("jobid")})
     });
   },
+  setupController: function(controller, model) {
+    controller.set('model', model);
+    console.log(model.tunein);
+    controller.set('currentAlgorithm', model.tunein.get("tuningAlgorithm"));
+    controller.set('currentIterationCount', model.tunein.get("iterationCount"));
+  },
   actions: {
+    sendUserSuggestedParameters(tunein) {
+      console.log(tunein);
+      return this.get('ajax').post('/rest/tunein', {
+        contentType: 'application/json; charset=UTF-8',
+        data: JSON.stringify({
+          tunein: tunein
+        })
+      })
+    },
     error(error, transition) {
       if (error.errors[0].status == 404) {
         return this.transitionTo('not-found', { queryParams: {'previous': window.location.href}});
