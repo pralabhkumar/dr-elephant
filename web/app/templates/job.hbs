@@ -25,13 +25,10 @@
     {{#link-to "workflow" (query-params workflowid=model.jobs.flowexecid)}}Workflow{{/link-to}}
     {{#link-to "job" (query-params jobid=model.jobs.jobexecid) class="active"}}<label>Job</label>{{/link-to}}
   </div>
-
   <div class="shadow details-container box">
     <h4>{{model.jobs.jobdisplayname}}</h4>
     <hr class="horizontal-line"/>
     <table class="info borderless">
-
-
       <tbody>
       <tr>
         <td>User</td>
@@ -61,27 +58,22 @@
                href="./newflowhistory?flow-def-id={{urlEncode model.jobs.flowdefid}}&select-graph-type=resources"><span
             class="glyphicon glyphicon-stats"></span> FlowHistory</a></td>
         <td><a id="job_flow_def_id" class="btn" href={{model.jobs.flowdefid}}><span
-            class="glyphicon glyphicon-info-sign"></span> Flow
-          definition</a></td>
+            class="glyphicon glyphicon-info-sign"></span> Flow Definition</a></td>
         <td><a id="job_flow_exec_id" class="btn" href="{{model.jobs.flowexecid}}"><span
-            class="glyphicon glyphicon-cog"></span> Flow
-          execution</a></td>
+            class="glyphicon glyphicon-cog"></span> Flow Execution</a></td>
       </tr>
       <tr>
         <td><a id="job_job_history" class="btn"
                href="./newjobhistory?job-def-id={{urlEncode model.jobs.jobdefid}}&select-graph-type=resources"><span
             class="glyphicon glyphicon-stats"></span> JobHistory</a></td>
         <td><a id="job_job_def_id" class="btn" href="{{model.jobs.jobdefid}}"><span
-            class="glyphicon glyphicon-info-sign"></span> Job
-          definition</a></td>
+            class="glyphicon glyphicon-info-sign"></span> Job Definition</a></td>
         <td><a id="job_job_exec_id" class="btn" href="{{model.jobs.jobexecid}}"><span
-            class="glyphicon glyphicon-cog"></span> Job
-          execution</a></td>
+            class="glyphicon glyphicon-cog"></span> Job Execution</a></td>
       </tr>
     </table>
     <table class="info borderless">
       <tbody>
-
       <tr>
         <td id="job_task_severity">
           {{tasks-severity tasksseverity=model.jobs.tasksseverity}}
