@@ -30,29 +30,27 @@
     <h4>{{model.jobs.jobdisplayname}}</h4>
     <hr class="horizontal-line"/>
     <table class="info borderless">
-
-
       <tbody>
-      <tr>
-        <td>User</td>
-        <td id="job_user">{{model.jobs.username}}</td>
-      </tr>
-      <tr>
-        <td>Queue</td>
-        <td id="job_queue">{{model.jobs.queue}}</td>
-      </tr>
-      <tr>
-        <td>Jobtype</td>
-        <td id="job_type">{{model.jobs.jobtype}}</td>
-      </tr>
-      <tr>
-        <td>Start time</td>
-        <td id="job_start_time">{{model.jobs.starttime}}</td>
-      </tr>
-      <tr>
-        <td>End time</td>
-        <td id="job_end_time">{{model.jobs.finishtime}}</td>
-      </tr>
+        <tr>
+          <td>User</td>
+          <td id="job_user">{{model.jobs.username}}</td>
+        </tr>
+        <tr>
+          <td>Queue</td>
+          <td id="job_queue">{{model.jobs.queue}}</td>
+        </tr>
+        <tr>
+          <td>Jobtype</td>
+          <td id="job_type">{{model.jobs.jobtype}}</td>
+        </tr>
+        <tr>
+          <td>Start time</td>
+          <td id="job_start_time">{{model.jobs.starttime}}</td>
+        </tr>
+        <tr>
+          <td>End time</td>
+          <td id="job_end_time">{{model.jobs.finishtime}}</td>
+        </tr>
       </tbody>
     </table>
     <table class="info borderless">
@@ -81,17 +79,16 @@
     </table>
     <table class="info borderless">
       <tbody>
-
-      <tr>
-        <td id="job_task_severity">
-          {{tasks-severity tasksseverity=model.jobs.tasksseverity}}
-        </td>
-      </tr>
-      <tr>
-        <td id="job_aggregated_metrics">
-          {{aggregated-metrics application=model.jobs}}
-        </td>
-      </tr>
+        <tr>
+          <td id="job_task_severity">
+            {{tasks-severity tasksseverity=model.jobs.tasksseverity}}
+          </td>
+        </tr>
+        <tr>
+          <td id="job_aggregated_metrics">
+            {{aggregated-metrics application=model.jobs}}
+          </td>
+        </tr>
       </tbody>
     </table>
   </div>
@@ -101,20 +98,20 @@
       <hr class="bold-horizontal-line">
       <table class="table info borderless">
         <tbody>
-        <tr class="heading">
-          <th>Parameter Name</th>
-          <th>Suggested Value</th>
-          <th>Manual Override</th>
-        </tr>
-        {{#each model.tunein.tuningParameters as |tuningParam|}}
-          <tr>
-            <td class="bold">{{tuningParam.name}}</td>
-            <td>{{tuningParam.jobSuggestedParamValue}}</td>
-            <td>
-              {{input type="text" class="param-value" value=tuningParam.userSuggestedParamValue disabled=true}}
-            </td>
+          <tr class="heading">
+            <th>Parameter Name</th>
+            <th>Suggested Value</th>
+            <th>Manual Override</th>
           </tr>
-        {{/each}}
+          {{#each model.tunein.tuningParameters as |tuningParam|}}
+            <tr>
+              <td class="bold">{{tuningParam.name}}</td>
+              <td>{{tuningParam.jobSuggestedParamValue}}</td>
+              <td>
+                {{input type="text" class="param-value" value=tuningParam.userSuggestedParamValue disabled=true}}
+              </td>
+            </tr>
+          {{/each}}
         </tbody>
       </table>
       <div class="severity-None">*These parameter suggestions are based on latest job execution</div>
@@ -141,7 +138,6 @@
               {{/each}}
             </select>
           </div>
-
           <div class="col-sm-3">
             {{input type="text" class="iteration-count" id="form-workflow-id" name="iterationCount" value=model.tunein.iterationCount disabled=true}}
           </div>
@@ -157,7 +153,6 @@
       {{/if}}
     </div>
   {{/unless}}
-
 
   <div class="shadow summary-list-container">
     <div class="summary-list-header">Applications</div>
