@@ -1698,43 +1698,43 @@ public class Application extends Controller {
     return ok(new Gson().toJson(sortedDatasets));
   }
 
-  /* Rest Api implementation for providing the tuning parameters details for a job
+  /** Rest Api implementation for providing the tuning parameters details for a job
    * @param jobId - job execution id passed as a parameter for the GET request
    * @result JSON containing suggested tuning paramter details
    * eg: Formatted JSON Data
-    {
-      "tunein":{
-      "id":"https://ltx1-holdemaz01.grid.linkedin.com:8443/executor?execid=1234567&job=dimDataSimpleFlow_dimDataSimple&attempt=0",
-      "jobSuggestedParamSetId":1234,
-      "tuningAlgorithmId":2,
-      "autoApply":false,
-      "tuningAlgorithm":"HBT",
-      "tuningAlgorithms":[
-         {
-            "name":"HBT"
-         },
-         {
-            "name":"OBT"
-         }
-      ],
-      "iterationCount":10,
-      "tuningParameters":[
-         {
-            "name":"mapreduce.map.memory.mb",
-            "jobSuggestedParamValue":"1113.33",
-            "userSuggestedParamValue":"1113.33",
-            "currentParamValue":"1113.33"
-         },
-         {
-            "name":"mapreduce.map.java.opts",
-            "jobSuggestedParamValue":"839",
-            "userSuggestedParamValue":"839",
-            "currentParamValue":"839"
-         }
-      ]
-    }
-   }
-  */
+   * {
+   *   "tunein":{
+   *   "id":"https://localhost:9080/executor?execid=1234567&job=sampleJob&attempt=0",
+   *   "jobSuggestedParamSetId":1234,
+   *   "tuningAlgorithmId":2,
+   *   "autoApply":false,
+   *   "tuningAlgorithm":"HBT",
+   *   "tuningAlgorithms":[
+   *      {
+   *         "name":"HBT"
+   *      },
+   *      {
+   *         "name":"OBT"
+   *      }
+   *   ],
+   *   "iterationCount":10,
+   *   "tuningParameters":[
+   *      {
+   *         "name":"mapreduce.map.memory.mb",
+   *         "jobSuggestedParamValue":"1113.33",
+   *         "userSuggestedParamValue":"1113.33",
+   *         "currentParamValue":"1113.33"
+   *      },
+   *      {
+   *         "name":"mapreduce.map.java.opts",
+   *         "jobSuggestedParamValue":"839",
+   *         "userSuggestedParamValue":"839",
+   *         "currentParamValue":"839"
+   *      }
+   *   ]
+   * }
+   *}
+   **/
   public static Result getTuningParameter(String jobId) {
     logger.info("Getting Tuning Parameters for " + jobId);
     JsonObject parent = new JsonObject();
@@ -1746,13 +1746,11 @@ public class Application extends Controller {
           .findUnique();
       Integer jobDefinitionId = 0;
       if (jobExecution == null) {
-        logger.info("No Job Execution enrty found for job execution " + jobId);
+        throw new Exception("No Job Execution enrty found for job execution: " + jobId);
       } else {
         jobDefinitionId = jobExecution.job.id;
       }
-
-      logger.info("jobDefinitionid::  " + jobDefinitionId);
-
+      logger.info("Job DefinitionId ::  " + jobDefinitionId);
       JobSuggestedParamSet jobSuggestedParamSet = JobSuggestedParamSet.find.select("*")
           .where()
           .eq(JobSuggestedParamSet.TABLE.jobDefinition + "." + JobDefinition.TABLE.id , jobDefinitionId)
@@ -1778,75 +1776,29 @@ public class Application extends Controller {
           .order()
           .desc(TuningJobDefinition.TABLE.createdTs)
           .findUnique();
-
+      logger.info("JobSuggestedParamSet:: " + jobSuggestedParamSet.id);
       if (userSuggestedParamSet == null) {
         logger.info("No user suggested param set for jobDefinitionId:" + jobDefinitionId);
       } else {
         logger.info("User suggested param set: " + userSuggestedParamSet.id);
       }
-
       logger.info("Tuning Job Definition Id: " + tuningJobDefinition.job.id);
       Boolean autoApply = tuningJobDefinition.autoApply;
-      logger.info("JobSuggestedParamSet:: " + jobSuggestedParamSet.id);
-
       TuningAlgorithm tuningAlgorithm = jobSuggestedParamSet.tuningAlgorithm;
       List<TuningParameter> parametersList = getTuningParametersListForJob(tuningAlgorithm.id);
-      logger.info("tuning parameter id: " + tuningAlgorithm.id);
-      DecimalFormat truncateParamValueFormat = new DecimalFormat("#.##");
-      JsonArray tuningParameters = new JsonArray();
-      for (TuningParameter tuningParam : parametersList) {
-        String paramName = tuningParam.paramName;
-        Integer id = tuningParam.id;
-        logger.info("params:: " + paramName + " " + id + " " + tuningParam.paramName);
-        JobSuggestedParamValue userSuggestedParameterValue = null;
-        if (userSuggestedParamSet != null) {
-          userSuggestedParameterValue = JobSuggestedParamValue.find.select("*")
-              .where()
-              .eq(JobSuggestedParamValue.TABLE.jobSuggestedParamSet + "." + JobSuggestedParamSet.TABLE.id, userSuggestedParamSet.id)
-              .eq(JobSuggestedParamValue.TABLE.tuningParameter + "." + TuningParameter.TABLE.id, id)
-              .findUnique();
-        }
-
-        JobSuggestedParamValue jobSuggestedParameterValue = JobSuggestedParamValue.find.select("*")
-            .where()
-            .eq(JobSuggestedParamValue.TABLE.jobSuggestedParamSet + "." + JobSuggestedParamSet.TABLE.id, jobSuggestedParamSet.id)
-            .eq(JobSuggestedParamValue.TABLE.tuningParameter + "." + TuningParameter.TABLE.id, id)
-            .findUnique();
-
-        if (jobSuggestedParameterValue == null) {
-          logger.info("No Job Suggested Param Value");
-          continue;
-        }
-
-        logger.info("paramResult for execId: " + jobId + " and tpId: " + id + " " + jobSuggestedParameterValue.paramValue);
-
-        JsonObject param = new JsonObject();
-        param.addProperty("name", paramName);
-        param.addProperty("jobSuggestedParamValue",  truncateParamValueFormat.format(jobSuggestedParameterValue.paramValue));
-        if (userSuggestedParameterValue != null) {
-          param.addProperty("userSuggestedParamValue",  truncateParamValueFormat.format(userSuggestedParameterValue.paramValue));
-          param.addProperty("currentParamValue",  truncateParamValueFormat.format(userSuggestedParameterValue.paramValue));
-        } else {
-          param.addProperty("userSuggestedParamValue",  truncateParamValueFormat.format(jobSuggestedParameterValue.paramValue));
-          param.addProperty("currentParamValue",  truncateParamValueFormat.format(jobSuggestedParameterValue.paramValue));
-        }
-        tuningParameters.add(param);
-        logger.info("param: " + tuningParameters);
-      }
-
-      String currentTuningAlgorithm = tuningAlgorithm.
-          optimizationAlgo.name().contains("PSO") ? "OBT" : "HBT";
+      logger.info("Tuning Algorithm id: " + tuningAlgorithm.id);
+      JsonArray tuningParameters = getTuningParameterDetails(parametersList, jobSuggestedParamSet, userSuggestedParamSet);
+      String currentTuningAlgorithm = getCurrentTuningAlgorithmName(tuningAlgorithm);
       JsonArray tuningAlgorithmList = new JsonArray();
-      logger.info("jobId:: " + jobId);
       tuneIn.addProperty("id", jobId);
-      //Two types of tuning types
+      tuneIn.addProperty("jobDefinitionId", jobDefinitionId);
+      //Two tuning types {HBT, OBT}
       JsonObject hbtAlgo = new JsonObject();
       hbtAlgo.addProperty("name", "HBT");
       JsonObject obtAlgo = new JsonObject();
       obtAlgo.addProperty("name", "OBT");
       tuningAlgorithmList.add(hbtAlgo);
       tuningAlgorithmList.add(obtAlgo);
-
       tuneIn.addProperty("jobSuggestedParamSetId", jobSuggestedParamSet.id);
       tuneIn.addProperty("tuningAlgorithmId", tuningAlgorithm.id);
       tuneIn.addProperty("autoApply", autoApply);
@@ -1855,7 +1807,7 @@ public class Application extends Controller {
       tuneIn.addProperty("iterationCount",tuningJobDefinition.numberOfIterations);
       tuneIn.add("tuningParameters", tuningParameters);
       parent.add("tunein", tuneIn);
-      logger.info("tuneIn : " + tuneIn);
+      logger.debug("tuneIn Json: " + tuneIn);
       return ok(new Gson().toJson(parent));
     } catch (Exception ex) {
       logger.error(ex);
@@ -1938,9 +1890,57 @@ public class Application extends Controller {
         TuningParameter.find.select("*")
             .where()
             .eq(TuningParameter.TABLE.tuningAlgorithm + "." + TuningAlgorithm.TABLE.id, tuningAlgorithmId)
+            .order()
+            .asc(TuningParameter.TABLE.paramName)
             .findList();
-    logger.info("size of paramList " + parametersList.size());
-    logger.info("tuningParam for tAId: " + tuningAlgorithmId + " has " + parametersList.get(0).id);
+    logger.info("Size of paramList " + parametersList.size());
     return parametersList;
+  }
+
+  private static JsonArray getTuningParameterDetails(List<TuningParameter> parametersList, JobSuggestedParamSet jobSuggestedParamSet, JobSuggestedParamSet userSuggestedParamSet) {
+    JsonArray tuningParameters = new JsonArray();
+    DecimalFormat truncateParamValueFormat = new DecimalFormat("#.##");
+    for (TuningParameter tuningParam : parametersList) {
+      String paramName = tuningParam.paramName;
+      Integer id = tuningParam.id;
+      JobSuggestedParamValue userSuggestedParameterValue = null;
+      if (userSuggestedParamSet != null) {
+        userSuggestedParameterValue = JobSuggestedParamValue.find.select("*")
+            .where()
+            .eq(JobSuggestedParamValue.TABLE.jobSuggestedParamSet + "." + JobSuggestedParamSet.TABLE.id, userSuggestedParamSet.id)
+            .eq(JobSuggestedParamValue.TABLE.tuningParameter + "." + TuningParameter.TABLE.id, id)
+            .findUnique();
+      }
+
+      JobSuggestedParamValue jobSuggestedParameterValue = JobSuggestedParamValue.find.select("*")
+          .where()
+          .eq(JobSuggestedParamValue.TABLE.jobSuggestedParamSet + "." + JobSuggestedParamSet.TABLE.id, jobSuggestedParamSet.id)
+          .eq(JobSuggestedParamValue.TABLE.tuningParameter + "." + TuningParameter.TABLE.id, id)
+          .findUnique();
+
+      if (jobSuggestedParameterValue == null) {
+        logger.info("No Job Suggested Param Value");
+        continue;
+      }
+      JsonObject param = new JsonObject();
+      param.addProperty("paramId",id);
+      param.addProperty("name", paramName);
+      param.addProperty("jobSuggestedParamValue",  truncateParamValueFormat.format(jobSuggestedParameterValue.paramValue));
+      if (userSuggestedParameterValue != null) {
+        param.addProperty("userSuggestedParamValue",  truncateParamValueFormat.format(userSuggestedParameterValue.paramValue));
+        param.addProperty("currentParamValue",  truncateParamValueFormat.format(userSuggestedParameterValue.paramValue));
+      } else {
+        param.addProperty("userSuggestedParamValue",  truncateParamValueFormat.format(jobSuggestedParameterValue.paramValue));
+        param.addProperty("currentParamValue",  truncateParamValueFormat.format(jobSuggestedParameterValue.paramValue));
+      }
+      tuningParameters.add(param);
+      logger.info("param: " + tuningParameters);
+    }
+    return tuningParameters;
+  }
+
+  private static String getCurrentTuningAlgorithmName(TuningAlgorithm tuningAlgorithm) {
+    return tuningAlgorithm.optimizationAlgo.name().contains("PSO") ? "OBT" : "HBT";
+
   }
 }
