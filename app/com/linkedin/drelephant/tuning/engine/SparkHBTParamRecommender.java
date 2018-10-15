@@ -2,11 +2,15 @@ package com.linkedin.drelephant.tuning.engine;
 
 import java.util.HashMap;
 import java.util.Map;
+
 import models.AppResult;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
+
 import com.linkedin.drelephant.spark.heuristics.ConfigurationHeuristic;
 import com.linkedin.drelephant.spark.heuristics.DriverHeuristic;
+import com.linkedin.drelephant.spark.heuristics.ExecutorGcHeuristic;
 import com.linkedin.drelephant.spark.heuristics.JvmUsedMemoryHeuristic;
 import com.linkedin.drelephant.spark.heuristics.UnifiedMemoryHeuristic;
 import com.linkedin.drelephant.util.MemoryFormatUtils;
@@ -21,14 +25,20 @@ public class SparkHBTParamRecommender {
   AppResult appResult;
 
   // TODos Move these to configuration
-  public static final int MAX_EXECUTOR_CORE = 4;
+  public static final int MAX_EXECUTOR_CORE = 3;
   public static final long MAX_EXECUTOR_MEMORY = 10 * FileUtils.ONE_GB;
+  public static final long MIN_EXECUTOR_MEMORY = 900 * FileUtils.ONE_MB;
+  public static final long MIN_DRIVER_MEMORY = 900 * FileUtils.ONE_MB;
+
   public static final int CLUSTER_DEFAULT_EXECUTOR_CORE = 1;
   public static final long RESERVED_MEMORY = 300 * FileUtils.ONE_MB;
 
-  private static final long EXECUTOR_MEMORY_BUFFER_PER_CORE = 5;
-  private static final long EXECUTOR_MEMORY_BUFFER_OVERALL = 5;
-  private static final long DRIVER_MEMORY_BUFFER = 20;
+  private static final long EXECUTOR_MEMORY_BUFFER_PER_CORE = 0;
+  private static final long EXECUTOR_MEMORY_BUFFER_OVERALL = 0;
+  private static final long DRIVER_MEMORY_BUFFER = 0;
+
+  private static final int GC_MEMORY_INCREASE = 5;
+  private static final int GC_MEMORY_DECREASE = -5;
 
   private long maxPeakUnifiedMemory;
   private long maxPeakJVMUsedMemory;
@@ -39,7 +49,7 @@ public class SparkHBTParamRecommender {
   private int lastRunExecutorCore;
   private long lastRunExecutorMemoryOverhead;
   private long lastRunDriverMemoryOverhead;
-
+  private Float gcRunTimeRatio;
   private Long suggestedExecutorMemory;
   private Integer suggestedCore;
   private Double suggestedMemoryFactor;
@@ -71,6 +81,9 @@ public class SparkHBTParamRecommender {
     } catch (NumberFormatException e) {
       // Do Nothing
     }
+    gcRunTimeRatio =
+        Float.parseFloat(appHeuristicsResultDetailsMap.get(ExecutorGcHeuristic.class.getCanonicalName() + "_"
+            + ExecutorGcHeuristic.GC_RUN_TIME_RATIO()));
 
     driverMaxPeakJVMUsedMemory =
         MemoryFormatUtils.stringToBytes(appHeuristicsResultDetailsMap.get(DriverHeuristic.class.getCanonicalName()
@@ -189,23 +202,27 @@ public class SparkHBTParamRecommender {
    */
   public HashMap<String, Double> getHBTSuggestion() {
     HashMap<String, Double> suggestedParameters = new HashMap<String, Double>();
-    suggestExecutorMemoryCore();
-    suggestMemoryFactor();
-    suggestDriverMemory();
-    suggestedParameters.put(SparkConfigurationConstants.SPARK_EXECUTOR_MEMORY_KEY, (double) suggestedExecutorMemory
-        / FileUtils.ONE_MB);
-    suggestedParameters.put(SparkConfigurationConstants.SPARK_EXECUTOR_CORES_KEY, suggestedCore.doubleValue());
-    if (suggestedMemoryFactor < UnifiedMemoryHeuristic.SPARK_MEMORY_FRACTION_THRESHOLD()) {
-      suggestedMemoryFactor = UnifiedMemoryHeuristic.SPARK_MEMORY_FRACTION_THRESHOLD();
+    try {
+      suggestExecutorMemoryCore();
+      suggestMemoryFactor();
+      suggestDriverMemory();
+      suggestedParameters.put(SparkConfigurationConstants.SPARK_EXECUTOR_MEMORY_KEY, (double) suggestedExecutorMemory
+          / FileUtils.ONE_MB);
+      suggestedParameters.put(SparkConfigurationConstants.SPARK_EXECUTOR_CORES_KEY, suggestedCore.doubleValue());
+      if (suggestedMemoryFactor < UnifiedMemoryHeuristic.SPARK_MEMORY_FRACTION_THRESHOLD()) {
+        suggestedMemoryFactor = UnifiedMemoryHeuristic.SPARK_MEMORY_FRACTION_THRESHOLD();
+      }
+      suggestedParameters.put(SparkConfigurationConstants.SPARK_MEMORY_FRACTION_KEY, suggestedMemoryFactor);
+      suggestedParameters.put(SparkConfigurationConstants.SPARK_DRIVER_MEMORY_KEY, (double) suggestedDriverMemory
+          / FileUtils.ONE_MB);
+      logger.info("Following are the suggestions for spark parameters for app id : " + appResult.flowExecId);
+      logger.info("suggestedExecutorMemory " + suggestedExecutorMemory);
+      logger.info("suggestedCore " + suggestedCore);
+      logger.info("suggestedMemoryFactor " + suggestedMemoryFactor);
+      logger.info("suggestedDriverMemory " + suggestedDriverMemory);
+    } catch (Exception e) {
+      logger.error("Error in generating parameters ", e);
     }
-    suggestedParameters.put(SparkConfigurationConstants.SPARK_MEMORY_FRACTION_KEY, suggestedMemoryFactor);
-    suggestedParameters.put(SparkConfigurationConstants.SPARK_DRIVER_MEMORY_KEY, (double) suggestedDriverMemory
-        / FileUtils.ONE_MB);
-    logger.info("Following are the suggestions for spark parameters for app id : " + appResult.flowExecId);
-    logger.info("suggestedExecutorMemory " + suggestedExecutorMemory);
-    logger.info("suggestedCore " + suggestedCore);
-    logger.info("suggestedMemoryFactor " + suggestedMemoryFactor);
-    logger.info("suggestedDriverMemory " + suggestedDriverMemory);
     return suggestedParameters;
   }
 
@@ -238,6 +255,12 @@ public class SparkHBTParamRecommender {
     if (!validSuggestion) {
       suggestedExecutorMemory = lastRunExecutorMemory;
       suggestedCore = lastRunExecutorCore;
+    }
+    if (getMemoryIncreaseForGC() != 0) {
+      suggestedExecutorMemory = suggestedExecutorMemory * (100 + getMemoryIncreaseForGC()) / 100;
+    }
+    if (suggestedExecutorMemory < MIN_EXECUTOR_MEMORY) {
+      suggestedExecutorMemory = MIN_EXECUTOR_MEMORY;
     }
     suggestedExecutorMemory = getRoundedExecutorMemory();
   }
@@ -310,6 +333,9 @@ public class SparkHBTParamRecommender {
    */
   private void suggestDriverMemory() {
     suggestedDriverMemory = driverMaxPeakJVMUsedMemory * (100 + DRIVER_MEMORY_BUFFER) / 100;
+    if (suggestedDriverMemory < MIN_DRIVER_MEMORY) {
+      suggestedDriverMemory = MIN_DRIVER_MEMORY;
+    }
     suggestedDriverMemory = getRoundedDriverMemory();
   }
 
@@ -323,4 +349,13 @@ public class SparkHBTParamRecommender {
     return ((long) Math.ceil(memory * 1.0 / FileUtils.ONE_GB)) * FileUtils.ONE_GB;
   }
 
+  private int getMemoryIncreaseForGC() {
+    if (gcRunTimeRatio > ExecutorGcHeuristic.DEFAULT_GC_SEVERITY_A_THRESHOLDS().moderate().floatValue()) {
+      return GC_MEMORY_INCREASE;
+    } else if (gcRunTimeRatio < ExecutorGcHeuristic.DEFAULT_GC_SEVERITY_D_THRESHOLDS().moderate().floatValue()) {
+      return GC_MEMORY_DECREASE;
+    } else {
+      return 0;
+    }
+  }
 }
