@@ -39,10 +39,12 @@ public class AutoTuner implements Runnable {
   private static final Logger logger = Logger.getLogger(AutoTuner.class);
   private static final long DEFAULT_METRICS_COMPUTATION_INTERVAL = ONE_MIN / 5;
   public static final String AUTO_TUNING_DAEMON_WAIT_INTERVAL = "autotuning.daemon.wait.interval.ms";
-  private static final String tuningTypes[] = {"OBT"};
 
+
+  /**
+   *  It will start auto tuning thread .
+   */
   public void run() {
-
     logger.info("Starting Auto Tuning thread");
     HDFSContext.load();
     Configuration configuration = ElephantContext.instance().getAutoTuningConf();
@@ -64,6 +66,4 @@ public class AutoTuner implements Runnable {
     }
     logger.info("Auto tuning thread shutting down");
   }
-
-
 }

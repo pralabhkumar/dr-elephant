@@ -47,7 +47,7 @@ public class AutoTuningFlow {
     }
   }
 
-  public void createBaseLineManagersPipeline() {
+  private void createBaseLineManagersPipeline() {
     List<Manager> baselineManagers = new ArrayList<Manager>();
     for (Constant.TuningType tuningType : Constant.TuningType.values()) {
 
@@ -57,14 +57,14 @@ public class AutoTuningFlow {
     this.pipelines.add(baselineManagers);
   }
 
-  public void createJobStatusManagersPipeline() {
+  private void createJobStatusManagersPipeline() {
     List<Manager> jobStatusManagers = new ArrayList<Manager>();
     jobStatusManagers.add(ManagerFactory.getManager(null, null, null, AbstractJobStatusManager.class.getSimpleName()));
     //jobStatusManagers.add(new JobStatusManagerOBT());
     this.pipelines.add(jobStatusManagers);
   }
 
-  public void createFitnessManagersPipeline() {
+  private void createFitnessManagersPipeline() {
     List<Manager> fitnessManagers = new ArrayList<Manager>();
     for (Constant.TuningType tuningType : Constant.TuningType.values()) {
       for (Constant.AlgotihmType algotihmType : Constant.AlgotihmType.values()) {
@@ -80,7 +80,7 @@ public class AutoTuningFlow {
     this.pipelines.add(fitnessManagers);
   }
 
-  public void createTuningTypeManagersPipeline() {
+  private void createTuningTypeManagersPipeline() {
     List<Manager> algorithmManagers = new ArrayList<Manager>();
     for (Constant.TuningType tuningType : Constant.TuningType.values()) {
       for (Constant.AlgotihmType algotihmType : Constant.AlgotihmType.values()) {

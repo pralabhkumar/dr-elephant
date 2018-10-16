@@ -23,6 +23,10 @@ public abstract class AbstractJobStatusManager implements Manager {
   protected abstract boolean analyzeCompletedJobsExecution(
       List<TuningJobExecutionParamSet> inProgressExecutionParamSet);
 
+  /**
+   * This method detect jobs whose execution state in job execution table is in in progress
+   * @return List of tuning jobs whose status is in progress.
+   */
   protected List<TuningJobExecutionParamSet> detectJobsExecutionInProgress() {
     logger.info("Fetching the executions which are in progress");
     List<TuningJobExecutionParamSet> tuningJobExecutionParamSets =
@@ -37,6 +41,12 @@ public abstract class AbstractJobStatusManager implements Manager {
     return tuningJobExecutionParamSets;
   }
 
+  /**
+   *
+   * @param jobs : It takes jobs whose state is changes from execution to completed and also paramset w
+   *             whose status is changed to executed.
+   * @return : If the database update successfully then it return true other false
+   */
   protected boolean updateDataBase(List<TuningJobExecutionParamSet> jobs) {
     try {
       for (TuningJobExecutionParamSet job : jobs) {
@@ -50,13 +60,18 @@ public abstract class AbstractJobStatusManager implements Manager {
           logger.info("Execution " + jobExecution.jobExecId + " is still in running state");
         }
       }
-    }catch(Exception e){
-      logger.info ( "Exception occur while updating database " + e.getMessage());
+    } catch (Exception e) {
+      logger.info("Exception occur while updating database " + e.getMessage());
       return false;
     }
     return true;
   }
 
+  /**
+   *
+   * @param jobExecution : Take jobExecution as input
+   * @return true if the job execution is not in progress.
+   */
   private Boolean isJobCompleted(JobExecution jobExecution) {
     if (jobExecution.executionState.equals(JobExecution.ExecutionState.SUCCEEDED) || jobExecution.executionState.equals(
         JobExecution.ExecutionState.FAILED) || jobExecution.executionState.equals(
@@ -67,6 +82,11 @@ public abstract class AbstractJobStatusManager implements Manager {
     }
   }
 
+  /**
+   *
+   * @param completedJobs : Take jobs whose execution is completed. Update ingraph metrics
+   * @return true if update is successfull else false.
+   */
   protected boolean updateMetrics(List<TuningJobExecutionParamSet> completedJobs) {
     try {
       for (TuningJobExecutionParamSet completedJob : completedJobs) {
@@ -77,13 +97,20 @@ public abstract class AbstractJobStatusManager implements Manager {
           AutoTuningMetricsController.markFailedJobs();
         }
       }
-    }catch (Exception e){
+    } catch (Exception e) {
       logger.info(" Exception while updating Metrics to ingraph " + e.getMessage());
       return false;
     }
     return true;
   }
 
+  /**
+   * 1) Get the jobs for which Status need to be queried from Azkaban
+   * 2) Queried the Azkaban and get current status
+   * 3) Update the data base if the execution is completed
+   * 4) Update the metrics
+   * @return true if method executes successfully  . Otherwise false
+   */
   @Override
   public final boolean execute() {
     logger.info("Executing Job Status Manager");

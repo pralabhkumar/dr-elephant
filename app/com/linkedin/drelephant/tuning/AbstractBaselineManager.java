@@ -43,12 +43,12 @@ public abstract class AbstractBaselineManager implements Manager {
     configuration = ElephantContext.instance().getAutoTuningConf();
   }
 
-  /*
-  Execute the whole logic for Base line Computing
-  1) Get the jobs for which Baseline have to be calculated
-  2) Calculate the baseline
-  3) Update the base line
-  4) Update the metrics .
+  /**
+   * 1) Get the jobs for which Baseline have to be calculated
+   * 2) Calculate the baseline
+   * 3) Update the base line
+   * 4) Update the metrics
+   * @return true if method executes successfully  . Otherwise false
    */
   @Override
   public final boolean execute() {
@@ -81,14 +81,12 @@ public abstract class AbstractBaselineManager implements Manager {
    * This is done by returning the jobs with null average resource usage
    * @return List of jobs whose baseline needs to be added
    */
-
   protected abstract List<TuningJobDefinition> detectJobsForBaseLineComputation();
 
   /**
    * Adds baseline metric values for a job
    * @param tuningJobDefinitions Job for which baseline is to be computed
    */
-
   protected boolean calculateBaseLine(List<TuningJobDefinition> tuningJobDefinitions) {
     for (TuningJobDefinition tuningJobDefinition : tuningJobDefinitions) {
       try {
@@ -156,7 +154,6 @@ public abstract class AbstractBaselineManager implements Manager {
    * This method update metrics for auto tuning monitoring for baseline computation
    * @param tuningJobDefinitions
    */
-
   protected boolean updateMetrics(List<TuningJobDefinition> tuningJobDefinitions) {
     try {
       int baselineComputeWaitJobs = 0;

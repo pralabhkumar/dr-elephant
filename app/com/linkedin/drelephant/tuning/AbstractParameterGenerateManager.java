@@ -38,7 +38,6 @@ public abstract class AbstractParameterGenerateManager implements Manager {
    * @param tuningJobDefinitions
    * @return
    */
-
   protected abstract boolean updateDatabase(List<JobTuningInfo> tuningJobDefinitions);
 
   /**
@@ -52,29 +51,20 @@ public abstract class AbstractParameterGenerateManager implements Manager {
    * generation have to done
    * @return
    */
-
   protected abstract List<TuningJobDefinition> getTuningJobDefinitions();
 
   /**
-   * If the algorithm requires to save previous state ,then this method should be implemented
+   * If the algorithm requires to save previous state ,then this method should be implemented.
    * @param jobTuningInfo
    * @param job
    */
-
   protected abstract void saveJobState(JobTuningInfo jobTuningInfo, JobDefinition job);
 
   /**
-   *
+   * Update the boundry constraint based on the previous executions. Used in IPSO.
    * @param tuningParameterList
    * @param job
    */
-
-  /**
-   * Update the boundry constraint based on the previous executions
-   * @param tuningParameterList
-   * @param job
-   */
-
   protected abstract void updateBoundryConstraint(List<TuningParameter> tuningParameterList, JobDefinition job);
 
   /**
@@ -88,7 +78,6 @@ public abstract class AbstractParameterGenerateManager implements Manager {
    * Fetches the list to job which need new parameter suggestion
    * @return Job list
    */
-
   protected List<JobTuningInfo> detectJobsForParameterGeneration() {
     List<TuningJobDefinition> jobsForSwarmSuggestion = getJobsForParamSuggestion();
     List<JobTuningInfo> jobTuningInfoList = getJobsTuningInfo(jobsForSwarmSuggestion);
@@ -129,6 +118,11 @@ public abstract class AbstractParameterGenerateManager implements Manager {
     return jobsForParamSuggestion;
   }
 
+  /**
+   * Generate parameters for the job
+   * @param jobsForParameterSuggestion
+   * @return Update jobTuningInfo with the suggested parameters .
+   */
   protected List<JobTuningInfo> generateParameters(List<JobTuningInfo> jobsForParameterSuggestion) {
     List<JobTuningInfo> updatedJobTuningInfoList = new ArrayList<JobTuningInfo>();
     for (JobTuningInfo jobTuningInfo : jobsForParameterSuggestion) {
@@ -138,6 +132,13 @@ public abstract class AbstractParameterGenerateManager implements Manager {
     return updatedJobTuningInfoList;
   }
 
+  /**
+   * Execute the whole logic for parameter generations
+   * 1) Get the jobs for which parameters need to be generated
+   * 2) Generate the parameters
+   * 3) Update the database
+   * @return true if the parameters are generated successfully else false.
+   */
   public final boolean execute() {
     try {
       logger.info("Executing Tuning Algorithm");
@@ -152,7 +153,7 @@ public abstract class AbstractParameterGenerateManager implements Manager {
       logger.info("Param Generation Done");
       return databaseUpdateDone;
     } catch (Exception e) {
-      logger.info("Exception in generating parameters ", e);
+      logger.warn("Exception in generating parameters ", e);
       return false;
     }
   }
@@ -163,27 +164,29 @@ public abstract class AbstractParameterGenerateManager implements Manager {
    * @return Tuning information list
    */
   protected List<JobTuningInfo> getJobsTuningInfo(List<TuningJobDefinition> tuningJobs) {
-    List<com.linkedin.drelephant.tuning.JobTuningInfo> jobTuningInfoList =
+    List<JobTuningInfo> jobTuningInfoList =
         new ArrayList<com.linkedin.drelephant.tuning.JobTuningInfo>();
     for (TuningJobDefinition tuningJobDefinition : tuningJobs) {
       JobDefinition job = tuningJobDefinition.job;
       List<TuningParameter> tuningParameterList = generateTuningParameterListWithDefaultValues(tuningJobDefinition);
       // updating boundary constraints for the job
       updateBoundryConstraint(tuningParameterList, job);
-
-      com.linkedin.drelephant.tuning.JobTuningInfo jobTuningInfo = new com.linkedin.drelephant.tuning.JobTuningInfo();
+      JobTuningInfo jobTuningInfo = new JobTuningInfo();
       jobTuningInfo.setTuningJob(job);
       jobTuningInfo.setJobType(tuningJobDefinition.tuningAlgorithm.jobType);
       jobTuningInfo.setParametersToTune(tuningParameterList);
-
       saveJobState(jobTuningInfo, job);
-
       logger.info("Adding JobTuningInfo " + Json.toJson(jobTuningInfo));
       jobTuningInfoList.add(jobTuningInfo);
     }
     return jobTuningInfoList;
   }
 
+  /**
+   * Assign default values to tuning parameters . Then later on the boundaries are updated
+   * @param tuningJobDefinition
+   * @return
+   */
   protected List<TuningParameter> generateTuningParameterListWithDefaultValues(TuningJobDefinition tuningJobDefinition) {
     JobDefinition job = tuningJobDefinition.job;
     logger.info("Getting tuning information for job: " + job.jobDefId);
@@ -195,6 +198,11 @@ public abstract class AbstractParameterGenerateManager implements Manager {
     return tuningParameterList;
   }
 
+  /**
+   * Assign default values to the parameters
+   * @param defaultJobParamSet
+   * @param tuningParameterList
+   */
   protected void assignDefaultValues(JobSuggestedParamSet defaultJobParamSet, List<TuningParameter> tuningParameterList) {
     if (defaultJobParamSet != null) {
       logger.info("Fetching default parameter values for job ");

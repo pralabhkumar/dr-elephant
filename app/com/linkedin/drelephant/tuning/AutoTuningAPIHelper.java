@@ -129,15 +129,6 @@ public class AutoTuningAPIHelper {
   }
 
   /**
-   * Sets the tuning algorithm based on the job type and optimization metric
-   * @param tuningInput TuningInput for which tuning algorithm is to be set
-   *//*
-  private void setTuningAlgorithm(TuningInput tuningInput,TuningJobDefinition tuningJobDefinition) throws IllegalArgumentException {
-    TuningAlgorithm tuningAlgorithm = tuningJobDefinition.tuningAlgorithm;
-    tuningInput.setTuningAlgorithm(tuningAlgorithm);
-  }*/
-
-  /**
    * Applies penalty to the param set corresponding to the given execution
    * @param jobExecId String job execution id/url of the execution whose parameter set has to be penalized
    * Assumption: Best param set will never be penalized
@@ -167,7 +158,6 @@ public class AutoTuningAPIHelper {
     jobSuggestedParamSet.paramSetState = ParamSetStatus.FITNESS_COMPUTED;
     jobSuggestedParamSet.fitnessJobExecution = jobExecution;
     jobSuggestedParamSet.update();
-
     jobExecution.resourceUsage = 0D;
     jobExecution.executionTime = 0D;
     jobExecution.inputSizeInBytes = 1D;
@@ -233,7 +223,6 @@ public class AutoTuningAPIHelper {
       job.flowDefinition = flowDefinition;
       job.save();
     }
-
     String client = tuningInput.getClient();
     Map<String, Double> defaultParams = null;
     try {
@@ -250,21 +239,28 @@ public class AutoTuningAPIHelper {
     tuningJobDefinition.allowedMaxExecutionTimePercent = tuningInput.getAllowedMaxExecutionTimePercent();
     tuningJobDefinition.allowedMaxResourceUsagePercent = tuningInput.getAllowedMaxResourceUsagePercent();
     tuningJobDefinition.save();
-
     insertParamSet(job, tuningInput.getTuningAlgorithm(), defaultParams);
-
     logger.info("Added job: " + tuningInput.getJobDefId() + " for tuning");
     return tuningJobDefinition;
   }
 
+  /**
+   * This method will be used to get tuning algorithm for the first execution of the job.
+   * Currently for backward compatibility the tuning algorithm is Azkaban version depended.
+   * (See Version in Application.java)
+   * .
+   * But in future HBT ,will be the by default tuning algorithm for first time.
+   * .eq(TuningAlgorithm.TABLE.optimizationAlgo, "HBT")
+   * @param tuningInput
+   * @return
+   */
   private TuningAlgorithm getTuningAlgorithmForfirstTime(TuningInput tuningInput) {
-    logger.info("Version "+tuningInput.getVersion() + "\t" + tuningInput.getOptimizationAlgo());
+    logger.info("Version " + tuningInput.getVersion() + "\t" + tuningInput.getOptimizationAlgo());
     TuningAlgorithm tuningAlgorithm = TuningAlgorithm.find.select("*")
         .where()
         .eq(TuningAlgorithm.TABLE.jobType, tuningInput.getJobType())
         .eq(TuningAlgorithm.TABLE.optimizationMetric, "RESOURCE")
-       // .eq(TuningAlgorithm.TABLE.optimizationAlgo, "HBT")
-       .eq(TuningAlgorithm.TABLE.optimizationAlgo,tuningInput.getOptimizationAlgo())
+        .eq(TuningAlgorithm.TABLE.optimizationAlgo, tuningInput.getOptimizationAlgo())
         .findUnique();
     if (tuningAlgorithm == null) {
       throw new IllegalArgumentException("Wrong job type " + tuningInput.getJobType());
@@ -307,7 +303,6 @@ public class AutoTuningAPIHelper {
   private JobExecution addNewExecution(TuningInput tuningInput) {
     JobDefinition jobDefinition = getJobDefinition(tuningInput);
     FlowExecution flowExecution = getFlowExecution(tuningInput);
-
     JobExecution jobExecution = new JobExecution();
     jobExecution.jobExecId = tuningInput.getJobExecId();
     jobExecution.jobExecUrl = tuningInput.getJobExecUrl();
@@ -324,7 +319,6 @@ public class AutoTuningAPIHelper {
    * @return JobExecution corresponding to the given tuning input
    */
   private JobExecution getJobExecution(TuningInput tuningInput) {
-
     JobExecution jobExecution = JobExecution.find.select("*")
         .fetch(JobExecution.TABLE.job, "*")
         .where()
@@ -343,13 +337,11 @@ public class AutoTuningAPIHelper {
    * @return Parameter Suggestion
    */
   public Map<String, Double> getCurrentRunParameters(TuningInput tuningInput) throws Exception {
-    /* try {*/
     logger.info("Parameter set request received from execution: " + tuningInput.getJobExecId());
     if (tuningInput.getAllowedMaxExecutionTimePercent() == null
         || tuningInput.getAllowedMaxResourceUsagePercent() == null) {
       setMaxAllowedMetricIncreasePercentage(tuningInput);
     }
-
     String jobDefId = tuningInput.getJobDefId();
     TuningJobDefinition tuningJobDefinition = TuningJobDefinition.find.select("*")
         .fetch(TuningJobDefinition.TABLE.job, "*")
@@ -358,9 +350,7 @@ public class AutoTuningAPIHelper {
         .setMaxRows(1)
         .orderBy(TuningJobDefinition.TABLE.createdTs + " desc")
         .findUnique();
-
     JobExecution jobExecution = getJobExecution(tuningInput);
-    //setTuningAlgorithm(tuningInput,tuningJobDefinition);
     if (tuningJobDefinition == null) {
       tuningInput.setTuningAlgorithm(getTuningAlgorithmForfirstTime(tuningInput));
       logger.info(" Tuning Algorithm Type " + tuningInput.getTuningAlgorithm().optimizationAlgo.name());
@@ -372,14 +362,14 @@ public class AutoTuningAPIHelper {
       initializeOptimizationAlgoPrerequisite(tuningInput);
       return processForSubsequentExecutions(tuningJobDefinition, tuningInput, jobExecution);
     }
-  } /*catch (Exception e) {
-      logger.info(" Exception occured " + e.getMessage());
-      logger.info(" Running Default parameters ");
-      return new HashMap<String, Double>();
-    }*/
+  }
 
-//}
-
+  /**
+   * This method will be called for the first execution of the job
+   * @param tuningInput
+   * @param jobExecution
+   * @return Map of property name and value
+   */
   private Map<String, Double> processForFirstExecution(TuningInput tuningInput, JobExecution jobExecution) {
     logger.info(
         " New Job. Hence  Not checking for AutoTuning . Running with default Parameters " + tuningInput.getJobExecId());
@@ -393,6 +383,16 @@ public class AutoTuningAPIHelper {
     return jobSuggestedParamValueListToMap(jobSuggestedParamValues);
   }
 
+  /**
+   * This method will be called for all the next execution of the job (except the first one). Execution path would
+   * be different for first execution and subsequent execution . Since user cannot enable auto apply before first execution
+   * . If user doesn't enable after seeing in Dr elephant , then suggested parameters will not be applied instead default
+   * parameters will be applied.
+   * @param tuningJobDefinition
+   * @param tuningInput
+   * @param jobExecution
+   * @return
+   */
   private Map<String, Double> processForSubsequentExecutions(TuningJobDefinition tuningJobDefinition,
       TuningInput tuningInput, JobExecution jobExecution) {
     logger.info(" Not a New Job . Hence check for autoTuning" + tuningInput.getJobExecId());
@@ -406,6 +406,12 @@ public class AutoTuningAPIHelper {
     }
   }
 
+  /**
+   * If auto apply is enabled , then get the suggested parameters . Retry if the job is failed .
+   * @param tuningInput
+   * @param jobExecution
+   * @return
+   */
   private List<JobSuggestedParamValue> processParameterTuningEnabled(TuningInput tuningInput,
       JobExecution jobExecution) {
     JobSuggestedParamSet jobSuggestedParamSet;
@@ -427,6 +433,12 @@ public class AutoTuningAPIHelper {
     return jobSuggestedParamValues;
   }
 
+  /**
+   * Since Auto Tuning disabled , no parameter suggestion .
+   * @param tuningInput
+   * @param jobExecution
+   * @return
+   */
   private Map<String, Double> sendDefaultParameters(TuningInput tuningInput, JobExecution jobExecution) {
     JobSuggestedParamSet jobSuggestedParamSet;
     logger.info(" Auto Tuning Disabled . Hence no parameter suggestion. Tagging execution with default values");
@@ -438,6 +450,10 @@ public class AutoTuningAPIHelper {
     return new HashMap<String, Double>();
   }
 
+  /**
+   * Update the data base with default values of the parameters
+   * @param tuningInput
+   */
   public void updateDataBaseWithDefaultValues(TuningInput tuningInput) {
     JobDefinition job =
         JobDefinition.find.select("*").where().eq(JobDefinition.TABLE.jobDefId, tuningInput.getJobDefId()).findUnique();
@@ -451,6 +467,11 @@ public class AutoTuningAPIHelper {
     insertParamSetForDefault(job, tuningInput.getTuningAlgorithm(), defaultParams);
   }
 
+  /**
+   * Get the default parameters which will be send .
+   * @param jobDefinition
+   * @return
+   */
   public JobSuggestedParamSet getDefaultParameters(JobDefinition jobDefinition) {
     JobSuggestedParamSet jobSuggestedParamSet = JobSuggestedParamSet.find.select("*")
         .fetch(JobSuggestedParamSet.TABLE.jobDefinition, "*")
@@ -464,6 +485,11 @@ public class AutoTuningAPIHelper {
     return jobSuggestedParamSet;
   }
 
+  /**
+   * If auto apply is disabled then , we have to discard all the generated parameters
+   * and send default values to the execution.
+   * @param jobDefinition
+   */
   public void discardGeneratedParameter(JobDefinition jobDefinition) {
     List<JobSuggestedParamSet> jobSuggestedParamSets = JobSuggestedParamSet.find.select("*")
         .fetch(JobSuggestedParamSet.TABLE.jobDefinition, "*")
@@ -471,7 +497,6 @@ public class AutoTuningAPIHelper {
         .eq(JobSuggestedParamSet.TABLE.jobDefinition + "." + JobDefinition.TABLE.id, jobDefinition.id)
         .eq(JobSuggestedParamSet.TABLE.paramSetState, ParamSetStatus.CREATED)
         .findList();
-
     if (jobSuggestedParamSets != null && jobSuggestedParamSets.size() >= 1) {
       logger.info(" Discarding Generated Parameters , as auto tuning off." + jobSuggestedParamSets.size());
       for (JobSuggestedParamSet jobSuggestedParamSet : jobSuggestedParamSets) {
@@ -481,6 +506,12 @@ public class AutoTuningAPIHelper {
     }
   }
 
+  /**
+   * Inserted data in JobSuggestedParamSet .
+   * @param job
+   * @param tuningAlgorithm
+   * @param paramValueMap
+   */
   private void insertParamSetForDefault(JobDefinition job, TuningAlgorithm tuningAlgorithm,
       Map<String, Double> paramValueMap) {
     logger.debug("Inserting default parameter set for job: " + job.jobName);
@@ -549,6 +580,12 @@ public class AutoTuningAPIHelper {
     return jobSuggestedParamSet;
   }
 
+  /**
+   * If the algorithm type is changed from HBT to OBT or vice versa ,
+   * then discard all the parameters which was generated by  previous algorithm type.
+   * @param jobDefinition
+   * @param tuningAlgorithm
+   */
   private void makeOtherAlgoParamGeneratedDiscarded(JobDefinition jobDefinition, TuningAlgorithm tuningAlgorithm) {
     logger.info("Making other tuning type suggested as discarded , if tuning type is changed");
     List<JobSuggestedParamSet> jobSuggestedParamSets = JobSuggestedParamSet.find.select("*")
@@ -558,9 +595,9 @@ public class AutoTuningAPIHelper {
         .eq(JobSuggestedParamSet.TABLE.paramSetState, ParamSetStatus.CREATED)
         .not(Expr.eq(JobSuggestedParamSet.TABLE.tuningAlgorithm, tuningAlgorithm))
         .findList();
-    if(jobSuggestedParamSets != null){
+    if (jobSuggestedParamSets != null) {
       logger.info(" other algorithm parameter created " + jobSuggestedParamSets.size());
-      for(JobSuggestedParamSet jobSuggestedParamSet : jobSuggestedParamSets){
+      for (JobSuggestedParamSet jobSuggestedParamSet : jobSuggestedParamSets) {
         jobSuggestedParamSet.paramSetState = ParamSetStatus.DISCARDED;
         jobSuggestedParamSet.save();
       }
@@ -634,6 +671,11 @@ public class AutoTuningAPIHelper {
     }
   }
 
+  /**
+   * This is specifically used in IPSO ,where tuning parameter constraint
+   * table is populated with default boundaries of the parameters .
+   * @param tuningInput
+   */
   private void initializeOptimizationAlgoPrerequisite(TuningInput tuningInput) {
     String jobDefId = tuningInput.getJobDefId();
     TuningJobDefinition tuningJobDefinition = TuningJobDefinition.find.select("*")

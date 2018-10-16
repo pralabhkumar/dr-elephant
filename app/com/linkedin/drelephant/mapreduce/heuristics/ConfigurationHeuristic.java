@@ -21,14 +21,12 @@ import com.linkedin.drelephant.analysis.HeuristicResult;
 import com.linkedin.drelephant.analysis.Severity;
 import com.linkedin.drelephant.configurations.heuristic.HeuristicConfigurationData;
 import com.linkedin.drelephant.mapreduce.data.MapReduceApplicationData;
-
 import static com.linkedin.drelephant.mapreduce.heuristics.CommonConstantsHeuristic.ParameterKeys.*;
-
 import org.apache.log4j.Logger;
 
-
-/*
-Heuristics to collect memory data/counter values  about application previous exeution.
+/**
+ * This heuristics is to collect memory data / properties / counter values about jobs
+ * previous execution
  */
 public class ConfigurationHeuristic implements Heuristic<MapReduceApplicationData> {
   private static final Logger logger = Logger.getLogger(ConfigurationHeuristic.class);
