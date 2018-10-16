@@ -37,7 +37,7 @@ public class AutoTuningFlow {
         public void run() {
             for (Manager manager : pipelineType) {
               logger.info(" Starting Manager  " + manager.getManagerName());
-              Boolean execute = manager.execute();
+              boolean execute = manager.execute();
              logger.info(" Ending Manager " + execute + " " + manager.getManagerName());
           }
         }
