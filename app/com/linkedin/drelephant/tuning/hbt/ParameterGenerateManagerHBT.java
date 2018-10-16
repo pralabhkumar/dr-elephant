@@ -87,17 +87,19 @@ public class ParameterGenerateManagerHBT extends AbstractParameterGenerateManage
     }
 
     List<AppResult> results = getAppResults(jobExecution);
-    if (results == null || results.size()==0 ) {
+    if (results == null || results.size() == 0) {
       logger.debug(
           " Job is analyzing  , cannot use for param generation " + jobExecution.id + " " + jobExecution.job.id);
       return "";
     }
     String idParameters = null;
-    try
-    {
-      idParameters=this._executionEngine.parameterGenerationsHBT(results, tuningParameters);
-    }catch(Exception e)
-    {
+    try {
+      idParameters = this._executionEngine.parameterGenerationsHBT(results, tuningParameters);
+      if (idParameters == null) {
+        logger.error(" id parameters are null ");
+        idParameters = "";
+      }
+    } catch (Exception e) {
       logger.error("Exception in getting specific parameters ", e);
     }
     return idParameters.toString();
@@ -187,8 +189,6 @@ public class ParameterGenerateManagerHBT extends AbstractParameterGenerateManage
 
     return true;
   }
-
-
 
   private void penaltyApplication(JobSuggestedParamSet jobSuggestedParamSet, TuningJobDefinition tuningJobDefinition) {
     logger.debug("Parameter constraint violated. Applying penalty.");
