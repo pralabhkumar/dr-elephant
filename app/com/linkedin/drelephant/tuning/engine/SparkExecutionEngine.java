@@ -74,6 +74,19 @@ public class SparkExecutionEngine implements ExecutionEngine {
 
   @Override
   public String parameterGenerationsHBT(List<AppResult> results, List<TuningParameter> tuningParameters) {
+    if (results != null && results.size() > 0) {
+      SparkHBTParamRecommender sparkHBTParamRecommender = new SparkHBTParamRecommender(results.get(0));
+      HashMap<String, Double> suggestedParameters = sparkHBTParamRecommender.getHBTSuggestion();
+      StringBuffer idParameters = new StringBuffer();
+      for (TuningParameter tuningParameter : tuningParameters) {
+        if (suggestedParameters.containsKey(tuningParameter.paramName)) {
+          idParameters.append(tuningParameter.id).append("\t")
+              .append(suggestedParameters.get(tuningParameter.paramName));
+          idParameters.append("\n");
+        }
+      }
+      return idParameters.toString();
+    }
     return null;
   }
 
