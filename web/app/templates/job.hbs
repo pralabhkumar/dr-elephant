@@ -20,86 +20,143 @@
 
 <div class="container" role="main">
 
-    <div class="bread-crumb flat">
-        {{#link-to "dashboard"}}<i class="glyphicon glyphicon-home"></i>{{/link-to}}
-        {{#link-to "workflow" (query-params workflowid=model.flowexecid)}}Workflow{{/link-to}}
-        {{#link-to "job" (query-params jobid=model.jobexecid) class="active"}}<label>Job</label>{{/link-to}}
-    </div>
+  <div class="bread-crumb flat">
+    {{#link-to "dashboard"}}<i class="glyphicon glyphicon-home"></i>{{/link-to}}
+    {{#link-to "workflow" (query-params workflowid=model.jobs.flowexecid)}}Workflow{{/link-to}}
+    {{#link-to "job" (query-params jobid=model.jobs.jobexecid) class="active"}}<label>Job</label>{{/link-to}}
+  </div>
 
+  <div class="shadow details-container box">
+    <h4>{{model.jobs.jobdisplayname}}</h4>
+    <hr class="horizontal-line"/>
+    <table class="info borderless">
+      <tbody>
+        <tr>
+          <td>User</td>
+          <td id="job_user">{{model.jobs.username}}</td>
+        </tr>
+        <tr>
+          <td>Queue</td>
+          <td id="job_queue">{{model.jobs.queue}}</td>
+        </tr>
+        <tr>
+          <td>Jobtype</td>
+          <td id="job_type">{{model.jobs.jobtype}}</td>
+        </tr>
+        <tr>
+          <td>Start time</td>
+          <td id="job_start_time">{{model.jobs.starttime}}</td>
+        </tr>
+        <tr>
+          <td>End time</td>
+          <td id="job_end_time">{{model.jobs.finishtime}}</td>
+        </tr>
+      </tbody>
+    </table>
+    <table class="info borderless">
+      <tr>
+        <td><a id="job_flow_history" class="btn"
+               href="./newflowhistory?flow-def-id={{urlEncode model.jobs.flowdefid}}&select-graph-type=resources"><span
+            class="glyphicon glyphicon-stats"></span> FlowHistory</a></td>
+        <td><a id="job_flow_def_id" class="btn" href={{model.jobs.flowdefid}}><span
+            class="glyphicon glyphicon-info-sign"></span> Flow
+          definition</a></td>
+        <td><a id="job_flow_exec_id" class="btn" href="{{model.jobs.flowexecid}}"><span
+            class="glyphicon glyphicon-cog"></span> Flow
+          execution</a></td>
+      </tr>
+      <tr>
+        <td><a id="job_job_history" class="btn"
+               href="./newjobhistory?job-def-id={{urlEncode model.jobs.jobdefid}}&select-graph-type=resources"><span
+            class="glyphicon glyphicon-stats"></span> JobHistory</a></td>
+        <td><a id="job_job_def_id" class="btn" href="{{model.jobs.jobdefid}}"><span
+            class="glyphicon glyphicon-info-sign"></span> Job
+          definition</a></td>
+        <td><a id="job_job_exec_id" class="btn" href="{{model.jobs.jobexecid}}"><span
+            class="glyphicon glyphicon-cog"></span> Job
+          execution</a></td>
+      </tr>
+    </table>
+    <table class="info borderless">
+      <tbody>
+        <tr>
+          <td id="job_task_severity">
+            {{tasks-severity tasksseverity=model.jobs.tasksseverity}}
+          </td>
+        </tr>
+        <tr>
+          <td id="job_aggregated_metrics">
+            {{aggregated-metrics application=model.jobs}}
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  {{#unless (eq model.tunein.jobSuggestedParamSetId "null")}}
     <div class="shadow details-container box">
-        <h4>{{model.jobdisplayname}}</h4>
-        <hr class="horizontal-line"/>
-        <table class="info borderless">
+      <h4>TuneIn Recommended Parameters</h4>
+      <hr class="bold-horizontal-line">
+      <table class="table info borderless">
+        <tbody>
+          <tr class="heading">
+            <th>Parameter Name</th>
+            <th>Suggested Value</th>
+            <th>Manual Override</th>
+          </tr>
+          {{#each model.tunein.tuningParameters as |tuningParam|}}
+            <tr>
+              <td class="bold">{{tuningParam.name}}</td>
+              <td>{{tuningParam.jobSuggestedParamValue}}</td>
+              <td>
+                {{input type="text" class="param-value" value=tuningParam.userSuggestedParamValue disabled=true}}
+              </td>
+            </tr>
+          {{/each}}
+        </tbody>
+      </table>
+      <div class="severity-None">*These parameter suggestions are based on latest job execution</div>
+      <hr class="bold-horizontal-line">
+      <div class="container">
+        <div class="row">
+          <div class="col-sm-3 heading bold">Auto Tuning</div>
+          <div class="col-sm-3 heading bold">Tuning Algorithm</div>
+          <div class="col-sm-3 heading bold">Number of Iterations</div>
+        </div>
+      </div>
+      <div class="container">
+        <div class="row">
+          <div class="col-sm-3">
+            <label class="switch">
+              {{input type="checkbox" checked=model.tunein.autoApply disabled=true}}
+              <div class="slider round"></div>
+            </label>
+          </div>
+          <div class="col-sm-3">
+            <select id='soflow' disabled>
+              {{#each model.tunein.tuningAlgorithmList as |algorithm|}}
+                <option value={{algorithm.name}} selected={{eq algorithm.name model.tunein.tuningAlgorithm}}>{{algorithm.name}}</option>
+              {{/each}}
+            </select>
+          </div>
+          <div class="col-sm-3">
+            {{input type="text" class="iteration-count" id="form-workflow-id" name="iterationCount" value=model.tunein.iterationCount disabled=true}}
+          </div>
 
-
-            <tbody>
-            <tr>
-                <td>User</td>
-                <td id="job_user">{{model.username}}</td>
-            </tr>
-            <tr>
-                <td>Queue</td>
-                <td id="job_queue">{{model.queue}}</td>
-            </tr>
-            <tr>
-                <td>Jobtype</td>
-                <td id="job_type">{{model.jobtype}}</td>
-            </tr>
-            <tr>
-                <td>Start time</td>
-                <td id="job_start_time">{{model.starttime}}</td>
-            </tr>
-            <tr>
-                <td>End time</td>
-                <td id="job_end_time">{{model.finishtime}}</td>
-            </tr>
-            </tbody>
-        </table>
-        <table class="info borderless">
-            <tr>
-                <td><a id="job_flow_history" class="btn"
-                       href="./newflowhistory?flow-def-id={{urlEncode model.flowdefid}}&select-graph-type=resources"><span
-                        class="glyphicon glyphicon-stats"></span> FlowHistory</a></td>
-                <td><a id="job_flow_def_id" class="btn" href={{model.flowdefid}}><span
-                        class="glyphicon glyphicon-info-sign"></span> Flow
-                    definition</a></td>
-                <td><a id="job_flow_exec_id" class="btn" href="{{model.flowexecid}}"><span
-                        class="glyphicon glyphicon-cog"></span> Flow
-                    execution</a></td>
-            </tr>
-            <tr>
-                <td><a id="job_job_history" class="btn"
-                       href="./newjobhistory?job-def-id={{urlEncode model.jobdefid}}&select-graph-type=resources"><span
-                        class="glyphicon glyphicon-stats"></span> JobHistory</a></td>
-                <td><a id="job_job_def_id" class="btn" href="{{model.jobdefid}}"><span
-                        class="glyphicon glyphicon-info-sign"></span> Job
-                    definition</a></td>
-                <td><a id="job_job_exec_id" class="btn" href="{{model.jobexecid}}"><span
-                        class="glyphicon glyphicon-cog"></span> Job
-                    execution</a></td>
-            </tr>
-        </table>
-        <table class="info borderless">
-            <tbody>
-
-            <tr>
-                <td id="job_task_severity">
-                    {{tasks-severity tasksseverity=model.tasksseverity}}
-                </td>
-            </tr>
-            <tr>
-                <td id="job_aggregated_metrics">
-                    {{aggregated-metrics application=model}}
-                </td>
-            </tr>
-            </tbody>
-        </table>
+          <div class="col-sm-3">
+            <button type="submit" class="btn wf-button" disabled title="This will be available in the next release"> Submit</button>
+          </div>
+        </div>
+        <div class="severity-Critical">Above shown features will be enabled in the next release</div>
+      </div>
+      {{#if (eq model.jobs.severity "None")}}
+        <div class="severity-None">All Heuristics Passed with the above mentioned parameters</div>
+      {{/if}}
     </div>
+  {{/unless}}
 
-    <div class="shadow summary-list-container">
-        <div class="summary-list-header">Applications</div>
-
-        {{application-list applications=model.taskssummaries}}
-    </div>
+  <div class="shadow summary-list-container">
+    <div class="summary-list-header">Applications</div>
+    {{application-list applications=model.jobs.taskssummaries}}
+  </div>
 
 </div>
