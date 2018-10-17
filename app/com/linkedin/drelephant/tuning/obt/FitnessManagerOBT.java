@@ -86,11 +86,39 @@ public abstract class FitnessManagerOBT extends AbstractFitnessManager {
     computeFitness(jobSuggestedParamSet, jobExecution, tuningJobDefinition, results);
   }
 
+  /**
+   * Updates the job suggested param set when the corresponding execution was succeeded
+   * @param jobExecution JobExecution: succeeded job execution corresponding to the param set which is to be updated
+   * @param jobSuggestedParamSet param set which is to be updated
+   * @param tuningJobDefinition TuningJobDefinition of the job to which param set corresponds
+   */
+  @Override
+  protected void updateJobSuggestedParamSetSucceededExecution(JobExecution jobExecution,
+      JobSuggestedParamSet jobSuggestedParamSet, TuningJobDefinition tuningJobDefinition) {
+    int penaltyConstant = 3;
+    Double averageResourceUsagePerGBInput =
+        tuningJobDefinition.averageResourceUsage * FileUtils.ONE_GB / tuningJobDefinition.averageInputSizeInBytes;
+    Double maxDesiredResourceUsagePerGBInput =
+        averageResourceUsagePerGBInput * tuningJobDefinition.allowedMaxResourceUsagePercent / 100.0;
+    Double averageExecutionTimePerGBInput =
+        tuningJobDefinition.averageExecutionTime * FileUtils.ONE_GB / tuningJobDefinition.averageInputSizeInBytes;
+    Double maxDesiredExecutionTimePerGBInput =
+        averageExecutionTimePerGBInput * tuningJobDefinition.allowedMaxExecutionTimePercent / 100.0;
+    Double resourceUsagePerGBInput = jobExecution.resourceUsage * FileUtils.ONE_GB / jobExecution.inputSizeInBytes;
+    Double executionTimePerGBInput = jobExecution.executionTime * FileUtils.ONE_GB / jobExecution.inputSizeInBytes;
 
-
-
-
-
+    if (resourceUsagePerGBInput > maxDesiredResourceUsagePerGBInput
+        || executionTimePerGBInput > maxDesiredExecutionTimePerGBInput) {
+      logger.debug("Execution " + jobExecution.jobExecId + " violates constraint on resource usage per GB input");
+      jobSuggestedParamSet.fitness = penaltyConstant * maxDesiredResourceUsagePerGBInput;
+    } else {
+      jobSuggestedParamSet.fitness = resourceUsagePerGBInput;
+    }
+    jobSuggestedParamSet.paramSetState = JobSuggestedParamSet.ParamSetStatus.FITNESS_COMPUTED;
+    jobSuggestedParamSet.fitnessJobExecution = jobExecution;
+    jobSuggestedParamSet = updateBestJobSuggestedParamSet(jobSuggestedParamSet);
+    jobSuggestedParamSet.update();
+  }
 
   /**
    * Checks and disables tuning for the given job definitions.
