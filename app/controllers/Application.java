@@ -47,13 +47,7 @@ import models.AppHeuristicResult;
 import models.AppResult;
 import models.TuningAlgorithm;
 import models.TuningAlgorithm.JobType;
-import models.JobDefinition;
-import models.JobExecution;
-import models.JobSuggestedParamSet;
-import models.JobSuggestedParamValue;
-import models.TuningAlgorithm;
-import models.TuningJobDefinition;
-import models.TuningParameter;
+
 import org.apache.commons.collections.map.ListOrderedMap;
 import org.apache.http.client.utils.URLEncodedUtils;
 import org.apache.http.message.BasicNameValuePair;
