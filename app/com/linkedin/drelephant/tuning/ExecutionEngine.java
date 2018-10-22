@@ -24,7 +24,7 @@ import models.TuningParameterConstraint;
 public interface ExecutionEngine {
 
   /**
-   * This method is used to compute the values of derived parameters . These parameter values have not suggested by tuning algorithm
+   * This method is used to compute the values of derived parameters . These parameter values have not been suggested by tuning algorithm
    *
    * @param derivedParameterList Derived Parameter List
    * @param jobSuggestedParamValue Update job suggested param value with the derived parameter value list.
