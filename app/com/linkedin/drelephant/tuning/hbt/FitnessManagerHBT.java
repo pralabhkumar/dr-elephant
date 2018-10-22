@@ -102,7 +102,7 @@ public class FitnessManagerHBT extends AbstractFitnessManager {
   protected void computeFitness(JobSuggestedParamSet jobSuggestedParamSet, JobExecution jobExecution,
       TuningJobDefinition tuningJobDefinition, List<AppResult> results) {
     if (!jobSuggestedParamSet.paramSetState.equals(JobSuggestedParamSet.ParamSetStatus.FITNESS_COMPUTED)
-        || !jobSuggestedParamSet.paramSetState.equals(JobSuggestedParamSet.ParamSetStatus.DISCARDED)) {
+        && !jobSuggestedParamSet.paramSetState.equals(JobSuggestedParamSet.ParamSetStatus.DISCARDED)) {
       if (jobExecution.executionState.equals(JobExecution.ExecutionState.SUCCEEDED)) {
         logger.debug("Execution id: " + jobExecution.id + " succeeded");
         updateJobSuggestedParamSetSucceededExecution(jobExecution, jobSuggestedParamSet, tuningJobDefinition);
@@ -164,7 +164,7 @@ public class FitnessManagerHBT extends AbstractFitnessManager {
         disableTuning(jobDefinition, "User Specified Iterations reached");
       }
       if (areHeuristicsPassed(tuningJobExecutionParamSets)) {
-        disableTuning(jobDefinition, "All Heuristics Passed1");
+        disableTuning(jobDefinition, "All Heuristics Passed");
       }
     }
     Long currentTimeAfter= System.currentTimeMillis();

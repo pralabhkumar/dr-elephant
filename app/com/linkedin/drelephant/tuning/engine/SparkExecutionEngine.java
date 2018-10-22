@@ -16,7 +16,7 @@ import com.linkedin.drelephant.tuning.ExecutionEngine;
 
 
 /**
- * This class represents Spark Exectuion Engine. It handles all the cases releated to Spark Engine
+ * This class represents Spark Execution Engine. It handles all the cases releated to Spark Engine
  */
 public class SparkExecutionEngine implements ExecutionEngine {
   private final Logger logger = Logger.getLogger(getClass());
