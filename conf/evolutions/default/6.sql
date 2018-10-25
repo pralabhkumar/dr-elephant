@@ -17,7 +17,7 @@
 # --- !Ups
 
 /**
- * This query make neccesssary steps to run IPSO
+ * This query make neccesssary steps to run Unified Architecture
  */
 
 ALTER TABLE tuning_algorithm MODIFY COLUMN optimization_algo enum('PSO','PSO_IPSO','HBT') NOT NULL COMMENT 'optimization algorithm name e.g. PSO' ;
@@ -64,6 +64,8 @@ create index index_tuning_parameter_constraint on tuning_parameter_constraint (j
 
 # --- !Downs
 DELETE FROM tuning_parameter WHERE tuning_algorithm_id=3;
+DELETE FROM tuning_parameter WHERE tuning_algorithm_id=4;
+DELETE FROM tuning_parameter WHERE tuning_algorithm_id=5;
 DELETE FROM tuning_algorithm WHERE optimization_algo='PSO_IPSO' ;
 ALTER TABLE tuning_algorithm MODIFY COLUMN optimization_algo enum('PSO') NOT NULL COMMENT 'optimization algorithm name e.g. PSO' ;
 DROP TABLE tuning_parameter_constraint;
