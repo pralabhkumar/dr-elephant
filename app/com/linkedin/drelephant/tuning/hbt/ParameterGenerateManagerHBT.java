@@ -95,14 +95,14 @@ public class ParameterGenerateManagerHBT extends AbstractParameterGenerateManage
     String idParameters = null;
     try {
       idParameters = this._executionEngine.parameterGenerationsHBT(results, tuningParameters);
-      if (idParameters == null) {
-        logger.error(" id parameters are null ");
-        idParameters = "";
-      }
     } catch (Exception e) {
       logger.error("Exception in getting specific parameters ", e);
     }
-    return idParameters.toString();
+    if (idParameters == null) {
+      logger.error(" id parameters are null ");
+      idParameters = "";
+    }
+    return idParameters;
   }
 
   private List<AppResult> getAppResults(JobExecution jobExecution) {

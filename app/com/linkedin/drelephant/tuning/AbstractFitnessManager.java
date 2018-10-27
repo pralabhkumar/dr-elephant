@@ -274,7 +274,7 @@ public abstract class AbstractFitnessManager implements Manager {
         .eq(TuningJobDefinition.TABLE.job + '.' + JobDefinition.TABLE.id, jobDefinition.id)
         .findUnique();
     if (tuningJobExecutionParamSets != null
-        && tuningJobExecutionParamSets.size() == tuningJobDefinition.numberOfIterations) {
+        && tuningJobExecutionParamSets.size() >= tuningJobDefinition.numberOfIterations) {
       return true;
     }
     return false;

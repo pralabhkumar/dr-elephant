@@ -595,7 +595,7 @@ public class AutoTuningAPIHelper {
         .eq(JobSuggestedParamSet.TABLE.paramSetState, ParamSetStatus.CREATED)
         .not(Expr.eq(JobSuggestedParamSet.TABLE.tuningAlgorithm, tuningAlgorithm))
         .findList();
-    if (jobSuggestedParamSets != null) {
+    if (jobSuggestedParamSets != null && jobSuggestedParamSets.size()>0) {
       logger.info(" other algorithm parameter created " + jobSuggestedParamSets.size());
       for (JobSuggestedParamSet jobSuggestedParamSet : jobSuggestedParamSets) {
         jobSuggestedParamSet.paramSetState = ParamSetStatus.DISCARDED;

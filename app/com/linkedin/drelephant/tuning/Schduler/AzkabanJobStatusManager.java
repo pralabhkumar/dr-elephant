@@ -70,6 +70,7 @@ public class AzkabanJobStatusManager extends AbstractJobStatusManager {
 
   private boolean analyzeJobExecution(JobExecution jobExecution,JobSuggestedParamSet jobSuggestedParamSet){
     try {
+      logger.debug(" Getting jobs for Flow "+jobExecution.flowExecution.flowExecId);
       Map<String, String> jobStatus = _azkabanJobStatusUtil.getJobsFromFlow(jobExecution.flowExecution.flowExecId);
       if (jobStatus != null) {
         for (Map.Entry<String, String> job : jobStatus.entrySet()) {
