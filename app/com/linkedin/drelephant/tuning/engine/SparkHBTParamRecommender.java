@@ -245,7 +245,11 @@ public class SparkHBTParamRecommender {
     long maxPeakJVMUsedMemoryPerCore = getMaxPeakJVMUsedMemoryPerCore();
     for (int core = MAX_EXECUTOR_CORE; core > 0; core--) {
       long currSuggestedMemory = suggestExecutorMemory(maxPeakJVMUsedMemoryPerCore, core);
-      if (currSuggestedMemory < MAX_EXECUTOR_MEMORY || core == 1) {
+      if (getMemoryIncreaseForGC() != 0) {
+        currSuggestedMemory = currSuggestedMemory * (100 + getMemoryIncreaseForGC()) / 100;
+      }
+      currSuggestedMemory = currSuggestedMemory + RESERVED_MEMORY;
+      if (currSuggestedMemory < MAX_EXECUTOR_MEMORY || core == 1 || currSuggestedMemory < lastRunExecutorMemory) {
         suggestedExecutorMemory = currSuggestedMemory;
         suggestedCore = core;
         validSuggestion = true;
@@ -256,13 +260,9 @@ public class SparkHBTParamRecommender {
       suggestedExecutorMemory = lastRunExecutorMemory;
       suggestedCore = lastRunExecutorCore;
     }
-    if (getMemoryIncreaseForGC() != 0) {
-      suggestedExecutorMemory = suggestedExecutorMemory * (100 + getMemoryIncreaseForGC()) / 100;
-    }
     if (suggestedExecutorMemory < MIN_EXECUTOR_MEMORY) {
       suggestedExecutorMemory = MIN_EXECUTOR_MEMORY;
     }
-    suggestedExecutorMemory = suggestedExecutorMemory + RESERVED_MEMORY;
     suggestedExecutorMemory = getRoundedExecutorMemory();
   }
 

@@ -145,11 +145,11 @@ public abstract class AbstractFitnessManager implements Manager {
     logger.debug("Current Time in millis: " + System.currentTimeMillis() + ", job execution last updated time "
         + jobExecution.updatedTs.getTime());
     if (diff > ignoreExecutionWaitInterval) {
-      logger.debug(
+      logger.info(
           "Fitness of param set " + jobSuggestedParamSet.id + " corresponding to execution id: " + jobExecution.id
               + " not computed for more than the maximum duration specified to compute fitness. "
               + "Resetting the param set to CREATED state");
-      resetParamSetToCreated(jobSuggestedParamSet);
+      resetParamSetToCreated(jobSuggestedParamSet, jobExecution);
     }
   }
 
@@ -180,11 +180,16 @@ public abstract class AbstractFitnessManager implements Manager {
    * Resets the param set to CREATED state if its fitness is not already computed
    * @param jobSuggestedParamSet Param set which is to be reset
    */
-  protected void resetParamSetToCreated(JobSuggestedParamSet jobSuggestedParamSet) {
+  protected void resetParamSetToCreated(JobSuggestedParamSet jobSuggestedParamSet, JobExecution jobExecution) {
     if (!jobSuggestedParamSet.paramSetState.equals(JobSuggestedParamSet.ParamSetStatus.FITNESS_COMPUTED)) {
       logger.debug("Resetting parameter set to created: " + jobSuggestedParamSet.id);
       jobSuggestedParamSet.paramSetState = JobSuggestedParamSet.ParamSetStatus.CREATED;
       jobSuggestedParamSet.save();
+
+      jobExecution.resourceUsage = 0D;
+      jobExecution.executionTime = 0D;
+      jobExecution.inputSizeInBytes = 1D;
+      jobExecution.save();
     }
   }
 

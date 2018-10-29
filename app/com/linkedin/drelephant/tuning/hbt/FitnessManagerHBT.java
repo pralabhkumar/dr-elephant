@@ -115,7 +115,7 @@ public class FitnessManagerHBT extends AbstractFitnessManager {
         // after failure.
         logger.info("HBT Execution id: " + jobExecution.id + " was not successful for reason other than tuning."
             + "Resetting param set: " + jobSuggestedParamSet.id + " to CREATED state");
-        resetParamSetToCreated(jobSuggestedParamSet);
+        resetParamSetToCreated(jobSuggestedParamSet, jobExecution);
       }
     }
   }
@@ -138,12 +138,19 @@ public class FitnessManagerHBT extends AbstractFitnessManager {
    * Resets the param set to CREATED state if its fitness is not already computed
    * @param jobSuggestedParamSet Param set which is to be reset
    */
-  protected void resetParamSetToCreated(JobSuggestedParamSet jobSuggestedParamSet) {
+  @Override
+  protected void resetParamSetToCreated(JobSuggestedParamSet jobSuggestedParamSet, JobExecution jobExecution) {
     if (!jobSuggestedParamSet.paramSetState.equals(JobSuggestedParamSet.ParamSetStatus.FITNESS_COMPUTED)
         && !jobSuggestedParamSet.paramSetState.equals(JobSuggestedParamSet.ParamSetStatus.DISCARDED)) {
       logger.debug("Resetting parameter set to created: " + jobSuggestedParamSet.id);
       jobSuggestedParamSet.paramSetState = JobSuggestedParamSet.ParamSetStatus.CREATED;
       jobSuggestedParamSet.save();
+
+      jobExecution.resourceUsage = 0D;
+      jobExecution.executionTime = 0D;
+      jobExecution.inputSizeInBytes = 1D;
+      jobExecution.save();
+
     }
   }
 

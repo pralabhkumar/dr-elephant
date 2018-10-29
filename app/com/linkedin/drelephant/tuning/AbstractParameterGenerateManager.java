@@ -105,7 +105,7 @@ public abstract class AbstractParameterGenerateManager implements Manager {
     List<TuningJobDefinition> tuningJobDefinitionList = getTuningJobDefinitions();
     //logger.info("Total Jobs " + tuningJobDefinitionList.size());
     if (tuningJobDefinitionList.size() == 0) {
-      logger.error("No auto-tuning enabled jobs found");
+      logger.info("No auto-tuning enabled jobs found");
     }
 
     for (TuningJobDefinition tuningJobDefinition : tuningJobDefinitionList) {
