@@ -22,6 +22,7 @@ import com.linkedin.drelephant.util.Utils;
 
 public class FitnessManagerHBT extends AbstractFitnessManager {
   private final Logger logger = Logger.getLogger(getClass());
+  private final int MINIMUM_HBT_EXECUTION=3;
 
   public FitnessManagerHBT() {
     Configuration configuration = ElephantContext.instance().getAutoTuningConf();
@@ -164,7 +165,7 @@ public class FitnessManagerHBT extends AbstractFitnessManager {
         disableTuning(jobDefinition, "User Specified Iterations reached");
       }
       //Minimum three execution needed for HBT to do some resource optimization
-      if (areHeuristicsPassed(tuningJobExecutionParamSets) && tuningJobExecutionParamSets.size()>=3) {
+      if (areHeuristicsPassed(tuningJobExecutionParamSets) && tuningJobExecutionParamSets.size()>=MINIMUM_HBT_EXECUTION) {
         disableTuning(jobDefinition, "All Heuristics Passed");
       }
     }
