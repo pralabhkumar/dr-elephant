@@ -22,7 +22,8 @@ import com.linkedin.drelephant.util.Utils;
 
 public class FitnessManagerHBT extends AbstractFitnessManager {
   private final Logger logger = Logger.getLogger(getClass());
-  private final int MINIMUM_HBT_EXECUTION=3;
+  private boolean isDebugEnabled = logger.isDebugEnabled();
+  private final int MINIMUM_HBT_EXECUTION = 3;
 
   public FitnessManagerHBT() {
     Configuration configuration = ElephantContext.instance().getAutoTuningConf();
@@ -76,7 +77,7 @@ public class FitnessManagerHBT extends AbstractFitnessManager {
     logger.debug("calculateAndUpdateFitness");
     Double totalResourceUsed = 0D;
     Double totalInputBytesInBytes = 0D;
-    Double score=0D;
+    Double score = 0D;
     for (AppResult appResult : results) {
       totalResourceUsed += appResult.resourceUsed;
       totalInputBytesInBytes += getTotalInputBytes(appResult);
@@ -88,7 +89,7 @@ public class FitnessManagerHBT extends AbstractFitnessManager {
     Long totalExecutionTime = totalRunTime - totalDelay;
 
     if (totalExecutionTime != 0) {
-      jobExecution.score=score;
+      jobExecution.score = score;
       updateJobExecution(jobExecution, totalResourceUsed, totalInputBytesInBytes, totalExecutionTime);
     }
 
@@ -134,6 +135,7 @@ public class FitnessManagerHBT extends AbstractFitnessManager {
     jobSuggestedParamSet = updateBestJobSuggestedParamSet(jobSuggestedParamSet);
     jobSuggestedParamSet.update();
   }
+
   /**
    * Resets the param set to CREATED state if its fitness is not already computed
    * @param jobSuggestedParamSet Param set which is to be reset
@@ -150,7 +152,6 @@ public class FitnessManagerHBT extends AbstractFitnessManager {
       jobExecution.executionTime = 0D;
       jobExecution.inputSizeInBytes = 1D;
       jobExecution.save();
-
     }
   }
 
@@ -171,13 +172,24 @@ public class FitnessManagerHBT extends AbstractFitnessManager {
       if (reachToNumberOfThresholdIterations(tuningJobExecutionParamSets, jobDefinition)) {
         disableTuning(jobDefinition, "User Specified Iterations reached");
       }
+      int autoAppliedExecution = 0;
+      for (TuningJobExecutionParamSet tuningJobExecutionParam : tuningJobExecutionParamSets) {
+        if (tuningJobExecutionParam.jobSuggestedParamSet.isParamSetSuggested
+            && !tuningJobExecutionParam.jobSuggestedParamSet.paramSetState.equals(
+            JobSuggestedParamSet.ParamSetStatus.DISCARDED)) {
+          autoAppliedExecution++;
+          if (isDebugEnabled) {
+            logger.debug(" Total number of executions after auto applied enabled " + autoAppliedExecution);
+          }
+        }
+      }
       //Minimum three execution needed for HBT to do some resource optimization
-      if (areHeuristicsPassed(tuningJobExecutionParamSets) && tuningJobExecutionParamSets.size()>=MINIMUM_HBT_EXECUTION) {
+      if (areHeuristicsPassed(tuningJobExecutionParamSets) && autoAppliedExecution >= MINIMUM_HBT_EXECUTION) {
         disableTuning(jobDefinition, "All Heuristics Passed");
       }
     }
-    Long currentTimeAfter= System.currentTimeMillis();
-    logger.info(" Total time taken by disable tuning " + (currentTimeAfter-currentTimeBefore));
+    Long currentTimeAfter = System.currentTimeMillis();
+    logger.info(" Total time taken by disable tuning " + (currentTimeAfter - currentTimeBefore));
   }
 
   private boolean areHeuristicsPassed(List<TuningJobExecutionParamSet> tuningJobExecutionParamSets) {
@@ -212,7 +224,9 @@ public class FitnessManagerHBT extends AbstractFitnessManager {
           }
         }
       } else {
-        logger.debug(appResult.id + " " + appResult.jobDefId + " have yarn app result null ");
+        if (isDebugEnabled) {
+          logger.debug(appResult.id + " " + appResult.jobDefId + " have yarn app result null ");
+        }
         return true;
       }
     }
@@ -256,11 +270,11 @@ public class FitnessManagerHBT extends AbstractFitnessManager {
   @Override
   protected JobSuggestedParamSet updateBestJobSuggestedParamSet(JobSuggestedParamSet jobSuggestedParamSet) {
     logger.debug("Checking if a new best param set is found for job: " + jobSuggestedParamSet.jobDefinition.jobDefId);
-    JobSuggestedParamSet currentBestJobSuggestedParamSet =
-        JobSuggestedParamSet.find
-            .where()
-            .eq(JobSuggestedParamSet.TABLE.jobDefinition + "." + JobDefinition.TABLE.id,
-                jobSuggestedParamSet.jobDefinition.id).eq(JobSuggestedParamSet.TABLE.isParamSetBest, 1).findUnique();
+    JobSuggestedParamSet currentBestJobSuggestedParamSet = JobSuggestedParamSet.find.where()
+        .eq(JobSuggestedParamSet.TABLE.jobDefinition + "." + JobDefinition.TABLE.id,
+            jobSuggestedParamSet.jobDefinition.id)
+        .eq(JobSuggestedParamSet.TABLE.isParamSetBest, 1)
+        .findUnique();
     if (currentBestJobSuggestedParamSet != null) {
       if (currentBestJobSuggestedParamSet.fitness > jobSuggestedParamSet.fitness) {
         logger.debug("Param set: " + jobSuggestedParamSet.id
@@ -270,15 +284,14 @@ public class FitnessManagerHBT extends AbstractFitnessManager {
         jobSuggestedParamSet.isParamSetBest = true;
         currentBestJobSuggestedParamSet.save();
       } else if (currentBestJobSuggestedParamSet.fitness.longValue() == jobSuggestedParamSet.fitness.longValue()) {
-        if (currentBestJobSuggestedParamSet.fitnessJobExecution.resourceUsage >
-        jobSuggestedParamSet.fitnessJobExecution.resourceUsage) {
+        if (currentBestJobSuggestedParamSet.fitnessJobExecution.resourceUsage
+            > jobSuggestedParamSet.fitnessJobExecution.resourceUsage) {
           logger.debug("Param set: " + jobSuggestedParamSet.id
               + " is the new best param set for job because of better resource usage: "
               + jobSuggestedParamSet.jobDefinition.jobDefId);
           currentBestJobSuggestedParamSet.isParamSetBest = false;
           jobSuggestedParamSet.isParamSetBest = true;
           currentBestJobSuggestedParamSet.save();
-
         }
       }
     } else {
@@ -288,5 +301,4 @@ public class FitnessManagerHBT extends AbstractFitnessManager {
     }
     return jobSuggestedParamSet;
   }
-
 }
