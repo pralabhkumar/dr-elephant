@@ -248,7 +248,6 @@ public class AutoTuningAPIHelper {
     tuningJobDefinition.client = client;
     tuningJobDefinition.tuningAlgorithm = getTuningAlgorithmForfirstTime(tuningInput);
     tuningJobDefinition.tuningEnabled = true;
-    tuningJobDefinition.autoApply = true;
     tuningJobDefinition.allowedMaxExecutionTimePercent = tuningInput.getAllowedMaxExecutionTimePercent();
     tuningJobDefinition.allowedMaxResourceUsagePercent = tuningInput.getAllowedMaxResourceUsagePercent();
     tuningJobDefinition.save();
@@ -273,8 +272,7 @@ public class AutoTuningAPIHelper {
         .where()
         .eq(TuningAlgorithm.TABLE.jobType, tuningInput.getJobType())
         .eq(TuningAlgorithm.TABLE.optimizationMetric, "RESOURCE")
-        .eq(TuningAlgorithm.TABLE.optimizationAlgo, TuningType.HBT.name())
-        //.eq(TuningAlgorithm.TABLE.optimizationAlgo, tuningInput.getOptimizationAlgo())
+        .eq(TuningAlgorithm.TABLE.optimizationAlgo, tuningInput.getOptimizationAlgo())
         .findUnique();
     if (tuningAlgorithm == null) {
       throw new IllegalArgumentException("Wrong job type " + tuningInput.getJobType());
