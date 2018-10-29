@@ -112,7 +112,7 @@ public class FitnessManagerHBT extends AbstractFitnessManager {
         // In all the above scenarios, fitness cannot be computed for the param set correctly.
         // Note that the penalty on failures caused by auto tuning is applied when the job execution is retried
         // after failure.
-        logger.debug("HBT Execution id: " + jobExecution.id + " was not successful for reason other than tuning."
+        logger.info("HBT Execution id: " + jobExecution.id + " was not successful for reason other than tuning."
             + "Resetting param set: " + jobSuggestedParamSet.id + " to CREATED state");
         resetParamSetToCreated(jobSuggestedParamSet);
       }
@@ -163,7 +163,8 @@ public class FitnessManagerHBT extends AbstractFitnessManager {
       if (reachToNumberOfThresholdIterations(tuningJobExecutionParamSets, jobDefinition)) {
         disableTuning(jobDefinition, "User Specified Iterations reached");
       }
-      if (areHeuristicsPassed(tuningJobExecutionParamSets)) {
+      //Minimum three execution needed for HBT to do some resource optimization
+      if (areHeuristicsPassed(tuningJobExecutionParamSets) && tuningJobExecutionParamSets.size()>=3) {
         disableTuning(jobDefinition, "All Heuristics Passed");
       }
     }
@@ -243,4 +244,41 @@ public class FitnessManagerHBT extends AbstractFitnessManager {
   public String getManagerName() {
     return "FitnessManagerHBT";
   }
+
+  @Override
+  protected JobSuggestedParamSet updateBestJobSuggestedParamSet(JobSuggestedParamSet jobSuggestedParamSet) {
+    logger.debug("Checking if a new best param set is found for job: " + jobSuggestedParamSet.jobDefinition.jobDefId);
+    JobSuggestedParamSet currentBestJobSuggestedParamSet =
+        JobSuggestedParamSet.find
+            .where()
+            .eq(JobSuggestedParamSet.TABLE.jobDefinition + "." + JobDefinition.TABLE.id,
+                jobSuggestedParamSet.jobDefinition.id).eq(JobSuggestedParamSet.TABLE.isParamSetBest, 1).findUnique();
+    if (currentBestJobSuggestedParamSet != null) {
+      if (currentBestJobSuggestedParamSet.fitness > jobSuggestedParamSet.fitness) {
+        logger.debug("Param set: " + jobSuggestedParamSet.id
+            + " is the new best param set for job because of better because of better fitness: "
+            + jobSuggestedParamSet.jobDefinition.jobDefId);
+        currentBestJobSuggestedParamSet.isParamSetBest = false;
+        jobSuggestedParamSet.isParamSetBest = true;
+        currentBestJobSuggestedParamSet.save();
+      } else if (currentBestJobSuggestedParamSet.fitness.longValue() == jobSuggestedParamSet.fitness.longValue()) {
+        if (currentBestJobSuggestedParamSet.fitnessJobExecution.resourceUsage >
+        jobSuggestedParamSet.fitnessJobExecution.resourceUsage) {
+          logger.debug("Param set: " + jobSuggestedParamSet.id
+              + " is the new best param set for job because of better resource usage: "
+              + jobSuggestedParamSet.jobDefinition.jobDefId);
+          currentBestJobSuggestedParamSet.isParamSetBest = false;
+          jobSuggestedParamSet.isParamSetBest = true;
+          currentBestJobSuggestedParamSet.save();
+
+        }
+      }
+    } else {
+      logger.debug("No best param set found for job: " + jobSuggestedParamSet.jobDefinition.jobDefId
+          + ". Marking current param set " + jobSuggestedParamSet.id + " as best");
+      jobSuggestedParamSet.isParamSetBest = true;
+    }
+    return jobSuggestedParamSet;
+  }
+
 }
