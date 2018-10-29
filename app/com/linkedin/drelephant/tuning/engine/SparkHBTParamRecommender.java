@@ -26,7 +26,7 @@ public class SparkHBTParamRecommender {
 
   // TODos Move these to configuration
   public static final int MAX_EXECUTOR_CORE = 3;
-  public static final long MAX_EXECUTOR_MEMORY = 10 * FileUtils.ONE_GB;
+  public static final long MAX_EXECUTOR_MEMORY = 8 * FileUtils.ONE_GB;
   public static final long MIN_EXECUTOR_MEMORY = 900 * FileUtils.ONE_MB;
   public static final long MIN_DRIVER_MEMORY = 900 * FileUtils.ONE_MB;
 
@@ -38,7 +38,7 @@ public class SparkHBTParamRecommender {
   private static final long DRIVER_MEMORY_BUFFER = 0;
 
   private static final int GC_MEMORY_INCREASE = 5;
-  private static final int GC_MEMORY_DECREASE = -5;
+  private static final int GC_MEMORY_DECREASE = 0;
 
   private long maxPeakUnifiedMemory;
   private long maxPeakJVMUsedMemory;
@@ -245,7 +245,11 @@ public class SparkHBTParamRecommender {
     long maxPeakJVMUsedMemoryPerCore = getMaxPeakJVMUsedMemoryPerCore();
     for (int core = MAX_EXECUTOR_CORE; core > 0; core--) {
       long currSuggestedMemory = suggestExecutorMemory(maxPeakJVMUsedMemoryPerCore, core);
-      if (currSuggestedMemory < MAX_EXECUTOR_MEMORY || core == 1) {
+      if (getMemoryIncreaseForGC() != 0) {
+        currSuggestedMemory = currSuggestedMemory * (100 + getMemoryIncreaseForGC()) / 100;
+      }
+      currSuggestedMemory = currSuggestedMemory + RESERVED_MEMORY;
+      if (currSuggestedMemory < MAX_EXECUTOR_MEMORY || core == 1 || currSuggestedMemory < lastRunExecutorMemory) {
         suggestedExecutorMemory = currSuggestedMemory;
         suggestedCore = core;
         validSuggestion = true;
@@ -255,9 +259,6 @@ public class SparkHBTParamRecommender {
     if (!validSuggestion) {
       suggestedExecutorMemory = lastRunExecutorMemory;
       suggestedCore = lastRunExecutorCore;
-    }
-    if (getMemoryIncreaseForGC() != 0) {
-      suggestedExecutorMemory = suggestedExecutorMemory * (100 + getMemoryIncreaseForGC()) / 100;
     }
     if (suggestedExecutorMemory < MIN_EXECUTOR_MEMORY) {
       suggestedExecutorMemory = MIN_EXECUTOR_MEMORY;
@@ -336,6 +337,7 @@ public class SparkHBTParamRecommender {
     if (suggestedDriverMemory < MIN_DRIVER_MEMORY) {
       suggestedDriverMemory = MIN_DRIVER_MEMORY;
     }
+    suggestedDriverMemory += RESERVED_MEMORY;
     suggestedDriverMemory = getRoundedDriverMemory();
   }
 
