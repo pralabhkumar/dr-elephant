@@ -28,8 +28,7 @@ CREATE TABLE IF NOT EXISTS tuning_algorithm (
   optimization_metric enum('RESOURCE','EXECUTION_TIME') DEFAULT NULL COMMENT 'metric to be optimized',
   created_ts timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_ts timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ,
-  PRIMARY KEY (id),
-  UNIQUE KEY tuning_algorithm_u1 (optimization_algo, optimization_algo_version)
+  PRIMARY KEY (id)
 ) ENGINE=InnoDB;
 
 INSERT INTO tuning_algorithm(id, job_type, optimization_algo, optimization_algo_version, optimization_metric, created_ts, updated_ts)

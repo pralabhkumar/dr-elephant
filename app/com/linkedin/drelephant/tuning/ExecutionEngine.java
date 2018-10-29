@@ -72,7 +72,7 @@ public interface ExecutionEngine {
    * @param tuningParameters : Tuning parameters
    * @return : Suggest parameters new values.
    */
-  public String parameterGenerationsHBT(List<AppResult> results, List<TuningParameter> tuningParameters);
+  String parameterGenerationsHBT(List<AppResult> results, List<TuningParameter> tuningParameters);
 
   /**
    * Check if the suggested parameter violets any constraint.

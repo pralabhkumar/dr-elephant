@@ -150,4 +150,5 @@ ALTER TABLE job_suggested_param_set DROP FOREIGN KEY `job_suggested_param_set_ib
 ALTER TABLE job_suggested_param_set DROP INDEX job_suggested_param_set_f3, ADD INDEX index_tje_job_definition_id (job_definition_id);
 ALTER TABLE job_suggested_param_set DROP INDEX index_tje_job_execution_id;
 ALTER TABLE  job_suggested_param_value ADD CONSTRAINT  job_suggested_param_value_f1  FOREIGN KEY (job_suggested_param_set_id) REFERENCES job_suggested_param_set(id);
-ALTER TABLE tuning_algorithm ADD CONSTRAINT tuning_algorithm_u1 UNIQUE (optimization_algo,optimization_algo_version);
+--ALTER TABLE tuning_algorithm ADD CONSTRAINT tuning_algorithm_u1 UNIQUE (optimization_algo,optimization_algo_version);
+UPDATE tuning_job_definition SET auto_apply=1;
