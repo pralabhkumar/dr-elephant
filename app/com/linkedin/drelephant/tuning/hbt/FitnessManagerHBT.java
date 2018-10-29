@@ -148,10 +148,14 @@ public class FitnessManagerHBT extends AbstractFitnessManager {
       jobSuggestedParamSet.paramSetState = JobSuggestedParamSet.ParamSetStatus.CREATED;
       jobSuggestedParamSet.save();
 
-      jobExecution.resourceUsage = 0D;
-      jobExecution.executionTime = 0D;
-      jobExecution.inputSizeInBytes = 1D;
-      jobExecution.save();
+      JobExecution latestJobExecution = JobExecution.find.where()
+          .eq(JobExecution.TABLE.id,
+              jobSuggestedParamSet.jobDefinition.id)
+          .findUnique();
+      latestJobExecution.resourceUsage = 0D;
+      latestJobExecution.executionTime = 0D;
+      latestJobExecution.inputSizeInBytes = 1D;
+      latestJobExecution.save();
     }
   }
 

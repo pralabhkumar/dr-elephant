@@ -82,7 +82,6 @@ public abstract class AbstractFitnessManager implements Manager {
         handleFitnessCalculation(jobExecution, results, tuningJobDefinition, jobSuggestedParamSet);
       } catch (Exception e) {
         logger.error("Error updating fitness of execution: " + jobExecution.id + "\n Stacktrace: ", e);
-        return false;
       }
     }
 
@@ -185,11 +184,14 @@ public abstract class AbstractFitnessManager implements Manager {
       logger.debug("Resetting parameter set to created: " + jobSuggestedParamSet.id);
       jobSuggestedParamSet.paramSetState = JobSuggestedParamSet.ParamSetStatus.CREATED;
       jobSuggestedParamSet.save();
-
-      jobExecution.resourceUsage = 0D;
-      jobExecution.executionTime = 0D;
-      jobExecution.inputSizeInBytes = 1D;
-      jobExecution.save();
+      JobExecution latestJobExecution = JobExecution.find.where()
+          .eq(JobExecution.TABLE.id,
+              jobSuggestedParamSet.jobDefinition.id)
+          .findUnique();
+      latestJobExecution.resourceUsage = 0D;
+      latestJobExecution.executionTime = 0D;
+      latestJobExecution.inputSizeInBytes = 1D;
+      latestJobExecution.save();
     }
   }
 
