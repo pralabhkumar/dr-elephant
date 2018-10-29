@@ -154,12 +154,10 @@ public class AutoTuningAPIHelper {
         .eq(TuningJobDefinition.TABLE.job + '.' + JobDefinition.TABLE.id, jobDefinition.id)
         .findUnique();
 
-    if(tuningJobDefinition.tuningAlgorithm.optimizationAlgo==OptimizationAlgo.HBT)
-    {
+    if (tuningJobDefinition.tuningAlgorithm.optimizationAlgo == OptimizationAlgo.HBT) {
       //For HBT we are using score as fitness. setting it to high value
       jobSuggestedParamSet.fitness = 10000D;
-    }else
-    {
+    } else {
       Double averageResourceUsagePerGBInput =
           tuningJobDefinition.averageResourceUsage * FileUtils.ONE_GB / tuningJobDefinition.averageInputSizeInBytes;
       Double maxDesiredResourceUsagePerGBInput =
