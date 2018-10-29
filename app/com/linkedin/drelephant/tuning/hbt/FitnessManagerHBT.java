@@ -178,10 +178,10 @@ public class FitnessManagerHBT extends AbstractFitnessManager {
             && !tuningJobExecutionParam.jobSuggestedParamSet.paramSetState.equals(
             JobSuggestedParamSet.ParamSetStatus.DISCARDED)) {
           autoAppliedExecution++;
-          if (isDebugEnabled) {
-            logger.debug(" Total number of executions after auto applied enabled " + autoAppliedExecution);
-          }
         }
+      }
+      if (isDebugEnabled) {
+        logger.debug(" Total number of executions after auto applied enabled " + autoAppliedExecution);
       }
       //Minimum three execution needed for HBT to do some resource optimization
       if (areHeuristicsPassed(tuningJobExecutionParamSets) && autoAppliedExecution >= MINIMUM_HBT_EXECUTION) {
