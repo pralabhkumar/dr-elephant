@@ -248,6 +248,10 @@ public class AzkabanWorkflowClient implements WorkflowClient {
       }
 
       String result = parseContent(response.getEntity().getContent());
+      if(logger.isDebugEnabled())
+      {
+        logger.debug("Response from Azkaban " + result);
+      }
       try {
         jsonObj = new JSONObject(result);
         if (jsonObj.has("error")) {
@@ -393,10 +397,17 @@ public class AzkabanWorkflowClient implements WorkflowClient {
       for (int i = 0; i < jobs.length(); i++) {
         JSONObject job = jobs.getJSONObject(i);
         jobMap.put(job.get("id").toString(), job.get("status").toString());
+        if (!job.isNull("nodes")) {
+          JSONArray internalJobs = job.getJSONArray("nodes");
+          for (int j = 0; j < internalJobs.length(); j++) {
+            JSONObject internalJob = internalJobs.getJSONObject(j);
+            jobMap.put(internalJob.get("id").toString(), internalJob.get("status").toString());
+          }
+        }
       }
       return jobMap;
     } catch (JSONException e) {
-      e.printStackTrace();
+      logger.error("Error in parsing azkaban output ", e);
     }
     return null;
   }
