@@ -58,7 +58,9 @@ ALTER TABLE job_suggested_param_set CHANGE param_set_state param_set_state enum(
  */
 ALTER TABLE job_execution CHANGE job_exec_id job_exec_id varchar(700) NOT NULL COMMENT 'unique job execution id from schedulers like azkaban, oozie etc';
 ALTER TABLE job_execution CHANGE job_exec_url job_exec_url varchar(700) NOT NULL COMMENT 'job execution url from schedulers like azkaban, oozie etc';
+ALTER TABLE job_execution DROP FOREIGN KEY job_execution_ibfk_2;
 ALTER TABLE job_execution CHANGE flow_execution_id flow_execution_id int(10) unsigned NOT NULL COMMENT 'foreign key from flow_execution table';
+ALTER TABLE job_execution ADD CONSTRAINT job_execution_ibfk_2 FOREIGN KEY (`flow_execution_id`) REFERENCES `flow_execution` (`id`);
 ALTER TABLE job_execution CHANGE execution_state execution_state enum('SUCCEEDED','FAILED','NOT_STARTED','IN_PROGRESS','CANCELLED') NOT NULL COMMENT 'current state of execution of the job ';
 
 /**
