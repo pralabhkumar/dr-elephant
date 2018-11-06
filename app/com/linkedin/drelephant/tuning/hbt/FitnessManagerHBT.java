@@ -1,5 +1,6 @@
 package com.linkedin.drelephant.tuning.hbt;
 
+import com.linkedin.drelephant.tuning.TuningHelper;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -46,7 +47,7 @@ public class FitnessManagerHBT extends AbstractFitnessManager {
 
   @Override
   protected List<TuningJobExecutionParamSet> detectJobsForFitnessComputation() {
-    logger.debug("Fetching completed executions whose fitness are yet to be computed");
+    logger.info("Fetching completed executions whose fitness are yet to be computed");
     List<TuningJobExecutionParamSet> completedJobExecutionParamSet = new ArrayList<TuningJobExecutionParamSet>();
 
     List<TuningJobExecutionParamSet> tuningJobExecutionParamSets = TuningJobExecutionParamSet.find.select("*")
@@ -64,10 +65,11 @@ public class FitnessManagerHBT extends AbstractFitnessManager {
             + "." + TuningAlgorithm.TABLE.optimizationAlgo, TuningAlgorithm.OptimizationAlgo.HBT.name())
         .findList();
 
-    logger.debug("#completed executions whose metrics are not computed: " + tuningJobExecutionParamSets.size());
+    logger.info("#completed executions whose metrics are not computed: " + tuningJobExecutionParamSets.size());
 
     getCompletedExecution(tuningJobExecutionParamSets, completedJobExecutionParamSet);
 
+    logger.info(" Final jobs for fitness Computation " + completedJobExecutionParamSet.size());
     return completedJobExecutionParamSet;
   }
 
@@ -148,10 +150,8 @@ public class FitnessManagerHBT extends AbstractFitnessManager {
       jobSuggestedParamSet.paramSetState = JobSuggestedParamSet.ParamSetStatus.CREATED;
       jobSuggestedParamSet.save();
 
-      JobExecution latestJobExecution = JobExecution.find.where()
-          .eq(JobExecution.TABLE.id,
-              jobSuggestedParamSet.jobDefinition.id)
-          .findUnique();
+      JobExecution latestJobExecution =
+          JobExecution.find.where().eq(JobExecution.TABLE.id, jobSuggestedParamSet.jobDefinition.id).findUnique();
       latestJobExecution.resourceUsage = 0D;
       latestJobExecution.executionTime = 0D;
       latestJobExecution.inputSizeInBytes = 1D;
@@ -164,36 +164,27 @@ public class FitnessManagerHBT extends AbstractFitnessManager {
     Long currentTimeBefore = System.currentTimeMillis();
     for (JobDefinition jobDefinition : jobDefinitionSet) {
       List<TuningJobExecutionParamSet> tuningJobExecutionParamSets =
-          TuningJobExecutionParamSet.find.fetch(TuningJobExecutionParamSet.TABLE.jobSuggestedParamSet, "*")
-              .fetch(TuningJobExecutionParamSet.TABLE.jobExecution, "*")
-              .where()
-              .eq(TuningJobExecutionParamSet.TABLE.jobSuggestedParamSet + '.' + JobSuggestedParamSet.TABLE.jobDefinition
-                  + '.' + JobDefinition.TABLE.id, jobDefinition.id)
-              .order()
-              .desc("job_execution_id")
-              .findList();
-
-      if (reachToNumberOfThresholdIterations(tuningJobExecutionParamSets, jobDefinition)) {
-        disableTuning(jobDefinition, "User Specified Iterations reached");
-      }
-      int autoAppliedExecution = 0;
-      for (TuningJobExecutionParamSet tuningJobExecutionParam : tuningJobExecutionParamSets) {
-        if (tuningJobExecutionParam.jobSuggestedParamSet.isParamSetSuggested
-            && !tuningJobExecutionParam.jobSuggestedParamSet.paramSetState.equals(
-            JobSuggestedParamSet.ParamSetStatus.DISCARDED)) {
-          autoAppliedExecution++;
-        }
-      }
-      if (isDebugEnabled) {
-        logger.debug(" Total number of executions after auto applied enabled " + autoAppliedExecution);
-      }
-      //Minimum three execution needed for HBT to do some resource optimization
-      if (areHeuristicsPassed(tuningJobExecutionParamSets) && autoAppliedExecution >= MINIMUM_HBT_EXECUTION) {
-        disableTuning(jobDefinition, "All Heuristics Passed");
+          TuningHelper.getTuningJobExecutionFromDefinition(jobDefinition);
+      int numberOfValidSuggestedParamExecution =
+          TuningHelper.getNumberOfValidSuggestedParamExecution(tuningJobExecutionParamSets);
+      if (disableTuningforUserSpecifiedIterations(jobDefinition, numberOfValidSuggestedParamExecution)
+          || disableTuningforHeuristicsPassed(jobDefinition, tuningJobExecutionParamSets,
+          numberOfValidSuggestedParamExecution)) {
+        logger.info(" Tuning Disabled for Job " + jobDefinition.id);
       }
     }
     Long currentTimeAfter = System.currentTimeMillis();
-    logger.info(" Total time taken by disable tuning " + (currentTimeAfter - currentTimeBefore));
+    logger.info(" Total time taken to check for disabling tuning " + (currentTimeAfter - currentTimeBefore));
+  }
+
+  private boolean disableTuningforHeuristicsPassed(JobDefinition jobDefinition,
+      List<TuningJobExecutionParamSet> tuningJobExecutionParamSets, int numberOfAppliedSuggestedParamExecution) {
+    //Minimum three execution needed for HBT to do some resource optimization
+    if (areHeuristicsPassed(tuningJobExecutionParamSets)
+        && numberOfAppliedSuggestedParamExecution >= MINIMUM_HBT_EXECUTION) {
+      disableTuning(jobDefinition, "All Heuristics Passed");
+    }
+    return true;
   }
 
   private boolean areHeuristicsPassed(List<TuningJobExecutionParamSet> tuningJobExecutionParamSets) {

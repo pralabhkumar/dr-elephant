@@ -390,7 +390,8 @@ public class AutoTuningAPIHelper {
     logger.debug("Number of output parameters for execution " + tuningInput.getJobExecId() + " = "
         + jobSuggestedParamValues.size());
     logger.info("Finishing getCurrentRunParameters");
-    return jobSuggestedParamValueListToMap(jobSuggestedParamValues);
+   // return jobSuggestedParamValueListToMap(jobSuggestedParamValues);
+    return new HashMap<String, Double>();
   }
 
   /**

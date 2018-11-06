@@ -47,6 +47,7 @@ public abstract class AbstractFitnessManager implements Manager {
   protected Long fitnessComputeWaitInterval;
   protected Long ignoreExecutionWaitInterval;
   private Map<Integer, TuningJobDefinition> tuningDefintionCollection = new HashMap<Integer, TuningJobDefinition>();
+  private boolean isDebugEnabled = logger.isDebugEnabled();
 
   /**
    * Detects  & return the jobs for which fitness computation have to be done.
@@ -184,10 +185,8 @@ public abstract class AbstractFitnessManager implements Manager {
       logger.debug("Resetting parameter set to created: " + jobSuggestedParamSet.id);
       jobSuggestedParamSet.paramSetState = JobSuggestedParamSet.ParamSetStatus.CREATED;
       jobSuggestedParamSet.save();
-      JobExecution latestJobExecution = JobExecution.find.where()
-          .eq(JobExecution.TABLE.id,
-              jobSuggestedParamSet.jobDefinition.id)
-          .findUnique();
+      JobExecution latestJobExecution =
+          JobExecution.find.where().eq(JobExecution.TABLE.id, jobSuggestedParamSet.jobDefinition.id).findUnique();
       latestJobExecution.resourceUsage = 0D;
       latestJobExecution.executionTime = 0D;
       latestJobExecution.inputSizeInBytes = 1D;
@@ -275,18 +274,6 @@ public abstract class AbstractFitnessManager implements Manager {
     }
   }
 
-  public boolean reachToNumberOfThresholdIterations(List<TuningJobExecutionParamSet> tuningJobExecutionParamSets,
-      JobDefinition jobDefinition) {
-    TuningJobDefinition tuningJobDefinition = TuningJobDefinition.find.where()
-        .eq(TuningJobDefinition.TABLE.job + '.' + JobDefinition.TABLE.id, jobDefinition.id)
-        .findUnique();
-    if (tuningJobExecutionParamSets != null
-        && tuningJobExecutionParamSets.size() >= tuningJobDefinition.numberOfIterations) {
-      return true;
-    }
-    return false;
-  }
-
   /**
    * Switches off tuning for the given job
    * @param jobDefinition Job for which tuning is to be switched off
@@ -347,11 +334,23 @@ public abstract class AbstractFitnessManager implements Manager {
       if (diff < fitnessComputeWaitInterval) {
         logger.debug("Delaying fitness compute for execution: " + jobExecution.jobExecId);
       } else {
-        logger.debug("Adding execution " + jobExecution.jobExecId + " to fitness computation queue");
+        logger.info("Adding execution " + jobExecution.jobExecId + " to fitness computation queue");
         completedJobExecutionParamSet.add(tuningJobExecutionParamSet);
       }
     }
-    logger.debug(
+    logger.info(
         "Number of completed execution fetched for fitness computation: " + completedJobExecutionParamSet.size());
+  }
+
+  public boolean disableTuningforUserSpecifiedIterations(JobDefinition jobDefinition,
+      int numberOfAppliedSuggestedParamExecution) {
+    TuningJobDefinition tuningJobDefinition = TuningJobDefinition.find.where()
+        .eq(TuningJobDefinition.TABLE.job + '.' + JobDefinition.TABLE.id, jobDefinition.id)
+        .findUnique();
+    if (numberOfAppliedSuggestedParamExecution >= tuningJobDefinition.numberOfIterations) {
+      disableTuning(jobDefinition, "User Specified Iterations reached");
+      return true;
+    }
+    return false;
   }
 }

@@ -5,6 +5,7 @@ import com.linkedin.drelephant.AutoTuner;
 import com.linkedin.drelephant.ElephantContext;
 import com.linkedin.drelephant.mapreduce.heuristics.CommonConstantsHeuristic;
 import com.linkedin.drelephant.tuning.AbstractFitnessManager;
+import com.linkedin.drelephant.tuning.TuningHelper;
 import com.linkedin.drelephant.util.Utils;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -26,6 +27,7 @@ import models.TuningParameter;
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
 import org.apache.hadoop.conf.Configuration;
+
 
 public abstract class FitnessManagerOBT extends AbstractFitnessManager {
   private final Logger logger = Logger.getLogger(getClass());
@@ -58,7 +60,6 @@ public abstract class FitnessManagerOBT extends AbstractFitnessManager {
    */
   protected abstract void computeFitness(JobSuggestedParamSet jobSuggestedParamSet, JobExecution jobExecution,
       TuningJobDefinition tuningJobDefinition, List<AppResult> results);
-
 
   @Override
   protected void calculateAndUpdateFitness(JobExecution jobExecution, List<AppResult> results,
@@ -128,34 +129,46 @@ public abstract class FitnessManagerOBT extends AbstractFitnessManager {
    *  - or number of tuning executions >= minTuningExecutions and median gain (in cost function) in last 6 executions is negative
    * @param jobDefinitionSet Set of jobs to check if tuning can be switched off for them
    */
-@Override
+  @Override
   protected void checkToDisableTuning(Set<JobDefinition> jobDefinitionSet) {
+    Long currentTimeBefore = System.currentTimeMillis();
     for (JobDefinition jobDefinition : jobDefinitionSet) {
       List<TuningJobExecutionParamSet> tuningJobExecutionParamSets =
-          TuningJobExecutionParamSet.find.fetch(TuningJobExecutionParamSet.TABLE.jobSuggestedParamSet, "*")
-              .fetch(TuningJobExecutionParamSet.TABLE.jobExecution, "*")
-              .where()
-              .eq(TuningJobExecutionParamSet.TABLE.jobSuggestedParamSet + '.' + JobSuggestedParamSet.TABLE.jobDefinition
-                  + '.' + JobDefinition.TABLE.id, jobDefinition.id)
-              .order()
-              .desc("job_execution_id")
-              .findList();
+          TuningHelper.getTuningJobExecutionFromDefinition(jobDefinition);
+      int numberOfValidSuggestedParamExecution =
+          TuningHelper.getNumberOfValidSuggestedParamExecution(tuningJobExecutionParamSets);
 
-      if (reachToNumberOfThresholdIterations(tuningJobExecutionParamSets, jobDefinition)) {
-        disableTuning(jobDefinition, "User Specified Iterations reached");
+      if (disableTuningforUserSpecifiedIterations(jobDefinition, numberOfValidSuggestedParamExecution)
+          || disableTuningforParameterConvergence(jobDefinition, numberOfValidSuggestedParamExecution,
+          tuningJobExecutionParamSets)){
+        logger.info(" Tuning Disabled for Job " + jobDefinition.id);
       }
-      if (tuningJobExecutionParamSets.size() >= minTuningExecutions) {
-        if (didParameterSetConverge(tuningJobExecutionParamSets)) {
-          logger.debug("Parameters converged. Disabling tuning for job: " + jobDefinition.jobName);
-          disableTuning(jobDefinition, "Parameters converged");
-        } else if (isMedianGainNegative(tuningJobExecutionParamSets)) {
-          logger.debug("Unable to get gain while tuning. Disabling tuning for job: " + jobDefinition.jobName);
-          disableTuning(jobDefinition, "Unable to get gain");
-        } else if (tuningJobExecutionParamSets.size() >= maxTuningExecutions) {
-          logger.debug("Maximum tuning executions limit reached. Disabling tuning for job: " + jobDefinition.jobName);
-          disableTuning(jobDefinition, "Maximum executions reached");
-        }
+    }
+    Long currentTimeAfter = System.currentTimeMillis();
+    logger.info(" Total time taken to check for disabling tuning " + (currentTimeAfter - currentTimeBefore));
+  }
+
+  private boolean disableTuningforParameterConvergence(JobDefinition jobDefinition,
+      int numberOfValidSuggestedParamExecution, List<TuningJobExecutionParamSet> tuningJobExecutionParamSets) {
+    if (numberOfValidSuggestedParamExecution >= minTuningExecutions) {
+      if (didParameterSetConverge(tuningJobExecutionParamSets)) {
+        logger.debug("Parameters converged. Disabling tuning for job: " + jobDefinition.jobName);
+        disableTuning(jobDefinition, "Parameters converged");
+        return true;
+      } else if (isMedianGainNegative(tuningJobExecutionParamSets)) {
+        logger.debug("Unable to get gain while tuning. Disabling tuning for job: " + jobDefinition.jobName);
+        disableTuning(jobDefinition, "Unable to get gain");
+        return true;
+      } else if (numberOfValidSuggestedParamExecution >= maxTuningExecutions) {
+        logger.debug("Maximum tuning executions limit reached. Disabling tuning for job: " + jobDefinition.jobName);
+        disableTuning(jobDefinition, "Maximum executions reached");
+        return true;
       }
+      else{
+        return false;
+      }
+    }else{
+      return false;
     }
   }
 
@@ -227,7 +240,6 @@ public abstract class FitnessManagerOBT extends AbstractFitnessManager {
     return result;
   }
 
-
   /**
    * Checks if the median gain (from tuning) during the last 6 executions is negative
    * Last 6 executions constitutes 2 iterations of PSO (given the swarm size is three). Negative average gains in
@@ -277,5 +289,4 @@ public abstract class FitnessManagerOBT extends AbstractFitnessManager {
       return false;
     }
   }
-
 }

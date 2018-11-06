@@ -6,11 +6,15 @@ import models.JobDefinition;
 import models.JobSuggestedParamSet;
 import models.TuningAlgorithm;
 import models.TuningJobDefinition;
+import models.TuningJobExecutionParamSet;
 import models.TuningParameter;
+import org.apache.log4j.Logger;
 
 
 public class TuningHelper {
-  public static List<TuningParameter> getTuningParameterList(TuningJobDefinition tuningJobDefinition){
+  private static final Logger logger = Logger.getLogger(TuningHelper.class);
+  private static boolean debugEnabled = logger.isDebugEnabled();
+  public static List<TuningParameter> getTuningParameterList(TuningJobDefinition tuningJobDefinition) {
     List<TuningParameter> tuningParameterList = TuningParameter.find.where()
         .eq(TuningParameter.TABLE.tuningAlgorithm + "." + TuningAlgorithm.TABLE.id,
             tuningJobDefinition.tuningAlgorithm.id)
@@ -19,7 +23,7 @@ public class TuningHelper {
     return tuningParameterList;
   }
 
-  public static JobSuggestedParamSet getDefaultParameterValuesforJob (TuningJobDefinition tuningJobDefinition){
+  public static JobSuggestedParamSet getDefaultParameterValuesforJob(TuningJobDefinition tuningJobDefinition) {
     JobSuggestedParamSet defaultJobParamSet = JobSuggestedParamSet.find.where()
         .eq(JobSuggestedParamSet.TABLE.jobDefinition + "." + JobDefinition.TABLE.id, tuningJobDefinition.job.id)
         .eq(JobSuggestedParamSet.TABLE.isParamSetDefault, 1)
@@ -30,7 +34,7 @@ public class TuningHelper {
     return defaultJobParamSet;
   }
 
-  public static TuningJobDefinition getTuningJobDefinition(JobDefinition job){
+  public static TuningJobDefinition getTuningJobDefinition(JobDefinition job) {
     TuningJobDefinition tuningJobDefinition = TuningJobDefinition.find.select("*")
         .fetch(TuningJobDefinition.TABLE.job, "*")
         .where()
@@ -40,7 +44,7 @@ public class TuningHelper {
     return tuningJobDefinition;
   }
 
-  public static List<TuningParameter> getDerivedParameterList(TuningJobDefinition tuningJobDefinition){
+  public static List<TuningParameter> getDerivedParameterList(TuningJobDefinition tuningJobDefinition) {
     List<TuningParameter> derivedParameterList = new ArrayList<TuningParameter>();
     derivedParameterList = TuningParameter.find.where()
         .eq(TuningParameter.TABLE.tuningAlgorithm + "." + TuningAlgorithm.TABLE.id,
@@ -50,4 +54,31 @@ public class TuningHelper {
     return derivedParameterList;
   }
 
+  public static List<TuningJobExecutionParamSet> getTuningJobExecutionFromDefinition(JobDefinition jobDefinition) {
+    List<TuningJobExecutionParamSet> tuningJobExecutionParamSets =
+        TuningJobExecutionParamSet.find.fetch(TuningJobExecutionParamSet.TABLE.jobSuggestedParamSet, "*")
+            .fetch(TuningJobExecutionParamSet.TABLE.jobExecution, "*")
+            .where()
+            .eq(TuningJobExecutionParamSet.TABLE.jobSuggestedParamSet + '.' + JobSuggestedParamSet.TABLE.jobDefinition
+                + '.' + JobDefinition.TABLE.id, jobDefinition.id)
+            .order()
+            .desc("job_execution_id")
+            .findList();
+    return tuningJobExecutionParamSets;
+  }
+
+  public static int getNumberOfValidSuggestedParamExecution(List<TuningJobExecutionParamSet> tuningJobExecutionParamSets) {
+    int autoAppliedExecution = 0;
+    for (TuningJobExecutionParamSet tuningJobExecutionParam : tuningJobExecutionParamSets) {
+      if (tuningJobExecutionParam.jobSuggestedParamSet.isParamSetSuggested
+          && !tuningJobExecutionParam.jobSuggestedParamSet.paramSetState.equals(
+          JobSuggestedParamSet.ParamSetStatus.DISCARDED)) {
+        autoAppliedExecution++;
+      }
+    }
+    if (debugEnabled) {
+      logger.debug(" Total number of executions after auto applied enabled " + autoAppliedExecution);
+    }
+    return autoAppliedExecution;
+  }
 }

@@ -69,14 +69,14 @@ public class FitnessManagerTestRunner implements Runnable {
 
   private void testTuningDisabled(List<TuningJobExecutionParamSet> jobsForFitnessComputation,AbstractFitnessManager fitnessManager ){
     JobDefinition jobDefinition = jobsForFitnessComputation.get(0).jobSuggestedParamSet.jobDefinition;
-    assertTrue(" Number of executions reach to threshold " ,!fitnessManager.reachToNumberOfThresholdIterations(jobsForFitnessComputation,jobDefinition));
+    assertTrue(" Number of executions reach to threshold " ,!fitnessManager.disableTuningforUserSpecifiedIterations(jobDefinition,1));
     TuningJobDefinition tuningJobDefinition = TuningJobDefinition.find.select("*").where()
         .eq(TuningJobDefinition.TABLE.job + "." + JobDefinition.TABLE.id, 100003)
         .eq(TuningJobDefinition.TABLE.tuningEnabled, 1).findUnique();
 
     tuningJobDefinition.numberOfIterations=1;
     tuningJobDefinition.save();
-    assertTrue(" Number of executions reach to threshold " ,fitnessManager.reachToNumberOfThresholdIterations(jobsForFitnessComputation,jobDefinition));
+    assertTrue(" Number of executions reach to threshold " ,fitnessManager.disableTuningforUserSpecifiedIterations(jobDefinition,1));
     assertTrue(" Tuning Enabled ", tuningJobDefinition.tuningEnabled);
     fitnessManager.disableTuning(jobDefinition, "User Specified Iterations reached");
     TuningJobDefinition tuningJobDefinition1 = TuningJobDefinition.find.select("*").where()
