@@ -143,11 +143,12 @@
           </div>
 
           <div class="col-sm-3">
-            {{input type="text" class="iteration-count" name="iterationCount" value=model.tunein.iterationCount focus-out="iterationCountChange"}}
+            {{input type="text" class="iteration-count" focus-out=(action "iterationCountChange") name="iterationCount" value=model.tunein.iterationCount }}
           </div>
 
           <div class="col-sm-3">
             <button type="submit" class="btn wf-button" {{action "paramChange" model.tunein model.jobs}}> Submit</button>
+            {{model.tunein.isAutoTuningChanged}}
           </div>
         </div>
       </div>

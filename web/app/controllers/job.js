@@ -33,6 +33,7 @@ export default Ember.Controller.extend({
     },
     autoTuningToggle(e) {
       var isAutoTuningChanged = this.get('model.tunein.isAutoTuningChanged');
+      console.log("isATChanged : " + isAutoTuningChanged)
       this.set('model.tunein.autoApply', e.target.checked);
       this.set('model.tunein.isAutoTuningChanged', !isAutoTuningChanged);
       console.log(this.get('model.tunein.isAutoTuningChanged'))

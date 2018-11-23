@@ -1655,14 +1655,14 @@ public class Application extends Controller {
   }
 
   //api for providing the tuning parameters details for a job
-  public static Result getTuningParameter(String jobId) {
+  public static Result getTuningParameter(String jobExecUrl) {
     JsonObject parent = new JsonObject();
     JsonObject tuneIn = new JsonObject();
     JsonArray tuningParameters = new JsonArray();
     JsonArray tuningAlgorithms = new JsonArray();
 
-    logger.info("jobId:: " + jobId);
-    tuneIn.addProperty("id", jobId);
+    logger.info("jobExecUrl:: " + jobExecUrl);
+    tuneIn.addProperty("id", jobExecUrl);
 
 
     JsonObject hbtAlgo = new JsonObject();
@@ -1677,7 +1677,7 @@ public class Application extends Controller {
 
       JobExecution jobExecution = JobExecution.find.select("*")
           .where()
-          .eq(JobExecution.TABLE.jobExecId, jobId)
+          .eq(JobExecution.TABLE.jobExecId, jobExecUrl)
           .findUnique();
 
       Integer jobDefinitionId = 0;
@@ -1785,7 +1785,7 @@ public class Application extends Controller {
       tuneIn.addProperty("isAutoTuningChanged", false);
       tuneIn.addProperty("tuningAlgorithm", currentTuningAlgorithm);
       tuneIn.add("tuningAlgorithmList", tuningAlgorithms);
-      tuneIn.addProperty("iterationCount",tuningJobDefinition.numberOfIterations);
+      tuneIn.addProperty("iterationCount", tuningJobDefinition.numberOfIterations);
       tuneIn.add("tuningParameters", tuningParameters);
       parent.add("tunein", tuneIn);
       logger.info("tuneIn : " + tuneIn);
@@ -1801,13 +1801,18 @@ public class Application extends Controller {
 
 
   public static Result changeTuneinParameters() {
-
     JsonNode requestBodyRoot = request().body().asJson();
+    logger.info("Post JSON: " + requestBodyRoot.toString());
     JsonNode tunein = requestBodyRoot.path("tunein");
     JsonNode job = requestBodyRoot.path("job");
     JsonNode tuningParameters = tunein.path("tuningParameters");
+    Boolean autoApply = tunein.path("autoApply").asBoolean();
+    Boolean changeAutoApply = tunein.path("isAutoTuningChanged").asBoolean();
+    Boolean isAlgorithmChanged = tunein.path("isAlgorithmTypeChanged").asBoolean();
+    Boolean isIterationCountChanged = tunein.path("isIterationCountChanged").asBoolean();
     Integer jobDefinitionId = tunein.path("jobDefinitionId").asInt();
     String jobType = job.path("jobtype").asText().toUpperCase();
+    int iterationCount = tunein.path("iterationCount").asInt();
     logger.info("jobType: " + jobType);
     String optimizationAlgo = tunein.path("tuningAlgorithm").asText().equals("OBT") ? "PSO_IPSO" : "HBT";
     Boolean isParamChanged = checkTuningParameterModificaiton(tuningParameters);
@@ -1828,12 +1833,17 @@ public class Application extends Controller {
       logger.info("tuningAlgoId: " + tuningAlgorithm.id);
 
       JobSuggestedParamSet userSuggestedParamSet = createUserSuggestedParamSet(jobDefinition, tuningAlgorithm);
-
-
       //Creating new parameter values suggested by the user
       createUserSuggestedParamValue(tuningParameters, userSuggestedParamSet);
     }
+
+    TuningJobDefinition tuningJobDefinition = getTuningJobDefition(jobDefinitionId);
+    changeAutoApplyProperty(jobDefinitionId, tuningJobDefinition, autoApply);
+    changeIterationCount(jobDefinitionId, tuningJobDefinition, iterationCount);
+    tuningJobDefinition.update();
+
     JsonObject parent = new JsonObject();
+    parent.addProperty("test_key", "testItem");
     parent.addProperty("tunein", request().body().asText());
     return ok(new Gson().toJson(parent));
   }
@@ -1928,8 +1938,8 @@ public class Application extends Controller {
     Boolean isParamChanged = false;
     for(JsonNode parameter: tuningParameters) {
       String name = parameter.path("name").asText();
-      String currentValue = parameter.path("currentParamValue").asText();
-      String userValue = parameter.path("userSuggestedValue").asText();
+      Double currentValue = parameter.path("currentParamValue").asDouble();
+      Double userValue = parameter.path("userSuggestedValue").asDouble();
       if(!userValue.equals(currentValue) ) {
         logger.info("Param " + name + " is changed from " + currentValue + " to " + userValue + " by User");
         isParamChanged = true;
@@ -1942,7 +1952,8 @@ public class Application extends Controller {
    * Returns a JobSuggestedParamSet which is created in the database when the user changed the tuning parameters' values
    * @return The JobSuggestedParamSet
    */
-  private static JobSuggestedParamSet createUserSuggestedParamSet(JobDefinition jobDefinition, TuningAlgorithm tuningAlgorithm) {
+  private static JobSuggestedParamSet createUserSuggestedParamSet(JobDefinition jobDefinition,
+      TuningAlgorithm tuningAlgorithm) {
 
     JobSuggestedParamSet userSuggestedParamSet = new JobSuggestedParamSet();
     userSuggestedParamSet.jobDefinition = jobDefinition;
@@ -1955,30 +1966,23 @@ public class Application extends Controller {
     userSuggestedParamSet.isManuallyOverridenParameter = true;
     userSuggestedParamSet.save();
 
-    //Getting the user suggested param set created above
-    JobSuggestedParamSet latestUserSuggestedParamSet = JobSuggestedParamSet.find.select("*")
-        .where()
-        .eq(JobSuggestedParamSet.TABLE.isManuallyOverridenParameter, true)
-        .order().desc(JobSuggestedParamSet.TABLE.createdTs)
-        .setMaxRows(1)
-        .findUnique();
-    logger.info("id for latest user suggested param set:: " + latestUserSuggestedParamSet.id);
+    logger.info("Id for latest user suggested param set:: " + userSuggestedParamSet.id);
 
     List<JobSuggestedParamSet> jobSuggestedParamSetList = JobSuggestedParamSet.find.select("*")
         .where()
         .eq(JobSuggestedParamSet.TABLE.jobDefinition + "." + JobDefinition.TABLE.id, jobDefinition.id)
-        .ne(JobSuggestedParamSet.TABLE.id, latestUserSuggestedParamSet.id)
+        .ne(JobSuggestedParamSet.TABLE.id, userSuggestedParamSet.id)
         .findList();
 
-    logger.info("list size:: " + jobSuggestedParamSetList.size());
+    logger.info("list of JSPS ne size:: " + jobSuggestedParamSetList.size());
 
     //Marking all the ParamSetStatus as discarded except the latest userSuggestedParamSet
     for (JobSuggestedParamSet paramSet : jobSuggestedParamSetList) {
-      logger.info("param set id: " + paramSet.id);
+      logger.info("Discarding param set id: " + paramSet.id);
       paramSet.paramSetState = JobSuggestedParamSet.ParamSetStatus.DISCARDED;
       paramSet.update();
     }
-    return latestUserSuggestedParamSet;
+    return userSuggestedParamSet;
   }
 
   /**
@@ -1989,7 +1993,7 @@ public class Application extends Controller {
       Integer tuningParameterId = param.path("paramId").asInt();
       Double paramValue = param.path("userSuggestedValue").asDouble();
 
-      logger.info("changing the value of the paramId:: " + tuningParameterId);
+      logger.info("Creating user suggested Param values for parameterId:: " + tuningParameterId);
       TuningParameter tuningParameter = TuningParameter.find
           .select("*")
           .where()
@@ -2001,6 +2005,32 @@ public class Application extends Controller {
       userSuggestedParamValue.jobSuggestedParamSet = userSuggestedParamSet;
       userSuggestedParamValue.tuningParameter = tuningParameter;
       userSuggestedParamValue.save();
+    }
+  }
+
+  private static TuningJobDefinition getTuningJobDefition(Integer jobDefinitionId) {
+    TuningJobDefinition tuningJobDefinition = TuningJobDefinition.find.where()
+        .eq(TuningJobDefinition.TABLE.job + '.' + JobDefinition.TABLE.id, jobDefinitionId)
+        .findUnique();
+    return tuningJobDefinition;
+  }
+
+  /**
+   * Change autoApply property in TuningJobDefintion table as per the user suggestion
+   */
+  private static void changeAutoApplyProperty(Integer jobDefinitionId, TuningJobDefinition tuningJobDefinition, Boolean autoApply) {
+    if(tuningJobDefinition.autoApply != autoApply) {
+      tuningJobDefinition.autoApply = autoApply;
+      logger.info("Changing autoApply for" + jobDefinitionId + " to : " + autoApply);
+    }
+  }
+  /**
+   * Change iterationCount as per the user suggestion in TuningJobDefintion table
+   */
+  private static void changeIterationCount(Integer jobDefinitionId, TuningJobDefinition tuningJobDefinition, int numberOfIteration) {
+    if (tuningJobDefinition.numberOfIterations != numberOfIteration) {
+      tuningJobDefinition.numberOfIterations = numberOfIteration;
+      logger.info("Changing the #iteration as per user suggestion for " + jobDefinitionId + " to: " + tuningJobDefinition.numberOfIterations);
     }
   }
 }

@@ -23,25 +23,37 @@ export default Ember.Route.extend({
     this.jobid = transition.queryParams.jobid;
   },
   model(){
+    console.log("ModelHook")
     return Ember.RSVP.hash({
       jobs:   this.store.queryRecord('job', {jobid: this.get("jobid")}),
       tunein: this.store.queryRecord('tunein', {id: this.get("jobid")})
     });
   },
     setupController: function(controller, model) {
+      console.log("setup controller " +
+          model.tunein.get('isAutoTuningChanged') + " " +
+          model.tunein.get('iterationCount') +  " " +
+          controller.get('currentIterationCount') + " ");
+
       controller.set('model', model);
       controller.set('currentAlgorithm', model.tunein.get('tuningAlgorithm')),
       controller.set('currentIterationCount', model.tunein.get('iterationCount'))
   },
   actions: {
     paramChange(tunein, jobs) {
-      console.log(this.get('model.jobs'))
-      return this.get('ajax').post('/rest/tunein', {
+      var c = this.controller;
+      console.log(tunein.get("isAutoTuningChanged") + " _ " + c.get("currentIterationCount") + " " + c.get("currentAlgorithm"));
+      return Ember.$.ajax({
+        url: "/rest/tunein",
+        type: 'POST',
         contentType: 'application/json',
         data: JSON.stringify({
           tunein: tunein,
-          job: jobs
+          job: jobs,
+          changeMap: tunein.changedAttributes()
         })
+      }).then(response => {
+        this.refresh();
       })
     },
     error(error, transition) {
