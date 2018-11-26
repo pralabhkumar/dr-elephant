@@ -83,6 +83,7 @@ public class TuningHelper {
     return autoAppliedExecution;
   }
 
+
   /**
    *
    * @param memory : Convert the memory to multiple of 1024
@@ -98,4 +99,5 @@ public class TuningHelper {
     }
     return heapSize;
   }
+
 }
