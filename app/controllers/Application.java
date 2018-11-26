@@ -86,7 +86,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.linkedin.drelephant.tuning.AutoTuningAPIHelper;
 import com.linkedin.drelephant.tuning.TuningInput;
-import com.linkedin.drelephant.tuning.engine.SparkConfigurationConstants;
+import com.linkedin.drelephant.tuning.hbt.SparkConfigurationConstants;
 
 
 public class Application extends Controller {

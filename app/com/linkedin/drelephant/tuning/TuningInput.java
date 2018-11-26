@@ -19,7 +19,7 @@ package com.linkedin.drelephant.tuning;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.linkedin.drelephant.tuning.engine.SparkConfigurationConstants;
+import com.linkedin.drelephant.tuning.hbt.SparkConfigurationConstants;
 
 import java.io.IOException;
 import java.util.HashMap;

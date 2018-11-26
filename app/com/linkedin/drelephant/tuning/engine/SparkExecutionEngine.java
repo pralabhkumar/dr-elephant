@@ -2,6 +2,7 @@ package com.linkedin.drelephant.tuning.engine;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import models.AppResult;
 import models.JobExecution;
 import models.JobSuggestedParamSet;
@@ -20,11 +21,6 @@ import com.linkedin.drelephant.tuning.ExecutionEngine;
  */
 public class SparkExecutionEngine implements ExecutionEngine {
   private final Logger logger = Logger.getLogger(getClass());
-  private String executionEngineName = "SPARK";
-
-  public String getExecutionEngineName() {
-    return this.executionEngineName;
-  }
 
   @Override
   public void computeValuesOfDerivedConfigurationParameters(List<TuningParameter> derivedParameterList,
@@ -58,41 +54,12 @@ public class SparkExecutionEngine implements ExecutionEngine {
   }
 
   @Override
-  public Boolean isParamConstraintViolatedPSO(List<JobSuggestedParamValue> jobSuggestedParamValueList) {
+  public List<Double> extractUsageParameter(String functionType, Map<String, Map<String, Double>> usageDataGlobal) {
     return null;
   }
 
   @Override
-  public Boolean isParamConstraintViolatedIPSO(List<JobSuggestedParamValue> jobSuggestedParamValueList) {
+  public Map<String, Map<String, Double>> extractParameterInformation(List<AppResult> appResults) {
     return null;
   }
-
-  @Override
-  public void parameterOptimizerIPSO(List<AppResult> results, JobExecution jobExecution) {
-
-  }
-
-  @Override
-  public String parameterGenerationsHBT(List<AppResult> results, List<TuningParameter> tuningParameters) {
-    if (results != null && results.size() > 0) {
-      SparkHBTParamRecommender sparkHBTParamRecommender = new SparkHBTParamRecommender(results.get(0));
-      HashMap<String, Double> suggestedParameters = sparkHBTParamRecommender.getHBTSuggestion();
-      StringBuffer idParameters = new StringBuffer();
-      for (TuningParameter tuningParameter : tuningParameters) {
-        if (suggestedParameters.containsKey(tuningParameter.paramName)) {
-          idParameters.append(tuningParameter.id).append("\t")
-              .append(suggestedParameters.get(tuningParameter.paramName));
-          idParameters.append("\n");
-        }
-      }
-      return idParameters.toString();
-    }
-    return null;
-  }
-
-  @Override
-  public Boolean isParamConstraintViolatedHBT(List<JobSuggestedParamValue> jobSuggestedParamValueList) {
-    return false;
-  }
-
 }

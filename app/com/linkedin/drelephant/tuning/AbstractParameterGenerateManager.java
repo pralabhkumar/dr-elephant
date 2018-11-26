@@ -20,10 +20,10 @@ import play.libs.Json;
 /**
  * This class is used to generate/suggest parameters . Based on TuningType , Algorithm Type & execution engine.
  */
-public abstract class AbstractParameterGenerateManager implements Manager {
+public abstract class AbstractParameterGenerateManager<T extends ExecutionEngine> implements Manager {
   protected final String JSON_CURRENT_POPULATION_KEY = "current_population";
   private final Logger logger = Logger.getLogger(getClass());
-  protected ExecutionEngine _executionEngine;
+
 
 
   /**

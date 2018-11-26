@@ -81,4 +81,8 @@ public class TuningHelper {
     }
     return autoAppliedExecution;
   }
+
+  public static Double getContainerSize(Double memory) {
+    return Math.ceil(memory / 1024.0) * 1024;
+  }
 }

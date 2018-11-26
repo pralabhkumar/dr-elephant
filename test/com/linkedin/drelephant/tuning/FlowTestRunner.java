@@ -6,12 +6,18 @@ import com.linkedin.drelephant.tuning.engine.SparkExecutionEngine;
 import com.linkedin.drelephant.tuning.hbt.BaselineManagerHBT;
 import com.linkedin.drelephant.tuning.hbt.FitnessManagerHBT;
 import com.linkedin.drelephant.tuning.hbt.ParameterGenerateManagerHBT;
+import com.linkedin.drelephant.tuning.hbt.ParameterGenerateManagerHBTMR;
+import com.linkedin.drelephant.tuning.hbt.ParameterGenerateManagerHBTSpark;
 import com.linkedin.drelephant.tuning.obt.BaselineManagerOBT;
 import com.linkedin.drelephant.tuning.obt.FitnessManagerOBTAlgoIPSO;
 import com.linkedin.drelephant.tuning.obt.FitnessManagerOBTAlgoPSO;
 import com.linkedin.drelephant.tuning.obt.ParameterGenerateManagerOBTAlgoPSOIPSOImpl;
 import com.linkedin.drelephant.tuning.obt.ParameterGenerateManagerOBTAlgoPSO;
+import com.linkedin.drelephant.tuning.obt.ParameterGenerateManagerOBTAlgoPSOIPSOMRImpl;
+import com.linkedin.drelephant.tuning.obt.ParameterGenerateManagerOBTAlgoPSOIPSOSparkImpl;
 import com.linkedin.drelephant.tuning.obt.ParameterGenerateManagerOBTAlgoPSOImpl;
+import com.linkedin.drelephant.tuning.obt.ParameterGenerateManagerOBTAlgoPSOMRImpl;
+import com.linkedin.drelephant.tuning.obt.ParameterGenerateManagerOBTAlgoPSOSparkImpl;
 import java.util.List;
 
 import static org.junit.Assert.*;
@@ -64,29 +70,29 @@ public class FlowTestRunner implements Runnable {
     List<Manager> tuningTypeManagers = pipelines.get(3);
     assertTrue(" Total Number of tuningType Managers   ", tuningTypeManagers.size() == 6);
 
-    assertTrue(" TuningTypeManagerHBT ", tuningTypeManagers.get(0) instanceof ParameterGenerateManagerHBT);
+   // assertTrue(" TuningTypeManagerHBT ", tuningTypeManagers.get(0) instanceof ParameterGenerateManagerHBT);
     assertTrue(" TuningTypeManagerHBTMR ",
-        ((ParameterGenerateManagerHBT) tuningTypeManagers.get(0))._executionEngine instanceof MRExecutionEngine);
+        (tuningTypeManagers.get(0) instanceof ParameterGenerateManagerHBTMR));
 
-    assertTrue(" TuningTypeManagerHBT ", tuningTypeManagers.get(1) instanceof ParameterGenerateManagerHBT);
+   // assertTrue(" TuningTypeManagerHBT ", tuningTypeManagers.get(1) instanceof ParameterGenerateManagerHBT);
     assertTrue(" TuningTypeManagerHBTSpark ",
-        ((ParameterGenerateManagerHBT) tuningTypeManagers.get(1))._executionEngine instanceof SparkExecutionEngine);
+        (tuningTypeManagers.get(1) instanceof ParameterGenerateManagerHBTSpark));
 
-    assertTrue(" TuningTypeManagerOBTPSO ", tuningTypeManagers.get(2) instanceof ParameterGenerateManagerOBTAlgoPSO);
+   // assertTrue(" TuningTypeManagerOBTPSO ", tuningTypeManagers.get(2) instanceof ParameterGenerateManagerOBTAlgoPSO);
     assertTrue(" TuningTypeManagerOBTPSOMR ",
-        ((ParameterGenerateManagerOBTAlgoPSOImpl) tuningTypeManagers.get(2))._executionEngine instanceof MRExecutionEngine);
+        (tuningTypeManagers.get(2) instanceof ParameterGenerateManagerOBTAlgoPSOMRImpl));
 
-    assertTrue(" TuningTypeManagerOBTPSO ", tuningTypeManagers.get(3) instanceof ParameterGenerateManagerOBTAlgoPSO);
+  //  assertTrue(" TuningTypeManagerOBTPSO ", tuningTypeManagers.get(3) instanceof ParameterGenerateManagerOBTAlgoPSO);
     assertTrue(" TuningTypeManagerOBTPSOSpark ",
-        ((ParameterGenerateManagerOBTAlgoPSOImpl) tuningTypeManagers.get(3))._executionEngine instanceof SparkExecutionEngine);
+        (tuningTypeManagers.get(3) instanceof ParameterGenerateManagerOBTAlgoPSOSparkImpl));
 
-    assertTrue(" TuningTypeManagerOBTIPSO ", tuningTypeManagers.get(4) instanceof ParameterGenerateManagerOBTAlgoPSOIPSOImpl);
+  //  assertTrue(" TuningTypeManagerOBTIPSO ", tuningTypeManagers.get(4) instanceof ParameterGenerateManagerOBTAlgoPSOIPSOImpl);
     assertTrue(" TuningTypeManagerOBTIPSOMR ",
-        ((ParameterGenerateManagerOBTAlgoPSOIPSOImpl) tuningTypeManagers.get(4))._executionEngine instanceof MRExecutionEngine);
+        (tuningTypeManagers.get(4) instanceof ParameterGenerateManagerOBTAlgoPSOIPSOMRImpl));
 
-    assertTrue(" TuningTypeManagerOBTIPSO ", tuningTypeManagers.get(5) instanceof ParameterGenerateManagerOBTAlgoPSOIPSOImpl);
+  //  assertTrue(" TuningTypeManagerOBTIPSO ", tuningTypeManagers.get(5) instanceof ParameterGenerateManagerOBTAlgoPSOIPSOImpl);
     assertTrue(" TuningTypeManagerOBTPSOSpark ",
-        ((ParameterGenerateManagerOBTAlgoPSOIPSOImpl) tuningTypeManagers.get(5))._executionEngine instanceof SparkExecutionEngine);
+        (tuningTypeManagers.get(5) instanceof ParameterGenerateManagerOBTAlgoPSOIPSOSparkImpl));
   }
 }
  /* StringBuffer stringBuffer = new StringBuffer();
