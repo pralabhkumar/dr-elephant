@@ -37,7 +37,7 @@ public class SparkExecutionEngine implements ExecutionEngine {
         .or(Expr.or(Expr.eq(JobSuggestedParamSet.TABLE.paramSetState, JobSuggestedParamSet.ParamSetStatus.CREATED),
             Expr.eq(JobSuggestedParamSet.TABLE.paramSetState, JobSuggestedParamSet.ParamSetStatus.SENT)),
             Expr.eq(JobSuggestedParamSet.TABLE.paramSetState, JobSuggestedParamSet.ParamSetStatus.EXECUTED))
-       // .eq(JobSuggestedParamSet.TABLE.isParamSetDefault, 0)
+        // .eq(JobSuggestedParamSet.TABLE.isParamSetDefault, 0)
         .eq(JobSuggestedParamSet.TABLE.tuningAlgorithm + "." + TuningAlgorithm.TABLE.jobType,
             TuningAlgorithm.JobType.SPARK.name()).eq(JobSuggestedParamSet.TABLE.isParamSetBest, 0);
   }

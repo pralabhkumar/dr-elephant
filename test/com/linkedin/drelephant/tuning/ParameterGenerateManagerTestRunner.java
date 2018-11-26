@@ -244,6 +244,6 @@ public class ParameterGenerateManagerTestRunner implements Runnable {
     assertTrue(" Mapper Memory Heap Recommended ", suggestedParameter.get("mapreduce.map.java.opts") == 619.0);
     assertTrue(" Reducer Memory Suggested ", suggestedParameter.get("mapreduce.reduce.memory.mb") == 2048.0);
     assertTrue(" Reducer Memory Heap Recommended ", suggestedParameter.get("mapreduce.reduce.java.opts") == 619);
-    
+
   }
 }
