@@ -3,6 +3,7 @@ package com.linkedin.drelephant.tuning;
 import com.linkedin.drelephant.tuning.engine.MRExecutionEngine;
 import com.linkedin.drelephant.tuning.hbt.FitnessManagerHBT;
 import com.linkedin.drelephant.tuning.hbt.ParameterGenerateManagerHBT;
+import com.linkedin.drelephant.tuning.hbt.ParameterGenerateManagerHBTMR;
 import java.util.List;
 import models.JobSuggestedParamSet;
 
@@ -30,7 +31,7 @@ public class ParameterGenerateManagerTestRunner implements Runnable {
 
   public void testParamGeneraterHBT() {
     AbstractParameterGenerateManager parameterGenerateManager =
-        new ParameterGenerateManagerHBT(new MRExecutionEngine());
+        new ParameterGenerateManagerHBTMR<MRExecutionEngine>(new MRExecutionEngine());
     List<JobTuningInfo> jobTuningInfos = parameterGenerateManager.detectJobsForParameterGeneration();
     assertTrue(" Job Needed for Param Generation " + jobTuningInfos.size(), jobTuningInfos.size() == 1);
     assertTrue(" Job State " + jobTuningInfos.get(0).getTunerState().replaceAll("\\{\\}", ""),

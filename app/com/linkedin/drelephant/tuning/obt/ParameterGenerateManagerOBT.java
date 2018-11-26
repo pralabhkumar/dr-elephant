@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.linkedin.drelephant.ElephantContext;
 import com.linkedin.drelephant.tuning.AbstractParameterGenerateManager;
+import com.linkedin.drelephant.tuning.ExecutionEngine;
 import com.linkedin.drelephant.tuning.JobTuningInfo;
 import com.linkedin.drelephant.tuning.Particle;
 import controllers.AutoTuningMetricsController;
@@ -29,7 +30,7 @@ import play.libs.Json;
 import org.apache.hadoop.conf.Configuration;
 
 
-public abstract class ParameterGenerateManagerOBT extends AbstractParameterGenerateManager {
+public abstract class ParameterGenerateManagerOBT<T extends ExecutionEngine> extends AbstractParameterGenerateManager<T> {
 
   protected final String PARAMS_TO_TUNE_FIELD_NAME = "parametersToTune";
 

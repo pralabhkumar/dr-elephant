@@ -26,37 +26,9 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 
-public class ParameterGenerateManagerHBT extends AbstractParameterGenerateManager {
+public abstract class ParameterGenerateManagerHBT<T extends ExecutionEngine>
+    extends AbstractParameterGenerateManager<T> {
   private final Logger logger = Logger.getLogger(getClass());
-
-  private Map<String, Map<String, Double>> usageDataGlobal = null;
-
-  public ParameterGenerateManagerHBT(ExecutionEngine executionEngine) {
-    this._executionEngine = executionEngine;
-  }
-
-  @Override
-  protected List<JobSuggestedParamSet> getPendingParamSets() {
-    List<JobSuggestedParamSet> pendingParamSetList = _executionEngine.getPendingJobs()
-        .eq(JobSuggestedParamSet.TABLE.tuningAlgorithm + "." + TuningAlgorithm.TABLE.optimizationAlgo,
-            TuningAlgorithm.OptimizationAlgo.HBT.name())
-        // .eq(JobSuggestedParamSet.TABLE.isParamSetDefault, 0)
-        .findList();
-    logger.debug(
-        " Number of Pending Jobs for parameter suggestion " + this._executionEngine + " " + pendingParamSetList.size());
-    return pendingParamSetList;
-  }
-
-  @Override
-  protected List<TuningJobDefinition> getTuningJobDefinitions() {
-    List<TuningJobDefinition> totalJobs = _executionEngine.getTuningJobDefinitionsForParameterSuggestion()
-        .eq(TuningJobDefinition.TABLE.tuningAlgorithm + "." + TuningAlgorithm.TABLE.optimizationAlgo,
-            TuningAlgorithm.OptimizationAlgo.HBT.name())
-        .findList();
-
-    logger.debug(" Number of Total Jobs " + this._executionEngine + " " + totalJobs.size());
-    return totalJobs;
-  }
 
   @Override
   protected void saveJobState(JobTuningInfo jobTuningInfo, JobDefinition job) {
@@ -94,7 +66,7 @@ public class ParameterGenerateManagerHBT extends AbstractParameterGenerateManage
     }
     String idParameters = null;
     try {
-      idParameters = this._executionEngine.parameterGenerationsHBT(results, tuningParameters);
+      idParameters = parameterGenerations(results, tuningParameters);
     } catch (Exception e) {
       logger.error("Exception in getting specific parameters ", e);
     }
@@ -104,6 +76,8 @@ public class ParameterGenerateManagerHBT extends AbstractParameterGenerateManage
     }
     return idParameters;
   }
+
+  protected abstract String parameterGenerations(List<AppResult> results, List<TuningParameter> tuningParameters);
 
   private List<AppResult> getAppResults(JobExecution jobExecution) {
     List<AppResult> results = null;
@@ -163,7 +137,7 @@ public class ParameterGenerateManagerHBT extends AbstractParameterGenerateManage
           + derivedParameterList.size());
 
       List<JobSuggestedParamValue> jobSuggestedParamValueList = getParamValueList(stringTunerState);
-      _executionEngine.computeValuesOfDerivedConfigurationParameters(derivedParameterList, jobSuggestedParamValueList);
+      computeValuesOfDerivedConfigurationParameters(derivedParameterList, jobSuggestedParamValueList);
       JobSuggestedParamSet jobSuggestedParamSet = new JobSuggestedParamSet();
       jobSuggestedParamSet.jobDefinition = job;
       jobSuggestedParamSet.tuningAlgorithm = tuningJobDefinition.tuningAlgorithm;
@@ -189,6 +163,9 @@ public class ParameterGenerateManagerHBT extends AbstractParameterGenerateManage
 
     return true;
   }
+
+  public abstract void computeValuesOfDerivedConfigurationParameters(List<TuningParameter> derivedParameterList,
+      List<JobSuggestedParamValue> jobSuggestedParamValueList);
 
   private void penaltyApplication(JobSuggestedParamSet jobSuggestedParamSet, TuningJobDefinition tuningJobDefinition) {
     logger.debug("Parameter constraint violated. Applying penalty.");
@@ -242,12 +219,6 @@ public class ParameterGenerateManagerHBT extends AbstractParameterGenerateManage
   @Override
   protected void updateBoundryConstraint(List<TuningParameter> tuningParameterList, JobDefinition job) {
 
-  }
-
-  @Override
-  public boolean isParamConstraintViolated(List<JobSuggestedParamValue> jobSuggestedParamValues) {
-
-    return _executionEngine.isParamConstraintViolatedHBT(jobSuggestedParamValues);
   }
 
   @Override

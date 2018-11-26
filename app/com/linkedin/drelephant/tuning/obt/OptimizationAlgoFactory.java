@@ -17,22 +17,22 @@ public class OptimizationAlgoFactory {
     if (tuningAlgorithm.optimizationAlgo.name().equals(TuningAlgorithm.OptimizationAlgo.PSO_IPSO.name())
         && tuningAlgorithm.jobType.name().equals(TuningAlgorithm.JobType.PIG.name())) {
       logger.info("OPTIMIZATION ALGORITHM PSO_IPSO MR");
-      return new ParameterGenerateManagerOBTAlgoPSOIPSOImpl(new MRExecutionEngine());
+      return new ParameterGenerateManagerOBTAlgoPSOIPSOMRImpl<MRExecutionEngine>(new MRExecutionEngine());
     }
     if (tuningAlgorithm.optimizationAlgo.name().equals(TuningAlgorithm.OptimizationAlgo.PSO_IPSO.name())
         && tuningAlgorithm.jobType.name().equals(TuningAlgorithm.JobType.SPARK.name())) {
       logger.info("OPTIMIZATION ALGORITHM PSO_IPSO SPARK");
-      return new ParameterGenerateManagerOBTAlgoPSOIPSOImpl(new SparkExecutionEngine());
+      return new ParameterGenerateManagerOBTAlgoPSOIPSOSparkImpl<SparkExecutionEngine>(new SparkExecutionEngine());
     }
     if (tuningAlgorithm.optimizationAlgo.name().equals(TuningAlgorithm.OptimizationAlgo.PSO.name())
         && tuningAlgorithm.jobType.name().equals(TuningAlgorithm.JobType.PIG.name())) {
       logger.info("OPTIMIZATION ALGORITHM PSO PIG");
-      return new ParameterGenerateManagerOBTAlgoPSOImpl(new MRExecutionEngine());
+      return new ParameterGenerateManagerOBTAlgoPSOMRImpl<MRExecutionEngine>(new MRExecutionEngine());
     }
     if (tuningAlgorithm.optimizationAlgo.name().equals(TuningAlgorithm.OptimizationAlgo.PSO.name())
         && tuningAlgorithm.jobType.name().equals(TuningAlgorithm.JobType.SPARK.name())) {
       logger.info("OPTIMIZATION ALGORITHM PSO SPARK");
-      return new ParameterGenerateManagerOBTAlgoPSOImpl(new MRExecutionEngine());
+      return new ParameterGenerateManagerOBTAlgoPSOSparkImpl<SparkExecutionEngine>(new SparkExecutionEngine());
     }
     logger.info("OPTIMIZATION ALGORITHM HBT");
     return null;

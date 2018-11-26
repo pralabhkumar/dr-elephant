@@ -24,6 +24,7 @@ import com.linkedin.drelephant.tuning.engine.MRExecutionEngine;
 import com.linkedin.drelephant.tuning.obt.ParameterGenerateManagerOBT;
 import com.linkedin.drelephant.tuning.obt.ParameterGenerateManagerOBTAlgoPSO;
 import com.linkedin.drelephant.tuning.obt.ParameterGenerateManagerOBTAlgoPSOImpl;
+import com.linkedin.drelephant.tuning.obt.ParameterGenerateManagerOBTAlgoPSOMRImpl;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -112,7 +113,7 @@ public class PSOParamGeneratorTest {
         jobTuningInfo.setJobType(TuningAlgorithm.JobType.PIG);
 
         //PSOParamGenerator psoParamGenerator = new PSOParamGenerator();
-        ParameterGenerateManagerOBT tuningTypeManagerOBT = new ParameterGenerateManagerOBTAlgoPSOImpl(new MRExecutionEngine());
+        ParameterGenerateManagerOBT tuningTypeManagerOBT = new ParameterGenerateManagerOBTAlgoPSOMRImpl<MRExecutionEngine>(new MRExecutionEngine());
         //algorithmManagerOBT.generateParamSet()
 
         JobTuningInfo updatedJobTuningInfo = tuningTypeManagerOBT.generateParamSet(jobTuningInfo);
@@ -209,7 +210,7 @@ public class PSOParamGeneratorTest {
        /* PSOParamGenerator psoParamGenerator = new PSOParamGenerator();
         psoParamGenerator.getParams();*/
 
-        Manager manager = new ParameterGenerateManagerOBTAlgoPSOImpl(new MRExecutionEngine());
+        Manager manager = new ParameterGenerateManagerOBTAlgoPSOMRImpl<MRExecutionEngine>(new MRExecutionEngine());
         manager.execute();
 
         List<JobSuggestedParamSet> jobSuggestedParamSetList = JobSuggestedParamSet.find.where()

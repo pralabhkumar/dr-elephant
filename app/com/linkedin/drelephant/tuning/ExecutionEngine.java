@@ -49,35 +49,21 @@ public interface ExecutionEngine {
    */
   ExpressionList<TuningJobDefinition> getTuningJobDefinitionsForParameterSuggestion();
 
-  /**
-   * Check if the suggested parameters violets any constraint for PSO .
-   */
-  Boolean isParamConstraintViolatedPSO(List<JobSuggestedParamValue> jobSuggestedParamValueList);
 
   /**
-   * Check if the suggested parameters violets any constraint for IPSO .
-   */
-  Boolean isParamConstraintViolatedIPSO(List<JobSuggestedParamValue> jobSuggestedParamValueList);
-
-  /**
-   *  Optimizes parameter boundries based on the Heuristics. This is only applicable for IPSO
-   * @param results : App Results
-   * @param jobExecution : Job Execution on the basis of which parameter boundries will be changed.
-   */
-  public void parameterOptimizerIPSO(List<AppResult> results, JobExecution jobExecution);
-
-  /**
-   *  Parameter Suggestion
-   * @param results : Based on the previous execution results
-   * @param tuningParameters : Tuning parameters
-   * @return : Suggest parameters new values.
-   */
-  String parameterGenerationsHBT(List<AppResult> results, List<TuningParameter> tuningParameters);
-
-  /**
-   * Check if the suggested parameter violets any constraint.
-   * @param jobSuggestedParamValueList
+   *
+   * @param functionType Extract usage information to the list
+   * @param usageDataGlobal
    * @return
    */
-  Boolean isParamConstraintViolatedHBT(List<JobSuggestedParamValue> jobSuggestedParamValueList);
+  List<Double> extractUsageParameter(String functionType, Map<String, Map<String, Double>> usageDataGlobal);
+
+  /**
+   *  Extract App results.
+   * @param appResults
+   * @return
+   */
+  Map<String, Map<String, Double>> extractParameterInformation(List<AppResult> appResults);
+
+
 }

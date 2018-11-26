@@ -25,12 +25,10 @@ import com.linkedin.drelephant.ElephantContext;
 import com.linkedin.drelephant.analysis.Metrics;
 import com.linkedin.drelephant.analysis.Severity;
 import com.linkedin.drelephant.util.Utils;
-import java.lang.reflect.Array;
 import java.text.DecimalFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -51,7 +49,6 @@ import models.JobDefinition;
 import models.JobExecution;
 import models.JobSuggestedParamSet;
 import models.JobSuggestedParamValue;
-import models.TuningAlgorithm;
 import models.TuningJobDefinition;
 import models.TuningParameter;
 import org.apache.commons.collections.map.ListOrderedMap;
@@ -89,7 +86,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.linkedin.drelephant.tuning.AutoTuningAPIHelper;
 import com.linkedin.drelephant.tuning.TuningInput;
-import com.linkedin.drelephant.tuning.engine.SparkConfigurationConstants;
+import com.linkedin.drelephant.tuning.hbt.SparkConfigurationConstants;
 
 
 public class Application extends Controller {

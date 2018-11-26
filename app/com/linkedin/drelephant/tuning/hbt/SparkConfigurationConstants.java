@@ -1,4 +1,4 @@
-package com.linkedin.drelephant.tuning.engine;
+package com.linkedin.drelephant.tuning.hbt;
 
 public class SparkConfigurationConstants {
   public final static String SPARK_EXECUTOR_MEMORY_KEY = "spark.executor.memory";
