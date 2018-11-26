@@ -18,43 +18,18 @@ import models.TuningParameterConstraint;
 import org.apache.log4j.Logger;
 
 
-public class ParameterGenerateManagerOBTAlgoPSOIPSOImpl extends ParameterGenerateManagerOBTAlgoPSO {
+public abstract class ParameterGenerateManagerOBTAlgoPSOIPSOImpl<T extends ExecutionEngine>
+    extends ParameterGenerateManagerOBTAlgoPSO<T> {
 
   private final Logger logger = Logger.getLogger(getClass());
 
   enum UsageCounterSchema {USED_PHYSICAL_MEMORY, USED_VIRTUAL_MEMORY, USED_HEAP_MEMORY}
-
-  public ParameterGenerateManagerOBTAlgoPSOIPSOImpl(ExecutionEngine executionEngine) {
-    this._executionEngine = executionEngine;
-  }
 
   @Override
   protected void updateBoundryConstraint(List<TuningParameter> tuningParameterList, JobDefinition job) {
     applyIntelligenceOnParameter(tuningParameterList, job);
   }
 
-  @Override
-  public boolean isParamConstraintViolated(List<JobSuggestedParamValue> jobSuggestedParamValues) {
-    return _executionEngine.isParamConstraintViolatedIPSO(jobSuggestedParamValues);
-  }
-
-  @Override
-  protected List<JobSuggestedParamSet> getPendingParamSets() {
-    List<JobSuggestedParamSet> pendingParamSetList = _executionEngine.getPendingJobs()
-        .eq(JobSuggestedParamSet.TABLE.tuningAlgorithm + "." + TuningAlgorithm.TABLE.optimizationAlgo,
-            TuningAlgorithm.OptimizationAlgo.PSO_IPSO.name())
-        .eq(JobSuggestedParamSet.TABLE.isParamSetDefault, 0)
-        .findList();
-    return pendingParamSetList;
-  }
-
-  @Override
-  protected List<TuningJobDefinition> getTuningJobDefinitions() {
-    return _executionEngine.getTuningJobDefinitionsForParameterSuggestion()
-        .eq(TuningJobDefinition.TABLE.tuningAlgorithm + "." + TuningAlgorithm.TABLE.optimizationAlgo,
-            TuningAlgorithm.OptimizationAlgo.PSO_IPSO.name())
-        .findList();
-  }
 
   @Override
   public void initializePrerequisite(TuningAlgorithm tuningAlgorithm, JobDefinition job) {
@@ -66,16 +41,16 @@ public class ParameterGenerateManagerOBTAlgoPSOIPSOImpl extends ParameterGenerat
     }
   }
 
-  private void setDefaultParameterValues(TuningAlgorithm tuningAlgorithm, JobDefinition job) throws Exception{
+  private void setDefaultParameterValues(TuningAlgorithm tuningAlgorithm, JobDefinition job) throws Exception {
     try {
       List<TuningParameter> tuningParameters =
           TuningParameter.find.where().eq(TuningParameter.TABLE.tuningAlgorithm, tuningAlgorithm).findList();
 
-      List<TuningParameterConstraint> tuningParameterConstrains= TuningParameterConstraint.find.where()
+      List<TuningParameterConstraint> tuningParameterConstrains = TuningParameterConstraint.find.where()
           .eq(TuningParameterConstraint.TABLE.jobDefinition + "." + JobDefinition.TABLE.id, job.id)
           .findList();
 
-      if(tuningParameterConstrains== null || tuningParameterConstrains.size()==0) {
+      if (tuningParameterConstrains == null || tuningParameterConstrains.size() == 0) {
         logger.debug("Parameter constraints not added . Hence adding parameter constraint. ");
         for (TuningParameter tuningParameter : tuningParameters) {
           TuningParameterConstraint tuningParameterConstraint = new TuningParameterConstraint();
@@ -86,21 +61,14 @@ public class ParameterGenerateManagerOBTAlgoPSOIPSOImpl extends ParameterGenerat
           tuningParameterConstraint.constraintType = TuningParameterConstraint.ConstraintType.BOUNDARY;
           tuningParameterConstraint.save();
         }
-      }
-      else{
+      } else {
         logger.debug(" Parameter constraints already added . Hence not adding them");
       }
     } catch (Exception e) {
       logger.debug(
-          " Error in setting up intial parameter constraint . IPSO will not work in this case ." + e.getMessage(),e);
+          " Error in setting up intial parameter constraint . IPSO will not work in this case ." + e.getMessage(), e);
       throw e;
     }
-  }
-
-  @Override
-  public void parameterOptimizer(List<AppResult> appResults, JobExecution jobExecution) {
-    logger.info(" IPSO Optimizer");
-    _executionEngine.parameterOptimizerIPSO(appResults, jobExecution);
   }
 
   public void applyIntelligenceOnParameter(List<TuningParameter> tuningParameterList, JobDefinition job) {
@@ -137,6 +105,6 @@ public class ParameterGenerateManagerOBTAlgoPSOIPSOImpl extends ParameterGenerat
   }
 
   public String getManagerName() {
-    return "ParameterGenerateManagerOBTAlgoPSOIPSOImpl" + this._executionEngine.getClass().getSimpleName();
+    return "ParameterGenerateManagerOBTAlgoPSOIPSOImpl" + this.getClass().getSimpleName();
   }
 }

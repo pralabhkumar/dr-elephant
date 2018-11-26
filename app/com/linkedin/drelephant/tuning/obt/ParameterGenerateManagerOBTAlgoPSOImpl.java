@@ -13,41 +13,15 @@ import models.TuningJobDefinition;
 import models.TuningParameter;
 import org.apache.log4j.Logger;
 
-public class ParameterGenerateManagerOBTAlgoPSOImpl extends ParameterGenerateManagerOBTAlgoPSO {
+public abstract class ParameterGenerateManagerOBTAlgoPSOImpl<T extends ExecutionEngine> extends ParameterGenerateManagerOBTAlgoPSO<T> {
   private final Logger logger = Logger.getLogger(getClass());
-  public ParameterGenerateManagerOBTAlgoPSOImpl(ExecutionEngine executionEngine) {
-    this._executionEngine=executionEngine;
-  }
 
   @Override
   protected void updateBoundryConstraint(List<TuningParameter> tuningParameterList, JobDefinition job) {
 
   }
 
-  @Override
-  public boolean isParamConstraintViolated(List<JobSuggestedParamValue> jobSuggestedParamValues) {
-    return _executionEngine.isParamConstraintViolatedPSO(jobSuggestedParamValues);
-  }
 
-
-
-  @Override
-  protected List<JobSuggestedParamSet> getPendingParamSets() {
-    List<JobSuggestedParamSet> pendingParamSetList = _executionEngine.getPendingJobs()
-        .eq(JobSuggestedParamSet.TABLE.tuningAlgorithm
-            + "." + TuningAlgorithm.TABLE.optimizationAlgo, TuningAlgorithm.OptimizationAlgo.PSO.name())
-        .eq(JobSuggestedParamSet.TABLE.isParamSetDefault, 0)
-        .findList();
-    return pendingParamSetList;
-  }
-
-  @Override
-  protected List<TuningJobDefinition> getTuningJobDefinitions() {
-    return _executionEngine.getTuningJobDefinitionsForParameterSuggestion()
-        .eq(TuningJobDefinition.TABLE.tuningAlgorithm
-            + "." + TuningAlgorithm.TABLE.optimizationAlgo, TuningAlgorithm.OptimizationAlgo.PSO.name())
-        .findList();
-  }
 
   @Override
   public void initializePrerequisite(TuningAlgorithm tuningAlgorithm, JobDefinition job) {
@@ -65,6 +39,6 @@ public class ParameterGenerateManagerOBTAlgoPSOImpl extends ParameterGenerateMan
   }
 
   public String getManagerName() {
-    return "ParameterGenerateManagerOBTAlgoPSOImpl" + this._executionEngine.getClass().getSimpleName();
+    return "ParameterGenerateManagerOBTAlgoPSOImpl" + this.getClass().getSimpleName();
   }
 }

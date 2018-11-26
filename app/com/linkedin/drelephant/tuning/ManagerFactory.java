@@ -6,12 +6,18 @@ import com.linkedin.drelephant.tuning.engine.SparkExecutionEngine;
 import com.linkedin.drelephant.tuning.hbt.BaselineManagerHBT;
 import com.linkedin.drelephant.tuning.hbt.FitnessManagerHBT;
 import com.linkedin.drelephant.tuning.hbt.ParameterGenerateManagerHBT;
+import com.linkedin.drelephant.tuning.hbt.ParameterGenerateManagerHBTMR;
+import com.linkedin.drelephant.tuning.hbt.ParameterGenerateManagerHBTSpark;
 import com.linkedin.drelephant.tuning.obt.BaselineManagerOBT;
 import com.linkedin.drelephant.tuning.obt.FitnessManagerOBTAlgoIPSO;
 import com.linkedin.drelephant.tuning.obt.FitnessManagerOBTAlgoPSO;
 import com.linkedin.drelephant.tuning.obt.ParameterGenerateManagerOBTAlgoPSOIPSOImpl;
 import com.linkedin.drelephant.tuning.obt.ParameterGenerateManagerOBTAlgoPSO;
+import com.linkedin.drelephant.tuning.obt.ParameterGenerateManagerOBTAlgoPSOIPSOMRImpl;
+import com.linkedin.drelephant.tuning.obt.ParameterGenerateManagerOBTAlgoPSOIPSOSparkImpl;
 import com.linkedin.drelephant.tuning.obt.ParameterGenerateManagerOBTAlgoPSOImpl;
+import com.linkedin.drelephant.tuning.obt.ParameterGenerateManagerOBTAlgoPSOMRImpl;
+import com.linkedin.drelephant.tuning.obt.ParameterGenerateManagerOBTAlgoPSOSparkImpl;
 import org.apache.log4j.Logger;
 
 
@@ -52,13 +58,13 @@ public class ManagerFactory {
         Constant.ExecutionEngineTypes.MR.name()) && algorithmType.equals(
         Constant.AlgotihmType.HBT.name())) {
       logger.info("Manager Type TuningType Manager HBT MR");
-      return new ParameterGenerateManagerHBT(new MRExecutionEngine());
+      return new ParameterGenerateManagerHBTMR<MRExecutionEngine>(new MRExecutionEngine());
     }
     if (typeOfManagers.equals(Constant.TypeofManagers.AbstractParameterGenerateManager.name()) && executionEngineTypes.equals(
         Constant.ExecutionEngineTypes.SPARK.name()) && algorithmType.equals(
         Constant.AlgotihmType.HBT.name())) {
       logger.info("Manager Type TuningType Manager HBT Spark");
-      return new ParameterGenerateManagerHBT(new SparkExecutionEngine());
+      return new ParameterGenerateManagerHBTSpark<SparkExecutionEngine>(new SparkExecutionEngine());
     }
     return null;
   }
@@ -89,22 +95,22 @@ public class ManagerFactory {
     if (executionEngineTypes.equals(Constant.ExecutionEngineTypes.MR.name()) && algorithmType.equals(
         Constant.AlgotihmType.PSO_IPSO.name())) {
       logger.info("Manager Type TuningType Manager OBT IPSO MR");
-      return new ParameterGenerateManagerOBTAlgoPSOIPSOImpl(new MRExecutionEngine());
+      return new ParameterGenerateManagerOBTAlgoPSOIPSOMRImpl<MRExecutionEngine>(new MRExecutionEngine());
     }
     if (executionEngineTypes.equals(Constant.ExecutionEngineTypes.MR.name()) && algorithmType.equals(
         Constant.AlgotihmType.PSO.name())) {
       logger.info("Manager Type TuningType Manager OBT PSO MR");
-      return new ParameterGenerateManagerOBTAlgoPSOImpl(new MRExecutionEngine());
+      return new ParameterGenerateManagerOBTAlgoPSOMRImpl<MRExecutionEngine>(new MRExecutionEngine());
     }
     if (executionEngineTypes.equals(Constant.ExecutionEngineTypes.SPARK.name()) && algorithmType.equals(
         Constant.AlgotihmType.PSO_IPSO.name())) {
       logger.info("Manager Type TuningType Manager OBT IPSO Spark");
-      return new ParameterGenerateManagerOBTAlgoPSOIPSOImpl(new SparkExecutionEngine());
+      return new ParameterGenerateManagerOBTAlgoPSOIPSOSparkImpl<SparkExecutionEngine>(new SparkExecutionEngine());
     }
     if (executionEngineTypes.equals(Constant.ExecutionEngineTypes.SPARK.name()) && algorithmType.equals(
         Constant.AlgotihmType.PSO.name())) {
       logger.info("Manager Type TuningType Manager OBT PSO Spark");
-      return new ParameterGenerateManagerOBTAlgoPSOImpl(new SparkExecutionEngine());
+      return new ParameterGenerateManagerOBTAlgoPSOSparkImpl<SparkExecutionEngine>(new SparkExecutionEngine());
     }
     return null;
   }

@@ -2,6 +2,7 @@ package com.linkedin.drelephant.tuning.obt;
 
 import com.linkedin.drelephant.ElephantContext;
 import com.linkedin.drelephant.tuning.AbstractParameterGenerateManager;
+import com.linkedin.drelephant.tuning.ExecutionEngine;
 import com.linkedin.drelephant.tuning.JobTuningInfo;
 import com.linkedin.drelephant.tuning.Particle;
 import controllers.AutoTuningMetricsController;
@@ -25,7 +26,7 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.commons.io.FileUtils;
 
-public abstract class ParameterGenerateManagerOBTAlgoPSO extends ParameterGenerateManagerOBT {
+public abstract class ParameterGenerateManagerOBTAlgoPSO<T extends ExecutionEngine> extends ParameterGenerateManagerOBT<T> {
 
   private final Logger logger = Logger.getLogger(getClass());
   private static final String PYTHON_PATH_CONF = "python.path";
@@ -263,7 +264,7 @@ public abstract class ParameterGenerateManagerOBTAlgoPSO extends ParameterGenera
       for (Particle suggestedParticle : suggestedPopulation) {
         AutoTuningMetricsController.markParamSetGenerated();
         List<JobSuggestedParamValue> jobSuggestedParamValueList = getParamValueList(suggestedParticle, paramList);
-        _executionEngine.computeValuesOfDerivedConfigurationParameters(derivedParameterList,
+        computeValuesOfDerivedConfigurationParameters(derivedParameterList,
             jobSuggestedParamValueList);
         JobSuggestedParamSet jobSuggestedParamSet = new JobSuggestedParamSet();
         jobSuggestedParamSet.jobDefinition = job;
@@ -307,6 +308,7 @@ public abstract class ParameterGenerateManagerOBTAlgoPSO extends ParameterGenera
     return true;
   }
 
+  public abstract void computeValuesOfDerivedConfigurationParameters(List<TuningParameter> derivedParameterList,List<JobSuggestedParamValue> jobSuggestedParamValueList);
   /**
    * Returns list of suggested parameters
    * @param particle Particle (configuration)
