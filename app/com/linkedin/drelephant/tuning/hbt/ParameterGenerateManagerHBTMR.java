@@ -84,7 +84,26 @@ public class ParameterGenerateManagerHBTMR<T extends MRExecutionEngine> extends 
                 .get(CommonConstantsHeuristic.UtilizedParameterKeys.MAX_TOTAL_COMMITTED_HEAP_USAGE_MEMORY.getValue()));
         idParameters.append("\n");
       }
+     if (tuningParameter.paramName.equals(
+         CommonConstantsHeuristic.ParameterKeys.REDUCER_MEMORY_HADOOP_CONF.getValue())) {
+       idParameters.append(tuningParameter.id)
+           .append("\t")
+           .append(Math.max(previousUsedMetrics.get("reduce")
+               .get(CommonConstantsHeuristic.UtilizedParameterKeys.MAX_PHYSICAL_MEMORY.getValue()), previousUsedMetrics
+               .get("reduce")
+               .get(CommonConstantsHeuristic.UtilizedParameterKeys.MAX_VIRTUAL_MEMORY.getValue()) / 2.1));
+       idParameters.append("\n");
+     }
+     if (tuningParameter.paramName.equals(
+         CommonConstantsHeuristic.ParameterKeys.REDUCER_HEAP_HADOOP_CONF.getValue())) {
+       idParameters.append(tuningParameter.id)
+           .append("\t")
+           .append(previousUsedMetrics.get("reduce")
+               .get(CommonConstantsHeuristic.UtilizedParameterKeys.MAX_TOTAL_COMMITTED_HEAP_USAGE_MEMORY.getValue()));
+       idParameters.append("\n");
+     }
     }
+
     logger.info(" New Suggested Parameter " + idParameters);
     return idParameters.toString();
   }

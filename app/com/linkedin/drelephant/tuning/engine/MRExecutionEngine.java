@@ -182,9 +182,9 @@ public class MRExecutionEngine implements ExecutionEngine {
     }
   }
 
-  private Map<String, Map<String, Double>> collectUsageDataPerApplication(AppResult appResult) {
-    Map<String, Map<String, Double>> usageData = null;
-    usageData = new HashMap<String, Map<String, Double>>();
+
+  public Map<String, Map<String, Double>> collectUsageDataPerApplication(AppResult appResult) {
+    Map<String, Map<String, Double>> usageData = new HashMap<String, Map<String, Double>>();
     if (appResult.yarnAppHeuristicResults != null) {
       for (AppHeuristicResult appHeuristicResult : appResult.yarnAppHeuristicResults) {
 
