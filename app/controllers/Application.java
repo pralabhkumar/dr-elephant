@@ -2000,7 +2000,7 @@ public class Application extends Controller {
       }
     }
     return "NONE";
-  } 
+  }
     private static Map<String, Double> getSparkParamsMap(Long jobSuggestedParamSetId) {
     logger.debug("Fetching params for JobSuggestedParamSet id: " + jobSuggestedParamSetId);
     List<JobSuggestedParamValue> paramValues = JobSuggestedParamValue.find.select("*")
