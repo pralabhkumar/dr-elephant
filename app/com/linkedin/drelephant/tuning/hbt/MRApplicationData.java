@@ -26,6 +26,7 @@ public class MRApplicationData {
   private static Set<String> validHeuristic = null;
   private Map<String, String> appliedParameter = null;
   private boolean processForMapperMemory = false;
+  private Map<String, Double> counterValues = null;
 
   static {
     validHeuristic = new HashSet<String>();
@@ -44,9 +45,19 @@ public class MRApplicationData {
     this.suggestedParameter = new HashMap<String, Double>();
     this.failedHeuristics = new HashMap<String, AppHeuristicResult>();
     this.appliedParameter = appliedParameter;
+    this.counterValues = new HashMap<String, Double>();
+    processForSuggestedParameter();
   }
 
-  public void processForSuggestedParameter() {
+  public Map<String, Double> getCounterValues() {
+    return this.counterValues;
+  }
+
+  public String getApplicationID() {
+    return this.applicationID;
+  }
+
+  private void processForSuggestedParameter() {
     if (_result.yarnAppHeuristicResults != null) {
       for (AppHeuristicResult yarnAppHeuristicResult : _result.yarnAppHeuristicResults) {
         if (isValidHeuristic(yarnAppHeuristicResult)) {
@@ -100,10 +111,53 @@ public class MRApplicationData {
         usedHeapMemoryMB = (double) MemoryFormatUtils.stringToBytes(appHeuristicResultDetails.value);
       }
     }
+    counterValues.put(functionType + " Max Virtual Memory (MB)", usedVirtualMemoryMB);
+    counterValues.put(functionType + " Max Physical Memory (MB)", usedPhysicalMemoryMB);
+    counterValues.put(functionType + " Max Total Committed Heap Usage Memory (MB)", usedHeapMemoryMB);
+
+    if (debugEnabled) {
+      logger.debug(
+          " Used Physical Memory " + yarnAppHeuristicResult.id + "_" + functionType + " " + usedPhysicalMemoryMB);
+      logger.debug(
+          " Used Virtual Memory " + yarnAppHeuristicResult.id + "_" + functionType + " " + usedVirtualMemoryMB);
+      logger.debug(" Used heap Memory " + yarnAppHeuristicResult.id + "_" + functionType + " " + usedHeapMemoryMB);
+    }
     Double memoryMB = max(usedPhysicalMemoryMB, usedVirtualMemoryMB / (2.1));
-    Double heapSizeLowerBound = min(0.75 * memoryMB, usedHeapMemoryMB);
-    suggestedParameter.put(functionType + " Memory", TuningHelper.getContainerSize(memoryMB));
-    suggestedParameter.put(functionType + "Heap", heapSizeLowerBound);
+    Double heapSizeMax = TuningHelper.getHeapSize(min(0.75 * memoryMB, usedHeapMemoryMB));
+    Double containerSize = TuningHelper.getContainerSize(memoryMB);
+    addParameterToSuggestedParameter(heapSizeMax, containerSize, yarnAppHeuristicResult.id, functionType);
+  }
+
+  private void addParameterToSuggestedParameter(Double heapSizeMax, Double containerSize, int id, String functionType) {
+    if (functionType.equals("Mapper")) {
+      addMapperMemoryAndHeapToSuggestedParameter(heapSizeMax, containerSize, id);
+    } else {
+      addReducerMemoryAndHeapToSuggestedParameter(heapSizeMax, containerSize, id);
+    }
+  }
+
+  private void addMapperMemoryAndHeapToSuggestedParameter(Double heapSizeMax, Double containerSize,
+      int heuristicsResultID) {
+    suggestedParameter.put("mapreduce.map.memory.mb", containerSize);
+    suggestedParameter.put("mapreduce.map.java.opts", heapSizeMax);
+    if (debugEnabled) {
+      logger.debug(
+          " Memory Assigned " + heuristicsResultID + "_Mapper " + suggestedParameter.get("mapreduce.map.memory.mb"));
+      logger.debug(
+          " Heap Assigned " + heuristicsResultID + "_Mapper " + suggestedParameter.get("mapreduce.map.java.opts"));
+    }
+  }
+
+  private void addReducerMemoryAndHeapToSuggestedParameter(Double heapSizeMax, Double containerSize,
+      int heuristicsResultID) {
+    suggestedParameter.put("mapreduce.reduce.memory.mb", containerSize);
+    suggestedParameter.put("mapreduce.reduce.java.opts", heapSizeMax);
+    if (debugEnabled) {
+      logger.debug(
+          " Memory Assigned " + heuristicsResultID + "_Reducer " + suggestedParameter.get("mapreduce.map.memory.mb"));
+      logger.debug(
+          " Heap Assigned " + heuristicsResultID + "_Reducer " + suggestedParameter.get("mapreduce.map.java.opts"));
+    }
   }
 
   private void processForNumberOfTask(AppHeuristicResult yarnAppHeuristicResult, String functionType) {
@@ -112,13 +166,13 @@ public class MRApplicationData {
     if (functionType.equals("Mapper")) {
       splitSize = getNewSplitSize(yarnAppHeuristicResult);
       if (splitSize > 0) {
-        suggestedParameter.put("Split Size", splitSize * 1.0);
+        suggestedParameter.put("pig.maxCombinedSplitSize", splitSize * 1.0);
       }
     }
     if (functionType.equals("Reducer")) {
       numberOfReduceTask = getNumberOfReducer(yarnAppHeuristicResult);
       if (numberOfReduceTask > 0) {
-        suggestedParameter.put("Number of Reducers", numberOfReduceTask * 1.0);
+        suggestedParameter.put("mapreduce.job.reduces", numberOfReduceTask * 1.0);
       }
     }
   }
@@ -217,8 +271,8 @@ public class MRApplicationData {
           newBufferSize = (int) (previousBufferSize * 1.2);
         }
       }
-      suggestedParameter.put("Sort Buffer", newBufferSize * 1.0);
-      suggestedParameter.put("Sort Spill", newSpillPercentage);
+      suggestedParameter.put("mapreduce.task.io.sort.mb", newBufferSize * 1.0);
+      suggestedParameter.put("mapreduce.map.sort.spill.percent", newSpillPercentage);
       if (processForMapperMemory) {
         modifyMapperMemory();
       }
@@ -226,17 +280,16 @@ public class MRApplicationData {
   }
 
   private void modifyMapperMemory() {
-    Double mapperMemory = suggestedParameter.get("Mapper Memory");
-    Double heapMemory = suggestedParameter.get("Mapper Heap");
-    Double sortBuffer = suggestedParameter.get("Sort Buffer");
+    Double mapperMemory = suggestedParameter.get("mapreduce.map.memory.mb");
+    Double heapMemory = suggestedParameter.get("mapreduce.map.java.opts");
+    Double sortBuffer = suggestedParameter.get("mapreduce.task.io.sort.mb");
     Double minimumMemoryBasedonSortBuffer = max(sortBuffer + 769, sortBuffer * (10 / 6));
     if (minimumMemoryBasedonSortBuffer > mapperMemory) {
       mapperMemory = minimumMemoryBasedonSortBuffer;
       heapMemory = 0.75 * mapperMemory;
     }
-    suggestedParameter.put("Mapper Memory", TuningHelper.getContainerSize(mapperMemory));
-    suggestedParameter.put("Mapper Heap", heapMemory);
-    suggestedParameter.put("Sort Buffer", sortBuffer);
+    suggestedParameter.put("mapreduce.map.memory.mb", TuningHelper.getContainerSize(mapperMemory));
+    suggestedParameter.put("mapreduce.map.java.opts", heapMemory);
   }
 
   private void optimizeForResourceUsage() {

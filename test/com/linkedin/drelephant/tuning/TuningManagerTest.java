@@ -47,49 +47,46 @@ public class TuningManagerTest {
     fakeApp = fakeApplication(dbConn, gs);
     Configuration configuration = ElephantContext.instance().getAutoTuningConf();
     Boolean autoTuningEnabled = configuration.getBoolean(DrElephant.AUTO_TUNING_ENABLED, false);
-   // org.junit.Assume.assumeTrue(autoTuningEnabled);
+    // org.junit.Assume.assumeTrue(autoTuningEnabled);
   }
 
   @Test
   public void testIPSOManager() {
     running(testServer(TEST_SERVER_PORT, fakeApp), new IPSOManagerTestRunner());
-
   }
 
   @Test
-  public void testFlowTestRunner(){
+  public void testFlowTestRunner() {
     running(testServer(TEST_SERVER_PORT, fakeApp), new FlowTestRunner());
   }
 
-
   @Test
-  public void testBaselineManagerTestRunner(){
+  public void testBaselineManagerTestRunner() {
     running(testServer(TEST_SERVER_PORT, fakeApp), new BaselineManagerTestRunner());
   }
 
   @Test
-  public void testJobStatusManagerTestRunner(){
+  public void testJobStatusManagerTestRunner() {
     running(testServer(TEST_SERVER_PORT, fakeApp), new JobStatusManagerTestRunner());
   }
 
-
   @Test
-  public void testFitnessManagerTestRunner(){
+  public void testFitnessManagerTestRunner() {
     running(testServer(TEST_SERVER_PORT, fakeApp), new FitnessManagerTestRunner());
   }
 
   @Test
-  public void testParamGenerterTestRunner(){
+  public void testParamGenerterTestRunner() {
     running(testServer(TEST_SERVER_PORT, fakeApp), new ParameterGenerateManagerTestRunner());
   }
 
   @Test
-  public void testAlgoBasedOnVersion(){
-    assertTrue("Alorithm Based on Version Test", controllers.Application.getAlgoBasedOnVersion(1).equals(
-        TuningAlgorithm.OptimizationAlgo.HBT.name()));
-    assertTrue("Alorithm Based on Version Test", controllers.Application.getAlgoBasedOnVersion(2).equals(
-        TuningAlgorithm.OptimizationAlgo.HBT.name()));
-    assertTrue("Alorithm Based on Version Test", controllers.Application.getAlgoBasedOnVersion(3).equals(
-        TuningAlgorithm.OptimizationAlgo.HBT.name()));
+  public void testAlgoBasedOnVersion() {
+    assertTrue("Alorithm Based on Version Test", controllers.Application.getAlgoBasedOnVersion(1).equals(TuningAlgorithm.OptimizationAlgo.HBT.name()));
+    assertTrue("Alorithm Based on Version Test", controllers.Application.getAlgoBasedOnVersion(2).equals(TuningAlgorithm.OptimizationAlgo.HBT.name()));
+    assertTrue("Alorithm Based on Version Test", controllers.Application.getAlgoBasedOnVersion(3).equals(TuningAlgorithm.OptimizationAlgo.HBT.name()));
   }
 }
+
+
+
