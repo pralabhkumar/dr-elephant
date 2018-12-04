@@ -10,18 +10,24 @@ import java.util.Set;
 import models.AppHeuristicResult;
 import models.AppHeuristicResultDetails;
 import models.AppResult;
+import org.apache.log4j.Logger;
 
 
 public class MRJob {
+  private final Logger logger = Logger.getLogger(getClass());
+  private boolean isDebugEnabled = logger.isDebugEnabled();
   private Map<String, Double> suggestedParameter = null;
   private List<MRApplicationData> applications = null;
   private Map<String, String> appliedParameter = null;
   private Set<String> suggestedParameterNames = null;
-  MRJob(List<AppResult> results, MRExecutionEngine mrExecutionEngine) {
+  private List<AppResult> applicationResults = null;
+  public MRJob(List<AppResult> results, MRExecutionEngine mrExecutionEngine) {
+    this.applicationResults=results;
+    this.appliedParameter = new HashMap<String,String>();
     setAppliedParameter(results);
-    parsedApplication(results);
     applications = new ArrayList<MRApplicationData>();
-    suggestedParameter = new HashMap<String,Double>();
+    suggestedParameter = new HashMap<String, Double>();
+    suggestedParameterNames = new HashSet<String>();
   }
 
   private void setAppliedParameter(List<AppResult> results) {
@@ -37,31 +43,41 @@ public class MRJob {
     }
   }
 
-  public void parsedApplication(List<AppResult> results) {
-    for (AppResult result : results) {
+  public Map<String, String> getAppliedParameter(){
+    return this.appliedParameter;
+  }
+
+  public List<MRApplicationData> getApplicationAnalyzedData(){
+    return applications;
+  }
+
+  public void analyzeAllApplications() {
+    for (AppResult result : this.applicationResults) {
       MRApplicationData mrApplicationData = new MRApplicationData(result, appliedParameter);
-      mrApplicationData.processForSuggestedParameter();
       suggestedParameterNames.addAll(mrApplicationData.getSuggestedParameter().keySet());
       applications.add(mrApplicationData);
     }
   }
 
-  public Map<String, Double> getSuggestedParameter() {
-    intialize();
+  public void processJobForParameter() {
+    initialize();
     for (MRApplicationData mrApplicationData : applications) {
-      Map<String,Double> applicationSuggestedParameter = mrApplicationData.getSuggestedParameter();
-      for(String parameterName : applicationSuggestedParameter.keySet()){
+      Map<String, Double> applicationSuggestedParameter = mrApplicationData.getSuggestedParameter();
+      for (String parameterName : applicationSuggestedParameter.keySet()) {
         Double valueSoFar = suggestedParameter.get(parameterName);
         Double valueAsperCurrentApplication = applicationSuggestedParameter.get(parameterName);
-        suggestedParameter.put(parameterName,Math.max(valueSoFar,valueAsperCurrentApplication));
+        suggestedParameter.put(parameterName, Math.max(valueSoFar, valueAsperCurrentApplication));
       }
     }
-    return null;
   }
 
-  private void intialize(){
-    for(String name : suggestedParameterNames){
-      suggestedParameter.put(name,0.0);
+  public Map<String, Double> getSuggestedParameter() {
+    return this.suggestedParameter;
+  }
+
+  private void initialize() {
+    for (String name : suggestedParameterNames) {
+      suggestedParameter.put(name, 0.0);
     }
   }
 }

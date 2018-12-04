@@ -28,6 +28,7 @@ public class TestConstants {
   public static final String TEST_AUTO_TUNING_DATA_FILE1 = "test/resources/tunein-test1.sql";
   public static final String TEST_FITNESS_CALCULATION_DATA_FILE = "test/resources/test-fitness-calculation-data.sql";
   public static final String TEST_PARAM_GENERATE_DATA_FILE = "test/resources/test-param-generate-data.sql";
+  public static final String TEST_AUTO_TUNING_MR_HBT="test/resources/test-init-MRHBT.sql";
 
   public static final int RESPONSE_TIMEOUT = 3000; // milliseconds
 

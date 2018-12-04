@@ -56,54 +56,23 @@ public class ParameterGenerateManagerHBTMR<T extends MRExecutionEngine> extends 
     return false;
   }
 
-  private Map<String, Map<String, Double>> extractParameterInformation(List<AppResult> appResults) {
+ /* private Map<String, Map<String, Double>> extractParameterInformation(List<AppResult> appResults) {
     logger.info(" Extract Parameter Information for MR HBT");
     return mrExecutionEngine.extractParameterInformation(appResults);
-  }
+  }*/
 
   @Override
   public String parameterGenerations(List<AppResult> results, List<TuningParameter> tuningParameters) {
-     Map<String, Map<String, Double>> previousUsedMetrics = extractParameterInformation(results);
+    MRJob mrJob = new MRJob(results, mrExecutionEngine);
+    mrJob.processJobForParameter();
+    Map<String, Double> suggestedParameter = mrJob.getSuggestedParameter();
     StringBuffer idParameters = new StringBuffer();
-   for (TuningParameter tuningParameter : tuningParameters) {
-      if (tuningParameter.paramName.equals(
-          CommonConstantsHeuristic.ParameterKeys.MAPPER_MEMORY_HADOOP_CONF.getValue())) {
-        idParameters.append(tuningParameter.id)
-            .append("\t")
-            .append(Math.max(previousUsedMetrics.get("map")
-                .get(CommonConstantsHeuristic.UtilizedParameterKeys.MAX_PHYSICAL_MEMORY.getValue()), previousUsedMetrics
-                .get("map")
-                .get(CommonConstantsHeuristic.UtilizedParameterKeys.MAX_VIRTUAL_MEMORY.getValue()) / 2.1));
-        idParameters.append("\n");
+    for (TuningParameter tuningParameter : tuningParameters) {
+      Double paramValue = suggestedParameter.get(tuningParameter.paramName);
+      if (paramValue != null && paramValue != 0.0) {
+        idParameters.append(tuningParameter.id).append("\t").append(paramValue).append("\n");
       }
-      if (tuningParameter.paramName.equals(
-          CommonConstantsHeuristic.ParameterKeys.MAPPER_HEAP_HADOOP_CONF.getValue())) {
-        idParameters.append(tuningParameter.id)
-            .append("\t")
-            .append(previousUsedMetrics.get("map")
-                .get(CommonConstantsHeuristic.UtilizedParameterKeys.MAX_TOTAL_COMMITTED_HEAP_USAGE_MEMORY.getValue()));
-        idParameters.append("\n");
-      }
-     if (tuningParameter.paramName.equals(
-         CommonConstantsHeuristic.ParameterKeys.REDUCER_MEMORY_HADOOP_CONF.getValue())) {
-       idParameters.append(tuningParameter.id)
-           .append("\t")
-           .append(Math.max(previousUsedMetrics.get("reduce")
-               .get(CommonConstantsHeuristic.UtilizedParameterKeys.MAX_PHYSICAL_MEMORY.getValue()), previousUsedMetrics
-               .get("reduce")
-               .get(CommonConstantsHeuristic.UtilizedParameterKeys.MAX_VIRTUAL_MEMORY.getValue()) / 2.1));
-       idParameters.append("\n");
-     }
-     if (tuningParameter.paramName.equals(
-         CommonConstantsHeuristic.ParameterKeys.REDUCER_HEAP_HADOOP_CONF.getValue())) {
-       idParameters.append(tuningParameter.id)
-           .append("\t")
-           .append(previousUsedMetrics.get("reduce")
-               .get(CommonConstantsHeuristic.UtilizedParameterKeys.MAX_TOTAL_COMMITTED_HEAP_USAGE_MEMORY.getValue()));
-       idParameters.append("\n");
-     }
     }
-
     logger.info(" New Suggested Parameter " + idParameters);
     return idParameters.toString();
   }
@@ -111,6 +80,6 @@ public class ParameterGenerateManagerHBTMR<T extends MRExecutionEngine> extends 
   @Override
   public void computeValuesOfDerivedConfigurationParameters(List<TuningParameter> derivedParameterList,
       List<JobSuggestedParamValue> jobSuggestedParamValueList) {
-    mrExecutionEngine.computeValuesOfDerivedConfigurationParameters(derivedParameterList, jobSuggestedParamValueList);
+  //  mrExecutionEngine.computeValuesOfDerivedConfigurationParameters(derivedParameterList, jobSuggestedParamValueList);
   }
 }

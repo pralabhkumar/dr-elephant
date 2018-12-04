@@ -58,6 +58,10 @@ public class DBTestUtil {
     initDBUtil(TEST_AUTO_TUNING_DATA_FILE1);
   }
 
+  public static void initMRHBT() throws IOException, SQLException {
+    initDBUtil(TEST_AUTO_TUNING_MR_HBT);
+  }
+
   public static void initDBUtil(String fileName) throws IOException, SQLException {
     String query = "";
     FileInputStream inputStream = new FileInputStream(fileName);
