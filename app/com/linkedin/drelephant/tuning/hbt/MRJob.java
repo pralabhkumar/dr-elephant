@@ -19,15 +19,14 @@ public class MRJob {
   private Map<String, Double> suggestedParameter = null;
   private List<MRApplicationData> applications = null;
   private Map<String, String> appliedParameter = null;
-  private Set<String> suggestedParameterNames = null;
   private List<AppResult> applicationResults = null;
+
   public MRJob(List<AppResult> results, MRExecutionEngine mrExecutionEngine) {
-    this.applicationResults=results;
-    this.appliedParameter = new HashMap<String,String>();
+    this.applicationResults = results;
+    this.appliedParameter = new HashMap<String, String>();
     setAppliedParameter(results);
     applications = new ArrayList<MRApplicationData>();
     suggestedParameter = new HashMap<String, Double>();
-    suggestedParameterNames = new HashSet<String>();
   }
 
   private void setAppliedParameter(List<AppResult> results) {
@@ -43,41 +42,43 @@ public class MRJob {
     }
   }
 
-  public Map<String, String> getAppliedParameter(){
+  public Map<String, String> getAppliedParameter() {
     return this.appliedParameter;
   }
 
-  public List<MRApplicationData> getApplicationAnalyzedData(){
+  public List<MRApplicationData> getApplicationAnalyzedData() {
     return applications;
   }
 
   public void analyzeAllApplications() {
     for (AppResult result : this.applicationResults) {
       MRApplicationData mrApplicationData = new MRApplicationData(result, appliedParameter);
-      suggestedParameterNames.addAll(mrApplicationData.getSuggestedParameter().keySet());
       applications.add(mrApplicationData);
     }
   }
 
   public void processJobForParameter() {
-    initialize();
     for (MRApplicationData mrApplicationData : applications) {
       Map<String, Double> applicationSuggestedParameter = mrApplicationData.getSuggestedParameter();
       for (String parameterName : applicationSuggestedParameter.keySet()) {
         Double valueSoFar = suggestedParameter.get(parameterName);
-        Double valueAsperCurrentApplication = applicationSuggestedParameter.get(parameterName);
-        suggestedParameter.put(parameterName, Math.max(valueSoFar, valueAsperCurrentApplication));
+        if (valueSoFar == null) {
+          suggestedParameter.put(parameterName, applicationSuggestedParameter.get(parameterName));
+        } else {
+          Double valueAsperCurrentApplication = applicationSuggestedParameter.get(parameterName);
+          suggestedParameter.put(parameterName, Math.max(valueSoFar, valueAsperCurrentApplication));
+        }
       }
     }
   }
 
-  public Map<String, Double> getSuggestedParameter() {
+  public Map<String, Double> getJobSuggestedParameter() {
     return this.suggestedParameter;
   }
 
-  private void initialize() {
+ /* private void initialize() {
     for (String name : suggestedParameterNames) {
       suggestedParameter.put(name, 0.0);
     }
-  }
+  }*/
 }

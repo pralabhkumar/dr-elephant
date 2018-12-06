@@ -58,17 +58,28 @@ public class MRApplicationData {
   }
 
   private void processForSuggestedParameter() {
+    Map<String, AppHeuristicResult> memoryHeuristics = new HashMap<String, AppHeuristicResult>();
     if (_result.yarnAppHeuristicResults != null) {
       for (AppHeuristicResult yarnAppHeuristicResult : _result.yarnAppHeuristicResults) {
+        if (yarnAppHeuristicResult.heuristicName.equals("Mapper Memory")) {
+          memoryHeuristics.put("Mapper", yarnAppHeuristicResult);
+        }
+        if (yarnAppHeuristicResult.heuristicName.equals("Reducer Memory")) {
+          memoryHeuristics.put("Reducer", yarnAppHeuristicResult);
+        }
         if (isValidHeuristic(yarnAppHeuristicResult)) {
+          logger.info(" Following Heuristic is valid for Optimization. As it have some failure "
+              + yarnAppHeuristicResult.heuristicName);
           processHeuristics(yarnAppHeuristicResult);
           failedHeuristics.put(yarnAppHeuristicResult.heuristicName, yarnAppHeuristicResult);
         }
       }
     }
-    if (failedHeuristics.size() == 0) {
-      optimizeForResourceUsage();
-    }
+    /*if (failedHeuristics.size() == 0) {
+      logger.info(" No Heuristics Failure . But Still trying to optimize for Memory ");
+      processForMemory(memoryHeuristics.get("Mapper"), "Mapper");
+      processForMemory(memoryHeuristics.get("Reducer"), "Reducer");
+    }*/
   }
 
   public Map<String, Double> getSuggestedParameter() {
@@ -178,16 +189,20 @@ public class MRApplicationData {
   }
 
   private long getNewSplitSize(AppHeuristicResult yarnAppHeuristicResult) {
+    logger.info("Calculating Split Size ");
     double averageTaskInputSize = 0.0;
     double averageTaskTimeInMinute = 0.0;
     //long blockSize = 536870912l;
     long newSplitSize = 0l;
     for (AppHeuristicResultDetails appHeuristicResultDetails : yarnAppHeuristicResult.yarnAppHeuristicResultDetails) {
+      logger.info("Names " + appHeuristicResultDetails.name);
       if (appHeuristicResultDetails.name.equals("Average task input size")) {
         averageTaskInputSize = (double) MemoryFormatUtils.stringToBytes(appHeuristicResultDetails.value);
+        counterValues.put("Mapper Average task input size", averageTaskInputSize);
       }
-      if (appHeuristicResultDetails.name.equals("Average task input size")) {
+      if (appHeuristicResultDetails.name.equals("Average task runtime")) {
         averageTaskTimeInMinute = getTimeInMinute(appHeuristicResultDetails.value);
+        counterValues.put("Mapper Average task runtime", averageTaskTimeInMinute);
       }
     }
     if (averageTaskTimeInMinute <= 1.0) {
@@ -199,6 +214,11 @@ public class MRApplicationData {
     } else if (averageTaskTimeInMinute >= 60) {
       newSplitSize = (long) (averageTaskInputSize * 0.8);
     }
+    if (debugEnabled) {
+      logger.debug(" Average task input size " + averageTaskInputSize);
+      logger.debug(" Average task runtime " + averageTaskTimeInMinute);
+      logger.debug(" New Split Size " + newSplitSize);
+    }
     return newSplitSize;
   }
 
@@ -207,11 +227,15 @@ public class MRApplicationData {
     double averageTaskTimeInMinute = 0.0;
     int newNumberOfReducer = 0;
     for (AppHeuristicResultDetails appHeuristicResultDetails : yarnAppHeuristicResult.yarnAppHeuristicResultDetails) {
-      if (appHeuristicResultDetails.name.equals("Average task time")) {
+      logger.info("Names " + appHeuristicResultDetails.name);
+      if (appHeuristicResultDetails.name.equals("Average task runtime")) {
         averageTaskTimeInMinute = getTimeInMinute(appHeuristicResultDetails.value);
+       // logger.info("Names " + appHeuristicResultDetails.value);
+        counterValues.put("Reducer Average task runtime", averageTaskTimeInMinute);
       }
       if (appHeuristicResultDetails.name.equals("Number of tasks")) {
         numberoOfTasks = Integer.parseInt(appHeuristicResultDetails.value);
+        counterValues.put("Reducer Number of tasks", numberoOfTasks * 1.0);
       }
     }
     if (averageTaskTimeInMinute <= 1.0) {
@@ -223,25 +247,28 @@ public class MRApplicationData {
     } else if (averageTaskTimeInMinute >= 60) {
       newNumberOfReducer = (int) (newNumberOfReducer * 1.2);
     }
+    if (debugEnabled) {
+      logger.debug(" Reducer Average task time " + averageTaskTimeInMinute);
+      logger.debug(" Reducer Number of tasks " + numberoOfTasks * 1.0);
+      logger.debug(" New number of reducer " + newNumberOfReducer);
+    }
     return newNumberOfReducer;
   }
 
   private double getTimeInMinute(String value) {
-    String split[] = value.split(" ");
+    value = value.replaceAll(" ", "");
+    String timeSplit[] = value.split("hr|min|sec");
     double timeInMinutes = 0.0;
-    for (String data : split) {
-      if (data.contains("hr")) {
-        data = data.replaceAll("hr", "");
-        timeInMinutes = timeInMinutes + Integer.parseInt(data) * 60;
-      }
-      if (data.contains("min")) {
-        data = data.replaceAll("min", "");
-        timeInMinutes = timeInMinutes + Integer.parseInt(data);
-      }
-      if (data.contains("sec")) {
-        data = data.replaceAll("sec", "");
-        timeInMinutes = timeInMinutes + Integer.parseInt(data) * 1.0 / 60 * 1.0;
-      }
+    if (timeSplit.length == 3) {
+      timeInMinutes = timeInMinutes + Integer.parseInt(timeSplit[0]) * 60;
+      timeInMinutes = timeInMinutes + Integer.parseInt(timeSplit[1]);
+      timeInMinutes = timeInMinutes + Integer.parseInt(timeSplit[2]) * 1.0 / 60 * 1.0;
+    } else if (timeSplit.length == 2) {
+      timeInMinutes = timeInMinutes + Integer.parseInt(timeSplit[0]);
+      timeInMinutes = timeInMinutes + Integer.parseInt(timeSplit[1]) * 1.0 / 60 * 1.0;
+    } else if (timeSplit.length == 1) {
+      logger.debug("Reducer Time "+timeSplit[0] +"\t"+Integer.parseInt(timeSplit[0]));
+      timeInMinutes = timeInMinutes + Integer.parseInt(timeSplit[0]) * 1.0 / 60 * 1.0;
     }
     return timeInMinutes;
   }
