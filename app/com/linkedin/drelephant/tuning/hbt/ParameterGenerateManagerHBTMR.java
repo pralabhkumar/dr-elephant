@@ -64,8 +64,9 @@ public class ParameterGenerateManagerHBTMR<T extends MRExecutionEngine> extends 
   @Override
   public String parameterGenerations(List<AppResult> results, List<TuningParameter> tuningParameters) {
     MRJob mrJob = new MRJob(results, mrExecutionEngine);
+    mrJob.analyzeAllApplications();
     mrJob.processJobForParameter();
-    Map<String, Double> suggestedParameter = mrJob.getSuggestedParameter();
+    Map<String, Double> suggestedParameter = mrJob.getJobSuggestedParameter();
     StringBuffer idParameters = new StringBuffer();
     for (TuningParameter tuningParameter : tuningParameters) {
       Double paramValue = suggestedParameter.get(tuningParameter.paramName);
