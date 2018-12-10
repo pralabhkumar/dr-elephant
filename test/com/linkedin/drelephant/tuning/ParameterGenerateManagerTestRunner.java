@@ -37,10 +37,9 @@ public class ParameterGenerateManagerTestRunner implements Runnable {
   public void run() {
     populateTestData();
     testMemoryAndNumberOfTaskRecommendations();
-    testNumberOfReducerTaskAndMapperSpill();
+    testNumberOfReducerTaskAndMapperSpillRecommendations();
+    testNoHeuristicFailRecommendations();
   }
-
-
 
   private void testMemoryAndNumberOfTaskRecommendations() {
     MRExecutionEngine mrExecutionEngine = new MRExecutionEngine();
@@ -52,7 +51,7 @@ public class ParameterGenerateManagerTestRunner implements Runnable {
         .eq(AppResult.TABLE.JOB_EXEC_ID,
             "https://ltx1-holdemaz01.grid.linkedin.com:8443/executor?execid=5416293&job=countByCountryFlow_countByCountry&attempt=0")
         .findList();
-    processData(mrExecutionEngine,results);
+    processData(mrExecutionEngine, results);
     assertTrue(" Number of MapReduce Application ", results.size() == 2);
     assertTrue(" Mapper Memory " + appliedParameter.size(), appliedParameter.get("Mapper Memory").equals("2048"));
     assertTrue(" Reducer Memory ", appliedParameter.get("Reducer Memory").equals("2048"));
@@ -65,7 +64,7 @@ public class ParameterGenerateManagerTestRunner implements Runnable {
     testJobRecommendedMemoryParameter(suggestedParameter);
   }
 
-  private void testNumberOfReducerTaskAndMapperSpill() {
+  private void testNumberOfReducerTaskAndMapperSpillRecommendations() {
     MRExecutionEngine mrExecutionEngine = new MRExecutionEngine();
     List<AppResult> results = AppResult.find.select("*")
         .fetch(AppResult.TABLE.APP_HEURISTIC_RESULTS, "*")
@@ -76,11 +75,26 @@ public class ParameterGenerateManagerTestRunner implements Runnable {
             "https://ltx1-faroaz02.grid.linkedin.com:8443/executor?execid=1200332&job=untitled&attempt=0")
         .findList();
     assertTrue(" Number of MapReduce Application " + results.size(), results.size() == 1);
-    processData(mrExecutionEngine,results);
+    processData(mrExecutionEngine, results);
     testApplicationRecommendedReducerTaskMapperSpill(mrApplicationDatas);
     testJobRecommendedReducerTaskAndMapperSpill(suggestedParameter);
   }
 
+  private void testNoHeuristicFailRecommendations() {
+    MRExecutionEngine mrExecutionEngine = new MRExecutionEngine();
+    List<AppResult> results = AppResult.find.select("*")
+        .fetch(AppResult.TABLE.APP_HEURISTIC_RESULTS, "*")
+        .fetch(AppResult.TABLE.APP_HEURISTIC_RESULTS + "." + AppHeuristicResult.TABLE.APP_HEURISTIC_RESULT_DETAILS, "*")
+        .where()
+        .eq(AppResult.TABLE.FLOW_EXEC_ID, "https://ltx1-faroaz01.grid.linkedin.com:8443/executor?execid=1342802")
+        .eq(AppResult.TABLE.JOB_EXEC_ID,
+            "https://ltx1-faroaz01.grid.linkedin.com:8443/executor?execid=1342802&job=fetl-dupe_fetlDupeLog&attempt=0")
+        .findList();
+    assertTrue(" Number of MapReduce Application " + results.size(), results.size() == 1);
+    processData(mrExecutionEngine, results);
+    testApplicationRecommendedForRU(mrApplicationDatas);
+    testJobRecommendedForRU(suggestedParameter);
+  }
 
   private void processData(MRExecutionEngine mrExecutionEngine, List<AppResult> results) {
     MRJob mrJob = new MRJob(results, mrExecutionEngine);
@@ -90,7 +104,6 @@ public class ParameterGenerateManagerTestRunner implements Runnable {
     mrJob.processJobForParameter();
     suggestedParameter = mrJob.getJobSuggestedParameter();
   }
-
 
   private void testApplicationRecommendedReducerTaskMapperSpill(List<MRApplicationData> mrApplicationDatas) {
     for (MRApplicationData mrApplicationData : mrApplicationDatas) {
@@ -124,7 +137,6 @@ public class ParameterGenerateManagerTestRunner implements Runnable {
     assertTrue(" Suggested Sort Spill ",
         Math.round(suggestedParameter.get("mapreduce.map.sort.spill.percent") * 100) / 100.0 == 0.85);
   }
-
 
   private void testApplicationRecommendedMemoryParameter(List<MRApplicationData> mrApplicationDatas) {
     for (MRApplicationData mrApplicationData : mrApplicationDatas) {
@@ -200,5 +212,38 @@ public class ParameterGenerateManagerTestRunner implements Runnable {
         assertTrue(" Number of Reducer recommended ", suggestedParameter.get("mapreduce.job.reduces") == 370);
       }
     }
+  }
+
+  private void testApplicationRecommendedForRU(List<MRApplicationData> mrApplicationDatas) {
+    for (MRApplicationData mrApplicationData : mrApplicationDatas) {
+      assertTrue(" Application IDs ", mrApplicationData.getApplicationID().equals("application_1540411174627_1086799"));
+      Map<String, Double> suggestedParameter = mrApplicationData.getSuggestedParameter();
+      Map<String, Double> usedParameter = mrApplicationData.getCounterValues();
+      assertTrue("Mapper Max Virtual Memory (MB) " + usedParameter.get("Mapper Max Virtual Memory (MB)"),
+          usedParameter.get("Mapper Max Virtual Memory (MB)") == 2330);
+      assertTrue("Mapper Max Physical Memory (MB)", usedParameter.get("Mapper Max Physical Memory (MB)") == 325);
+      assertTrue("Mapper Max Total Committed Heap Usage Memory (MB)",
+          usedParameter.get("Mapper Max Total Committed Heap Usage Memory (MB)") == 619);
+      assertTrue(" Mapper Memory Recommended ", suggestedParameter.get("mapreduce.map.memory.mb") == 2048.0);
+      assertTrue(" Mapper Memory Heap Recommended " + suggestedParameter.get("mapreduce.map.java.opts"),
+          suggestedParameter.get("mapreduce.map.java.opts") == 619);
+
+      assertTrue("Reducer Max Virtual Memory (MB)", usedParameter.get("Reducer Max Virtual Memory (MB)") == 2335);
+      assertTrue("Reducer Max Physical Memory (MB)", usedParameter.get("Reducer Max Physical Memory (MB)") == 425);
+      assertTrue("Reducer Max Total Committed Heap Usage Memory (MB)",
+          usedParameter.get("Reducer Max Total Committed Heap Usage Memory (MB)") == 619);
+      assertTrue(" Reducer Memory Recommended " + suggestedParameter.get("mapreduce.reduce.memory.mb"),
+          suggestedParameter.get("mapreduce.reduce.memory.mb") == 2048.0);
+      assertTrue("Reducer Memory Heap Recommended ", suggestedParameter.get("mapreduce.reduce.java.opts") == 619);
+    }
+  }
+  private void testJobRecommendedForRU(Map<String, Double> suggestedParameter) {
+
+    assertTrue(" Total  Parameter Suggested ", suggestedParameter.keySet().size() == 4);
+    assertTrue(" Mapper Memory Suggested ", suggestedParameter.get("mapreduce.map.memory.mb") == 2048.0);
+    assertTrue(" Mapper Memory Heap Recommended ", suggestedParameter.get("mapreduce.map.java.opts") == 619.0);
+    assertTrue(" Reducer Memory Suggested ", suggestedParameter.get("mapreduce.reduce.memory.mb") == 2048.0);
+    assertTrue(" Reducer Memory Heap Recommended ", suggestedParameter.get("mapreduce.reduce.java.opts") == 619);
+    
   }
 }
