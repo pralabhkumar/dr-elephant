@@ -63,6 +63,7 @@ public class AutoTuningAPIHelper {
       "autotuning.default.allowed_max_execution_time_percent";
   private static final Logger logger = Logger.getLogger(AutoTuningAPIHelper.class);
 
+
   /**
    * For a job, returns the best parameter set of the given job if it exists else  the default parameter set
    * @param jobDefId Sting JobDefId of the job
@@ -198,19 +199,23 @@ public class AutoTuningAPIHelper {
    *                    is to be returned
    * @return FlowExecution flow execution
    */
-   private synchronized FlowExecution getFlowExecution(TuningInput tuningInput) {
-    FlowExecution flowExecution =
-        FlowExecution.find.where().eq(FlowExecution.TABLE.flowExecId, tuningInput.getFlowExecId()).findUnique();
+  protected FlowExecution getFlowExecution(TuningInput tuningInput)  {
+    logger.debug(" Thread name " + Thread.currentThread().getName());
+    synchronized (AutoTuningAPIHelper.class) {
+      logger.debug(" Thread inside synchronize block " + Thread.currentThread().getName());
+      FlowExecution flowExecution =
+          FlowExecution.find.where().eq(FlowExecution.TABLE.flowExecId, tuningInput.getFlowExecId()).findUnique();
+      if (flowExecution == null) {
+        logger.info("Creating flow execution for " + tuningInput.getJobExecId());
+        flowExecution = new FlowExecution();
+        flowExecution.flowExecId = tuningInput.getFlowExecId();
+        flowExecution.flowExecUrl = tuningInput.getFlowExecUrl();
+        flowExecution.flowDefinition = getFlowDefinition(tuningInput);
+        flowExecution.save();
 
-    if (flowExecution == null) {
-      logger.info("Creating flow execution for " + tuningInput.getJobExecId());
-      flowExecution = new FlowExecution();
-      flowExecution.flowExecId = tuningInput.getFlowExecId();
-      flowExecution.flowExecUrl = tuningInput.getFlowExecUrl();
-      flowExecution.flowDefinition = getFlowDefinition(tuningInput);
-      flowExecution.save();
+      }
+      return flowExecution;
     }
-    return flowExecution;
   }
 
   /**
@@ -391,7 +396,7 @@ public class AutoTuningAPIHelper {
     logger.debug("Number of output parameters for execution " + tuningInput.getJobExecId() + " = "
         + jobSuggestedParamValues.size());
     logger.info("Finishing getCurrentRunParameters");
-   // return jobSuggestedParamValueListToMap(jobSuggestedParamValues);
+    // return jobSuggestedParamValueListToMap(jobSuggestedParamValues);
     return new HashMap<String, Double>();
   }
 
@@ -607,7 +612,7 @@ public class AutoTuningAPIHelper {
         .eq(JobSuggestedParamSet.TABLE.paramSetState, ParamSetStatus.CREATED)
         .not(Expr.eq(JobSuggestedParamSet.TABLE.tuningAlgorithm, tuningAlgorithm))
         .findList();
-    if (jobSuggestedParamSets != null && jobSuggestedParamSets.size()>0) {
+    if (jobSuggestedParamSets != null && jobSuggestedParamSets.size() > 0) {
       logger.info(" other algorithm parameter created " + jobSuggestedParamSets.size());
       for (JobSuggestedParamSet jobSuggestedParamSet : jobSuggestedParamSets) {
         jobSuggestedParamSet.paramSetState = ParamSetStatus.DISCARDED;
