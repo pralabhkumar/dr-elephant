@@ -18,6 +18,7 @@ package com.linkedin.drelephant.tuning;
 
 import com.avaje.ebean.Expr;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.annotations.VisibleForTesting;
 import com.linkedin.drelephant.ElephantContext;
 import com.linkedin.drelephant.tuning.Constant.AlgotihmType;
 import com.linkedin.drelephant.tuning.Constant.TuningType;
@@ -199,7 +200,8 @@ public class AutoTuningAPIHelper {
    *                    is to be returned
    * @return FlowExecution flow execution
    */
-  protected FlowExecution getFlowExecution(TuningInput tuningInput) {
+  @VisibleForTesting
+   FlowExecution getFlowExecution(TuningInput tuningInput) {
     if (debugEnabled) {
       logger.debug(" Thread name " + Thread.currentThread().getName());
     }
