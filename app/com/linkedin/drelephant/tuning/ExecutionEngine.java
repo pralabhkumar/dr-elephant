@@ -49,21 +49,18 @@ public interface ExecutionEngine {
    */
   ExpressionList<TuningJobDefinition> getTuningJobDefinitionsForParameterSuggestion();
 
-
   /**
    *
-   * @param functionType Extract usage information to the list
+   * @param functionType Extract usage information of the application to the list
    * @param usageDataGlobal
    * @return
    */
   List<Double> extractUsageParameter(String functionType, Map<String, Map<String, Double>> usageDataGlobal);
 
   /**
-   *  Extract App results.
+   *  Extract App results to Map ,it contains key (map and reduce for MR Execution engine) and then previous execution engine
    * @param appResults
    * @return
    */
   Map<String, Map<String, Double>> extractParameterInformation(List<AppResult> appResults);
-
-
 }
