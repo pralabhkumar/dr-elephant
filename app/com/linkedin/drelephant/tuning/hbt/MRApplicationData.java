@@ -16,6 +16,9 @@ import org.apache.log4j.Logger;
 import static java.lang.Math.*;
 
 
+/**
+ * This class represent the Application data for the Map Reduce Job.
+ */
 public class MRApplicationData {
   private final Logger logger = Logger.getLogger(getClass());
   boolean debugEnabled = logger.isDebugEnabled();

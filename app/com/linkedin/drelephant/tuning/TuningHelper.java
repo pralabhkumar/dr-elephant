@@ -14,6 +14,7 @@ import org.apache.log4j.Logger;
 public class TuningHelper {
   private static final Logger logger = Logger.getLogger(TuningHelper.class);
   private static boolean debugEnabled = logger.isDebugEnabled();
+  private static final Double MINIMUM_HEAP_SIZE = 600.0 ;
   public static List<TuningParameter> getTuningParameterList(TuningJobDefinition tuningJobDefinition) {
     List<TuningParameter> tuningParameterList = TuningParameter.find.where()
         .eq(TuningParameter.TABLE.tuningAlgorithm + "." + TuningAlgorithm.TABLE.id,
@@ -82,13 +83,18 @@ public class TuningHelper {
     return autoAppliedExecution;
   }
 
+  /**
+   *
+   * @param memory : Convert the memory to multiple of 1024
+   * @return
+   */
   public static Double getContainerSize(Double memory) {
     return Math.ceil(memory / 1024.0) * 1024;
   }
 
   public static Double getHeapSize(Double heapSize){
-    if(heapSize<600){
-      heapSize=600.0;
+    if(heapSize<MINIMUM_HEAP_SIZE){
+      heapSize=MINIMUM_HEAP_SIZE;
     }
     return heapSize;
   }

@@ -13,6 +13,9 @@ import models.AppResult;
 import org.apache.log4j.Logger;
 
 
+/**
+ * This class represents Map Reduce Job and the suggested parameter and the Map Reduce Job level.
+ */
 public class MRJob {
   private final Logger logger = Logger.getLogger(getClass());
   private boolean isDebugEnabled = logger.isDebugEnabled();
@@ -76,9 +79,4 @@ public class MRJob {
     return this.suggestedParameter;
   }
 
- /* private void initialize() {
-    for (String name : suggestedParameterNames) {
-      suggestedParameter.put(name, 0.0);
-    }
-  }*/
 }
