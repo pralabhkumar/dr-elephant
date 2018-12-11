@@ -62,7 +62,7 @@ public class AutoTuningAPIHelper {
   private static final String ALLOWED_MAX_EXECUTION_TIME_PERCENT_DEFAULT =
       "autotuning.default.allowed_max_execution_time_percent";
   private static final Logger logger = Logger.getLogger(AutoTuningAPIHelper.class);
-
+  boolean debugEnabled = logger.isDebugEnabled();
 
   /**
    * For a job, returns the best parameter set of the given job if it exists else  the default parameter set
@@ -199,10 +199,14 @@ public class AutoTuningAPIHelper {
    *                    is to be returned
    * @return FlowExecution flow execution
    */
-  protected FlowExecution getFlowExecution(TuningInput tuningInput)  {
-    logger.debug(" Thread name " + Thread.currentThread().getName());
+  protected FlowExecution getFlowExecution(TuningInput tuningInput) {
+    if (debugEnabled) {
+      logger.debug(" Thread name " + Thread.currentThread().getName());
+    }
     synchronized (AutoTuningAPIHelper.class) {
-      logger.debug(" Thread inside synchronize block " + Thread.currentThread().getName());
+      if (debugEnabled) {
+        logger.debug(" Thread inside synchronize block " + Thread.currentThread().getName());
+      }
       FlowExecution flowExecution =
           FlowExecution.find.where().eq(FlowExecution.TABLE.flowExecId, tuningInput.getFlowExecId()).findUnique();
       if (flowExecution == null) {
@@ -212,7 +216,9 @@ public class AutoTuningAPIHelper {
         flowExecution.flowExecUrl = tuningInput.getFlowExecUrl();
         flowExecution.flowDefinition = getFlowDefinition(tuningInput);
         flowExecution.save();
-
+      }
+      if (debugEnabled) {
+        logger.debug(" Thread exiting synchronize block " + Thread.currentThread().getName());
       }
       return flowExecution;
     }
@@ -396,7 +402,6 @@ public class AutoTuningAPIHelper {
     logger.debug("Number of output parameters for execution " + tuningInput.getJobExecId() + " = "
         + jobSuggestedParamValues.size());
     logger.info("Finishing getCurrentRunParameters");
-    // return jobSuggestedParamValueListToMap(jobSuggestedParamValues);
     return new HashMap<String, Double>();
   }
 

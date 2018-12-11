@@ -9,6 +9,7 @@ import java.util.Map;
 import static common.DBTestUtil.*;
 import static common.TestConstants.*;
 
+import java.util.concurrent.TimeUnit;
 import models.TuningAlgorithm;
 import org.slf4j.LoggerFactory;
 import play.Application;
@@ -22,7 +23,8 @@ import static play.test.Helpers.*;
 
 import org.junit.Before;
 import org.junit.Test;
-
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class TuningManagerTest {
   private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(TuningManagerTest.class);
@@ -92,15 +94,6 @@ public class TuningManagerTest {
 
   @Test
   public void testAutoTunerApiHelper() throws InterruptedException {
-    for (int i = 0; i < 50; i++) {
-      TuningInput tuningInput = new TuningInput();
-      tuningInput.setFlowExecId(1 + "");
-      tuningInput.setFlowExecUrl(1 + "");
-      tuningInput.setFlowDefId(i + "");
-      tuningInput.setFlowDefUrl(i + "");
-      Thread t1 = new Thread(new AutoTunerApiTestRunner(new AutoTuningAPIHelper(), tuningInput));
-      t1.start();
-      t1.join();
-    }
+    running(testServer(TEST_SERVER_PORT, fakeApp), new AutoTunerApiTestRunner());
   }
 }
