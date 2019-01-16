@@ -62,7 +62,8 @@ class SparkLogClient(hadoopConfiguration: Configuration, sparkConf: SparkConf, e
     val (eventLogPath, eventLogCodec) =
       sparkUtils.pathAndCodecforEventLog(sparkConf, eventLogFileSystem, baseEventLogPath, appId, attemptId)
 
-    Future { 
+    Future {
+      //logger.info( " EventLogFileSystem "+eventLogFileSystem+"\t"+eventLogPath+"\t"+eventLogCodec)
         sparkUtils.withEventLog(eventLogFileSystem, eventLogPath, eventLogCodec)(findDerivedData(_))
     }
   }
@@ -72,6 +73,7 @@ object SparkLogClient {
   import JsonAST._
 
   private implicit val formats: DefaultFormats = DefaultFormats
+  private val logger: Logger = Logger.getLogger(classOf[SparkLogClient])
 
   def findDerivedData(in: InputStream, eventsLimit: Option[Int] = None): SparkLogDerivedData = {
     val events = eventsLimit.map { getEvents(in).take(_) }.getOrElse { getEvents(in) }

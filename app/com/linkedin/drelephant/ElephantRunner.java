@@ -24,6 +24,7 @@ import com.linkedin.drelephant.analysis.HDFSContext;
 import com.linkedin.drelephant.analysis.HadoopSystemContext;
 import com.linkedin.drelephant.analysis.AnalyticJobGeneratorHadoop2;
 
+import com.linkedin.drelephant.exceptions.spark.ExceptionFingerprinting;
 import com.linkedin.drelephant.security.HadoopSecurity;
 
 import controllers.MetricsController;
@@ -171,9 +172,11 @@ public class ElephantRunner implements Runnable {
       try {
         String analysisName = String.format("%s %s", _analyticJob.getAppType().getName(), _analyticJob.getAppId());
         long analysisStartTimeMillis = System.currentTimeMillis();
-        logger.info(String.format("Analyzing %s", analysisName));
+        logger.info(String.format("Analyzing %s having status %s", analysisName, _analyticJob.isSucceeded()));
         AppResult result = _analyticJob.getAnalysis();
-        result.save();
+        if (result != null) {
+          result.save();
+        }
         long processingTime = System.currentTimeMillis() - analysisStartTimeMillis;
         logger.info(String.format("Analysis of %s took %sms", analysisName, processingTime));
         MetricsController.setJobProcessingTime(processingTime);
@@ -195,7 +198,7 @@ public class ElephantRunner implements Runnable {
       }
     }
 
-    private void jobFate () {
+    private void jobFate() {
       if (_analyticJob != null && _analyticJob.retry()) {
         logger.warn("Add analytic job id [" + _analyticJob.getAppId() + "] into the retry list.");
         _analyticJobGenerator.addIntoRetries(_analyticJob);
@@ -206,8 +209,9 @@ public class ElephantRunner implements Runnable {
       } else {
         if (_analyticJob != null) {
           MetricsController.markSkippedJob();
-          logger.error("Drop the analytic job. Reason: reached the max retries for application id = ["
-                  + _analyticJob.getAppId() + "].");
+          logger.error(
+              "Drop the analytic job. Reason: reached the max retries for application id = [" + _analyticJob.getAppId()
+                  + "].");
         }
       }
     }

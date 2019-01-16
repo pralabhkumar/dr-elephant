@@ -17,6 +17,8 @@
 package com.linkedin.drelephant.analysis;
 
 import com.linkedin.drelephant.ElephantContext;
+import com.linkedin.drelephant.exceptions.spark.ExceptionFingerprinting;
+import com.linkedin.drelephant.spark.fetchers.SparkFetcher;
 import com.linkedin.drelephant.util.InfoExtractor;
 import com.linkedin.drelephant.util.Utils;
 import java.util.ArrayList;
@@ -62,6 +64,10 @@ public class AnalyticJob {
   private String _trackingUrl;
   private long _startTime;
   private long _finishTime;
+  private boolean isSucceeded;
+  private String _amContainerLogsURL;
+  private String _amHostHttpAddress;
+  private String  _state ;
 
   /**
    * Returns the application type
@@ -244,7 +250,19 @@ public class AnalyticJob {
    */
   public AppResult getAnalysis() throws Exception {
     ElephantFetcher fetcher = ElephantContext.instance().getFetcherForApplicationType(getAppType());
-    HadoopApplicationData data = fetcher.fetchData(this);
+    HadoopApplicationData data = null;
+    if (this.getState().toLowerCase().equals("finished")) {
+      data = fetcher.fetchData(this);
+    }
+    //Todo : Create Factory to get the exception fingerprinting class
+    else {
+      logger.info(" Job state is " + this.getState() + " Hence not calling fetch ");
+      if (fetcher instanceof SparkFetcher && !this.isSucceeded()) {
+        logger.info(" Exception Fingerprinting for Job " + this.getAppId());
+        new Thread(new ExceptionFingerprinting(this, null)).start();
+      }
+      return null;
+    }
 
     JobType jobType = ElephantContext.instance().matchJobType(data);
     String jobTypeName = jobType == null ? UNKNOWN_JOB_TYPE : jobType.getName();
@@ -346,4 +364,62 @@ public class AnalyticJob {
   public boolean retry() {
     return (_retries++) < _RETRY_LIMIT;
   }
+
+  /**
+   *
+   * @return true if application is succeeded else false
+   */
+  public boolean isSucceeded() {
+    return isSucceeded;
+  }
+
+  /**
+   *
+   * @param succeeded set true if application succeeded else false
+   */
+  public AnalyticJob setSucceeded(boolean succeeded) {
+    isSucceeded = succeeded;
+    return this;
+  }
+
+  /**
+   *
+   * @return AM container Logs URL
+   */
+  public String getAmContainerLogsURL() {
+    return _amContainerLogsURL;
+  }
+
+  public AnalyticJob setAmContainerLogsURL(String amContainerLogsURL) {
+    _amContainerLogsURL = amContainerLogsURL;
+    return this;
+  }
+
+  /**
+   *
+   * @return http host address of AM
+   */
+
+  public String getAmHostHttpAddress() {
+    return _amHostHttpAddress;
+  }
+
+  public AnalyticJob setAmHostHttpAddress(String amHostHttpAddress) {
+    _amHostHttpAddress = amHostHttpAddress;
+    return this;
+  }
+
+  /**
+   *
+   * @return state of the job
+   */
+  public String getState() {
+    return _state;
+  }
+
+  public AnalyticJob setState(String state) {
+    _state = state;
+    return this;
+  }
+
 }

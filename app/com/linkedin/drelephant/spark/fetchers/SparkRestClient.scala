@@ -79,7 +79,6 @@ class SparkRestClient(sparkConf: SparkConf) {
     implicit ec: ExecutionContext
   ): Future[SparkRestDerivedData] = {
     val (applicationInfo, attemptTarget) = getApplicationMetaData(appId)
-
     Future {
       val futureJobDatas = Future {
         getJobDatas(attemptTarget)
@@ -261,7 +260,7 @@ object SparkRestClient {
   val HISTORY_SERVER_ADDRESS_KEY = "spark.yarn.historyServer.address"
   val API_V1_MOUNT_PATH = "api/v1"
   val IN_PROGRESS = ".inprogress"
-  val DEFAULT_TIMEOUT = Duration(5, SECONDS);
+  val DEFAULT_TIMEOUT = Duration(5000, SECONDS);
   val CONNECTION_TIMEOUT = 5000
   val READ_TIMEOUT = 5000
 

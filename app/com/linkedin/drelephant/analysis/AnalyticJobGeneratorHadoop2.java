@@ -140,19 +140,20 @@ public class AnalyticJobGeneratorHadoop2 implements AnalyticJobGenerator {
 
     // Fetch all succeeded apps
     URL succeededAppsURL = new URL(new URL("http://" + _resourceManagerAddress), String.format(
-            "/ws/v1/cluster/apps?finalStatus=SUCCEEDED&finishedTimeBegin=%s&finishedTimeEnd=%s",
+            "/ws/v1/cluster/apps?applicationTypes=SPARK&finalStatus=SUCCEEDED&finishedTimeBegin=%s&finishedTimeEnd=%s",
             String.valueOf(_lastTime + 1), String.valueOf(_currentTime)));
     logger.info("The succeeded apps URL is " + succeededAppsURL);
-    List<AnalyticJob> succeededApps = readApps(succeededAppsURL);
+    List<AnalyticJob> succeededApps = readApps(succeededAppsURL, true);
     appList.addAll(succeededApps);
 
     // Fetch all failed apps
     // state: Application Master State
     // finalStatus: Status of the Application as reported by the Application Master
+    // Applications which have state failed was not coming ,hence removing that.
     URL failedAppsURL = new URL(new URL("http://" + _resourceManagerAddress), String.format(
-        "/ws/v1/cluster/apps?finalStatus=FAILED&state=FINISHED&finishedTimeBegin=%s&finishedTimeEnd=%s",
+        "/ws/v1/cluster/apps?applicationTypes=SPARK&finalStatus=FAILED&finishedTimeBegin=%s&finishedTimeEnd=%s",
         String.valueOf(_lastTime + 1), String.valueOf(_currentTime)));
-    List<AnalyticJob> failedApps = readApps(failedAppsURL);
+    List<AnalyticJob> failedApps = readApps(failedAppsURL, false);
     logger.info("The failed apps URL is " + failedAppsURL);
     appList.addAll(failedApps);
 
@@ -223,7 +224,7 @@ public class AnalyticJobGeneratorHadoop2 implements AnalyticJobGenerator {
    * @throws IOException
    * @throws AuthenticationException Problem authenticating to resource manager
    */
-  private List<AnalyticJob> readApps(URL url) throws IOException, AuthenticationException{
+  private List<AnalyticJob> readApps(URL url, boolean isSucceeded) throws IOException, AuthenticationException{
     List<AnalyticJob> appList = new ArrayList<AnalyticJob>();
 
     JsonNode rootNode = readJsonNode(url);
@@ -241,6 +242,10 @@ public class AnalyticJobGeneratorHadoop2 implements AnalyticJobGenerator {
         String trackingUrl = app.get("trackingUrl") != null? app.get("trackingUrl").getValueAsText() : null;
         long startTime = app.get("startedTime").getLongValue();
         long finishTime = app.get("finishedTime").getLongValue();
+        String amContainerLogsURL = app.get("amContainerLogs").getValueAsText();
+        String amHostHttpAddress = app.get("amHostHttpAddress").getValueAsText();
+        String jobState = app.get("state").getValueAsText();
+        logger.info( " AM Container logs "+amContainerLogsURL);
 
         ApplicationType type =
             ElephantContext.instance().getApplicationTypeForName(app.get("applicationType").getValueAsText());
@@ -248,9 +253,18 @@ public class AnalyticJobGeneratorHadoop2 implements AnalyticJobGenerator {
         // If the application type is supported
         if (type != null) {
           AnalyticJob analyticJob = new AnalyticJob();
-          analyticJob.setAppId(appId).setAppType(type).setUser(user).setName(name).setQueueName(queueName)
-              .setTrackingUrl(trackingUrl).setStartTime(startTime).setFinishTime(finishTime);
-
+          analyticJob.setAppId(appId)
+              .setAppType(type)
+              .setUser(user)
+              .setName(name)
+              .setQueueName(queueName)
+              .setTrackingUrl(trackingUrl)
+              .setStartTime(startTime)
+              .setFinishTime(finishTime)
+              .setAmContainerLogsURL(amContainerLogsURL)
+              .setSucceeded(isSucceeded)
+              .setAmHostHttpAddress(amHostHttpAddress)
+              .setState(jobState);
           appList.add(analyticJob);
         }
       }
