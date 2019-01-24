@@ -151,7 +151,7 @@ public class AnalyticJobGeneratorHadoop2 implements AnalyticJobGenerator {
     // finalStatus: Status of the Application as reported by the Application Master
     // Applications which have state failed was not coming ,hence removing that.
     URL failedAppsURL = new URL(new URL("http://" + _resourceManagerAddress), String.format(
-        "/ws/v1/cluster/apps?applicationTypes=SPARK&finalStatus=FAILED&finishedTimeBegin=%s&finishedTimeEnd=%s",
+        "/ws/v1/cluster/apps?applicationTypes=SPARK&finalStatus=FAILED&state=FINISHED&finishedTimeBegin=%s&finishedTimeEnd=%s",
         String.valueOf(_lastTime + 1), String.valueOf(_currentTime)));
     List<AnalyticJob> failedApps = readApps(failedAppsURL, false);
     logger.info("The failed apps URL is " + failedAppsURL);

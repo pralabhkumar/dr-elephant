@@ -24,12 +24,10 @@ import com.linkedin.drelephant.analysis.HDFSContext;
 import com.linkedin.drelephant.analysis.HadoopSystemContext;
 import com.linkedin.drelephant.analysis.AnalyticJobGeneratorHadoop2;
 
-import com.linkedin.drelephant.exceptions.spark.ExceptionFingerprinting;
 import com.linkedin.drelephant.security.HadoopSecurity;
 
 import controllers.MetricsController;
 import java.io.IOException;
-import java.net.SocketTimeoutException;
 import java.security.PrivilegedAction;
 import java.util.List;
 import java.util.concurrent.*;

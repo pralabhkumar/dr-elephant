@@ -16,6 +16,8 @@
 
 package com.linkedin.drelephant.spark.fetchers
 
+import java.io.{PrintWriter, StringWriter}
+import java.util.Properties
 import java.util.concurrent.TimeoutException
 
 import scala.concurrent.{Await, ExecutionContext, Future}
@@ -24,12 +26,14 @@ import scala.util.{Failure, Success, Try}
 import com.linkedin.drelephant.analysis.{AnalyticJob, ElephantFetcher}
 import com.linkedin.drelephant.configurations.fetcher.FetcherConfigurationData
 import com.linkedin.drelephant.exceptions.spark
+import com.linkedin.drelephant.exceptions.spark.ExceptionFingerprintingSpark
 import com.linkedin.drelephant.spark.data.SparkApplicationData
 import com.linkedin.drelephant.spark.fetchers.statusapiv1.StageData
 import com.linkedin.drelephant.util.SparkUtils
 import org.apache.hadoop.conf.Configuration
 import org.apache.log4j.Logger
 import org.apache.spark.SparkConf
+
 import scala.collection.JavaConversions.seqAsJavaList
 
 /**
@@ -84,28 +88,10 @@ class SparkFetcher(fetcherConfigurationData: FetcherConfigurationData)
 
   override def fetchData(analyticJob: AnalyticJob): SparkApplicationData = {
       doFetchData(analyticJob) match {
-        case Success(data) => {
-          logger.debug(" Job status is finished and successfull able to fetch data " + analyticJob.getAppId)
-          processJobForExceptionFingerPrinting(analyticJob, Some(data.stagesWithFailedTasks))
-          data
-        }
-        case Failure(e) => {
-          logger.debug(" Job status is finished but unsuccessfull to fetch data " + analyticJob.getAppId)
-          processJobForExceptionFingerPrinting(analyticJob, None)
-          throw new TimeoutException()
-        }
+        case Success(data) => data
+        case Failure(e) => throw new TimeoutException()
       }
   }
-
-  private def processJobForExceptionFingerPrinting(analyticJob: AnalyticJob, failedTaskData: Option[Seq[StageData]]): Unit = {
-    if (!analyticJob.isSucceeded()) {
-      failedTaskData match {
-        case None => new Thread(new spark.ExceptionFingerprinting(analyticJob, null)).start()
-        case _ => new Thread(new spark.ExceptionFingerprinting(analyticJob, failedTaskData.get)).start()
-      }
-    }
-  }
-
 
   private def doFetchData(analyticJob: AnalyticJob): Try[SparkApplicationData] = {
     val appId = analyticJob.getAppId

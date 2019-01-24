@@ -28,6 +28,8 @@ import com.linkedin.drelephant.mapreduce.data.MapReduceApplicationData;
 import com.linkedin.drelephant.schedulers.Scheduler;
 import com.linkedin.drelephant.spark.data.SparkApplicationData;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.lang.reflect.InvocationTargetException;
 import java.util.HashSet;
 import java.util.List;
@@ -106,6 +108,8 @@ public class InfoExtractor {
     }
     return null;
   }
+
+
 
   /**
    * Loads result with the info depending on the application type
