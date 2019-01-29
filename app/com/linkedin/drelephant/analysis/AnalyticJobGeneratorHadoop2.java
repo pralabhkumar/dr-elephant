@@ -37,6 +37,7 @@ import org.codehaus.jackson.map.ObjectMapper;
  */
 public class AnalyticJobGeneratorHadoop2 implements AnalyticJobGenerator {
   private static final Logger logger = Logger.getLogger(AnalyticJobGeneratorHadoop2.class);
+  boolean debugEnabled = logger.isDebugEnabled();
   private static final String RESOURCE_MANAGER_ADDRESS = "yarn.resourcemanager.webapp.address";
   private static final String IS_RM_HA_ENABLED = "yarn.resourcemanager.ha.enabled";
   private static final String RESOURCE_MANAGER_IDS = "yarn.resourcemanager.ha.rm-ids";
@@ -140,7 +141,7 @@ public class AnalyticJobGeneratorHadoop2 implements AnalyticJobGenerator {
 
     // Fetch all succeeded apps
     URL succeededAppsURL = new URL(new URL("http://" + _resourceManagerAddress), String.format(
-            "/ws/v1/cluster/apps?applicationTypes=SPARK&finalStatus=SUCCEEDED&finishedTimeBegin=%s&finishedTimeEnd=%s",
+            "/ws/v1/cluster/apps?finalStatus=SUCCEEDED&finishedTimeBegin=%s&finishedTimeEnd=%s",
             String.valueOf(_lastTime + 1), String.valueOf(_currentTime)));
     logger.info("The succeeded apps URL is " + succeededAppsURL);
     List<AnalyticJob> succeededApps = readApps(succeededAppsURL, true);
@@ -151,7 +152,7 @@ public class AnalyticJobGeneratorHadoop2 implements AnalyticJobGenerator {
     // finalStatus: Status of the Application as reported by the Application Master
     // Applications which have state failed was not coming ,hence removing that.
     URL failedAppsURL = new URL(new URL("http://" + _resourceManagerAddress), String.format(
-        "/ws/v1/cluster/apps?applicationTypes=SPARK&finalStatus=FAILED&state=FINISHED&finishedTimeBegin=%s&finishedTimeEnd=%s",
+        "/ws/v1/cluster/apps?finalStatus=FAILED&state=FINISHED&finishedTimeBegin=%s&finishedTimeEnd=%s",
         String.valueOf(_lastTime + 1), String.valueOf(_currentTime)));
     List<AnalyticJob> failedApps = readApps(failedAppsURL, false);
     logger.info("The failed apps URL is " + failedAppsURL);
@@ -224,7 +225,7 @@ public class AnalyticJobGeneratorHadoop2 implements AnalyticJobGenerator {
    * @throws IOException
    * @throws AuthenticationException Problem authenticating to resource manager
    */
-  private List<AnalyticJob> readApps(URL url, boolean isSucceeded) throws IOException, AuthenticationException{
+  private List<AnalyticJob> readApps(URL url, boolean isSucceeded) throws IOException, AuthenticationException {
     List<AnalyticJob> appList = new ArrayList<AnalyticJob>();
 
     JsonNode rootNode = readJsonNode(url);
@@ -245,7 +246,11 @@ public class AnalyticJobGeneratorHadoop2 implements AnalyticJobGenerator {
         String amContainerLogsURL = app.get("amContainerLogs").getValueAsText();
         String amHostHttpAddress = app.get("amHostHttpAddress").getValueAsText();
         String jobState = app.get("state").getValueAsText();
-        logger.info( " AM Container logs "+amContainerLogsURL);
+        if (debugEnabled) {
+          logger.debug(" AM Container logs URL " + amContainerLogsURL);
+          logger.debug(" AM Host HTTP Address " + amHostHttpAddress);
+          logger.debug(" Job State " + jobState);
+        }
 
         ApplicationType type =
             ElephantContext.instance().getApplicationTypeForName(app.get("applicationType").getValueAsText());

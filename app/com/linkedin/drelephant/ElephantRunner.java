@@ -172,9 +172,7 @@ public class ElephantRunner implements Runnable {
         long analysisStartTimeMillis = System.currentTimeMillis();
         logger.info(String.format("Analyzing %s having status %s", analysisName, _analyticJob.isSucceeded()));
         AppResult result = _analyticJob.getAnalysis();
-        if (result != null) {
-          result.save();
-        }
+        result.save();
         long processingTime = System.currentTimeMillis() - analysisStartTimeMillis;
         logger.info(String.format("Analysis of %s took %sms", analysisName, processingTime));
         MetricsController.setJobProcessingTime(processingTime);

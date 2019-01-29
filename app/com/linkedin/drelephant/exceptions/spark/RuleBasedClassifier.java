@@ -3,14 +3,28 @@ package com.linkedin.drelephant.exceptions.spark;
 import java.util.List;
 import org.apache.log4j.Logger;
 
+import static com.linkedin.drelephant.exceptions.spark.Constant.*;
+
 
 public class RuleBasedClassifier implements Classifier {
   private static final Logger logger = Logger.getLogger(ExceptionFingerprintingSpark.class);
   private List<ExceptionInfo> dataToClassify = null;
+
+  /**
+   * In rule based classifier , currently we are not doing any pre processing .
+   * But it will be required in future to filter out exception may be based
+   * on sources .
+   * @param exceptions
+   */
+  @Override
+  public void preProcessingData(List<ExceptionInfo> exceptions) {
+
+  }
+
   @Override
   public LogClass classify(List<ExceptionInfo> exceptions) {
     this.dataToClassify = exceptions;
-   return outOfMemoryEarlyExitRule();
+    return outOfMemoryEarlyExitRule();
   }
 
   /**
@@ -21,9 +35,10 @@ public class RuleBasedClassifier implements Classifier {
    */
   private LogClass outOfMemoryEarlyExitRule() {
     for (ExceptionInfo exceptionInfo : dataToClassify) {
-      if((exceptionInfo.getExceptionName()+" "+exceptionInfo.getExcptionStackTrace()).contains("java.lang.OutOfMemoryError")){
+      if ((exceptionInfo.getExceptionName() + " " + exceptionInfo.getExcptionStackTrace()).contains(
+          "java.lang.OutOfMemoryError")) {
         logger.info(" AutoTuning Fault ");
-        return LogClass.AUTOTUINING_ENABLED;
+        return LogClass.AUTOTUNING_ENABLED;
       }
     }
     logger.info(" User Fault ");

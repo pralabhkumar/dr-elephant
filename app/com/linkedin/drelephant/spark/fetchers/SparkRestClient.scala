@@ -79,6 +79,7 @@ class SparkRestClient(sparkConf: SparkConf) {
     implicit ec: ExecutionContext
   ): Future[SparkRestDerivedData] = {
     val (applicationInfo, attemptTarget) = getApplicationMetaData(appId)
+
     Future {
       val futureJobDatas = Future {
         getJobDatas(attemptTarget)
@@ -158,7 +159,7 @@ class SparkRestClient(sparkConf: SparkConf) {
   }
 
   private def getLogData(attemptTarget: WebTarget): Option[SparkLogDerivedData] = {
-    val target = attemptTarget.path("logs")
+      val target = attemptTarget.path("logs")
     logger.info(s"calling REST API at ${target.getUri} to get eventlogs")
     resource.managed {
       getApplicationLogs(target)
@@ -260,7 +261,7 @@ object SparkRestClient {
   val HISTORY_SERVER_ADDRESS_KEY = "spark.yarn.historyServer.address"
   val API_V1_MOUNT_PATH = "api/v1"
   val IN_PROGRESS = ".inprogress"
-  val DEFAULT_TIMEOUT = Duration(5000, SECONDS);
+  val DEFAULT_TIMEOUT = Duration(5, SECONDS)
   val CONNECTION_TIMEOUT = 5000
   val READ_TIMEOUT = 5000
 

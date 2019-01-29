@@ -1,5 +1,8 @@
 package com.linkedin.drelephant.exceptions.spark;
 
+/**
+ * Class to store exception information
+ */
 public class ExceptionInfo {
 
   private int exceptionID;
@@ -15,6 +18,13 @@ public class ExceptionInfo {
     this.exceptionSource = exceptionSource.name();
   }
 
+  /**
+   * ToDo:
+   * Currently this has not been used . But the idea to have ID of two excpetion same
+   * if they are simillar , so that we can remove simillar exception from the exception fingerprinting
+   * system
+   * @return
+   */
   public int getExceptionID() {
     return exceptionID;
   }
@@ -31,6 +41,8 @@ public class ExceptionInfo {
     return exceptionStackTrace;
   }
 
+  //ToDo : Use exception source to prioritize  the exception
+  //
   public String getExceptionSource() {
     return exceptionSource;
   }

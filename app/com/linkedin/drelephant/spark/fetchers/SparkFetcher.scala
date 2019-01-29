@@ -16,8 +16,7 @@
 
 package com.linkedin.drelephant.spark.fetchers
 
-import java.io.{PrintWriter, StringWriter}
-import java.util.Properties
+
 import java.util.concurrent.TimeoutException
 
 import scala.concurrent.{Await, ExecutionContext, Future}
@@ -25,16 +24,12 @@ import scala.concurrent.duration.{Duration, SECONDS}
 import scala.util.{Failure, Success, Try}
 import com.linkedin.drelephant.analysis.{AnalyticJob, ElephantFetcher}
 import com.linkedin.drelephant.configurations.fetcher.FetcherConfigurationData
-import com.linkedin.drelephant.exceptions.spark
-import com.linkedin.drelephant.exceptions.spark.ExceptionFingerprintingSpark
 import com.linkedin.drelephant.spark.data.SparkApplicationData
-import com.linkedin.drelephant.spark.fetchers.statusapiv1.StageData
 import com.linkedin.drelephant.util.SparkUtils
 import org.apache.hadoop.conf.Configuration
 import org.apache.log4j.Logger
 import org.apache.spark.SparkConf
 
-import scala.collection.JavaConversions.seqAsJavaList
 
 /**
   * A fetcher that gets Spark-related data from a combination of the Spark monitoring REST API and Spark event logs.
@@ -69,12 +64,7 @@ class SparkFetcher(fetcherConfigurationData: FetcherConfigurationData)
       .exists(_.toBoolean)
     if (!eventLogEnabled) {
       EventLogSource.None
-    } else if (useRestForLogs) {
-      logger.info(" Used Rest for Logs ")
-      EventLogSource.Rest} else {
-      logger.info(" Used WebHDFS for logs")
-      EventLogSource.WebHdfs
-    }
+    } else if (useRestForLogs) EventLogSource.Rest else  EventLogSource.WebHdfs
   }
 
   private[fetchers] lazy val shouldProcessLogsLocally = (eventLogSource == EventLogSource.Rest) &&
@@ -87,10 +77,10 @@ class SparkFetcher(fetcherConfigurationData: FetcherConfigurationData)
   }
 
   override def fetchData(analyticJob: AnalyticJob): SparkApplicationData = {
-      doFetchData(analyticJob) match {
-        case Success(data) => data
-        case Failure(e) => throw new TimeoutException()
-      }
+    doFetchData(analyticJob) match {
+      case Success(data) => data
+      case Failure(e) => throw new TimeoutException()
+    }
   }
 
   private def doFetchData(analyticJob: AnalyticJob): Try[SparkApplicationData] = {
@@ -112,12 +102,10 @@ class SparkFetcher(fetcherConfigurationData: FetcherConfigurationData)
 
   private def doFetchSparkApplicationData(analyticJob: AnalyticJob): Future[SparkApplicationData] = {
     if (shouldProcessLogsLocally) {
-      logger.info(" Process data with fetch event and log parse")
       Future {
         sparkRestClient.fetchEventLogAndParse(analyticJob.getAppId)
       }
     } else {
-      logger.info(" Processing data with fetch client ")
       doFetchDataUsingRestAndLogClients(analyticJob)
     }
   }
@@ -125,7 +113,7 @@ class SparkFetcher(fetcherConfigurationData: FetcherConfigurationData)
   private def doFetchDataUsingRestAndLogClients(analyticJob: AnalyticJob): Future[SparkApplicationData] = Future {
     val appId = analyticJob.getAppId
     val restDerivedData = Await.result(sparkRestClient.fetchData(appId, eventLogSource == EventLogSource.Rest), DEFAULT_TIMEOUT)
-    logger.info(" Successfully fetched Spark Rest data")
+
     val logDerivedData = eventLogSource match {
       case EventLogSource.None => None
       case EventLogSource.Rest => restDerivedData.logDerivedData
@@ -157,7 +145,7 @@ object SparkFetcher {
   }
 
   val SPARK_EVENT_LOG_ENABLED_KEY = "spark.eventLog.enabled"
-  val DEFAULT_TIMEOUT = Duration(5000, SECONDS)
+  val DEFAULT_TIMEOUT = Duration(5, SECONDS)
   val LOG_LOCATION_URI_XML_FIELD = "event_log_location_uri"
   val FETCH_FAILED_TASKS = "fetch_failed_tasks"
 }

@@ -16,7 +16,6 @@
 
 package com.linkedin.drelephant.analysis;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.linkedin.drelephant.ElephantContext;
 import com.linkedin.drelephant.exceptions.spark.ExceptionFingerprintingFactory;
 import com.linkedin.drelephant.exceptions.spark.ExceptionFingerprintingRunner;
@@ -31,7 +30,7 @@ import models.AppHeuristicResult;
 import models.AppHeuristicResultDetails;
 import models.AppResult;
 import org.apache.log4j.Logger;
-import scala.collection.JavaConverters;
+import com.linkedin.drelephant.exceptions.spark.Constant.*;
 
 
 /**
@@ -254,8 +253,7 @@ public class AnalyticJob {
    */
   public AppResult getAnalysis() throws Exception {
     ElephantFetcher fetcher = ElephantContext.instance().getFetcherForApplicationType(getAppType());
-    HadoopApplicationData data = null;
-    data = fetcher.fetchData(this);
+    HadoopApplicationData data = fetcher.fetchData(this);
 
     JobType jobType = ElephantContext.instance().matchJobType(data);
     String jobTypeName = jobType == null ? UNKNOWN_JOB_TYPE : jobType.getName();
@@ -339,23 +337,32 @@ public class AnalyticJob {
     // Retrieve information from job configuration like scheduler information and store them into result.
     InfoExtractor.loadInfo(result, data);
 
-    boolean isExceptionFingerPrintingApplied = applyExceptionFingerPrinting(fetcher,result,data);
+    boolean isExceptionFingerPrintingApplied = applyExceptionFingerPrinting(result, data);
     if (isExceptionFingerPrintingApplied) {
-      logger.debug(" Exception Fingerprinting is applied ");
+      logger.debug(" Exception Fingerprinting is successfully applied ");
     }
     return result;
   }
 
-  @VisibleForTesting
-  public boolean applyExceptionFingerPrinting(ElephantFetcher fetcher, AppResult result, HadoopApplicationData data) {
-    if (!this.isSucceeded() && this.getAppType()
-        .getName()
-        .toLowerCase()
-        .equals(ExceptionFingerprintingFactory.ExecutionEngineTypes.SPARK.name().toLowerCase())) {
-      logger.info("Exception fingerprinting is called for following appID" + this.getAppId());
-      new Thread(new ExceptionFingerprintingRunner(this, result, data,
-          ExceptionFingerprintingFactory.ExecutionEngineTypes.SPARK));
-      return true;
+  /**
+   *
+   * @param result
+   * @param data
+   * @return true if the exception fingerprinting is applied then return true else false
+   */
+
+  public boolean applyExceptionFingerPrinting(AppResult result, HadoopApplicationData data) {
+    try {
+      if (!this.isSucceeded() && this.getAppType()
+          .getName()
+          .toLowerCase()
+          .equals(ExecutionEngineTypes.SPARK.name().toLowerCase())) {
+        logger.info("Exception fingerprinting is called for following appID" + this.getAppId());
+        new Thread(new ExceptionFingerprintingRunner(this, result, data, ExecutionEngineTypes.SPARK)).start();
+        return true;
+      }
+    } catch (Exception e) {
+      logger.error(" Exception while applying exception fingerprinting  ", e);
     }
     return false;
   }
@@ -388,7 +395,8 @@ public class AnalyticJob {
 
   /**
    *
-   * @param succeeded set true if application succeeded else false
+   * @param succeeded
+   * @return current object after setting the property
    */
   public AnalyticJob setSucceeded(boolean succeeded) {
     isSucceeded = succeeded;
@@ -403,6 +411,11 @@ public class AnalyticJob {
     return _amContainerLogsURL;
   }
 
+  /**
+   *
+   * @param amContainerLogsURL
+   * @return current object after setting the property
+   */
   public AnalyticJob setAmContainerLogsURL(String amContainerLogsURL) {
     _amContainerLogsURL = amContainerLogsURL;
     return this;
@@ -411,12 +424,19 @@ public class AnalyticJob {
   /**
    *
    * @return http host address of AM
+   * This method is currently not been used . But will be used once
+   * exception fingerprinting have to parase log from HDFS
    */
 
   public String getAmHostHttpAddress() {
     return _amHostHttpAddress;
   }
 
+  /**
+   *
+   * @param amHostHttpAddress
+   * @return current object after setting the property
+   */
   public AnalyticJob setAmHostHttpAddress(String amHostHttpAddress) {
     _amHostHttpAddress = amHostHttpAddress;
     return this;
@@ -430,6 +450,11 @@ public class AnalyticJob {
     return _state;
   }
 
+  /**
+   *
+   * @param state
+   * @return current object after setting the property
+   */
   public AnalyticJob setState(String state) {
     _state = state;
     return this;
