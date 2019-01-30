@@ -51,6 +51,6 @@ public class ExceptionFingerprintingRunner implements Runnable {
     }
     long endTime = System.nanoTime();
     logger.info(
-        "Total time spent in exception fingerprinting in  " + _analyticJob.getAppId() + " " + (endTime - startTime));
+        "Total time spent in exception fingerprinting in  " + _analyticJob.getAppId() + " " + + (endTime-startTime)*1.0/(1000000000.0) +"s");
   }
 }

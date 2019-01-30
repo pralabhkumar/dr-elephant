@@ -19,6 +19,7 @@ import org.apache.hadoop.conf.Configuration;
 
 import static com.linkedin.drelephant.exceptions.spark.ExceptionInfo.*;
 import static com.linkedin.drelephant.exceptions.spark.Constant.*;
+import static com.linkedin.drelephant.exceptions.spark.ExceptionUtils.*;
 
 
 public class ExceptionFingerprintingSpark implements ExceptionFingerprinting {
@@ -34,8 +35,7 @@ public class ExceptionFingerprintingSpark implements ExceptionFingerprinting {
   private static final String JOBHISTORY_ADDRESS_FOR_LOG = "http://{0}/jobhistory/nmlogs/{1}/stderr/?start=0";
   private static final int NUMBER_OF_STACKTRACE_LINE = 3;
   private static final int TIME_OUT = 150000;
-  private static final String REGEX_FOR_EXCEPTION = "^.+[Exception|Error][^\\n]+";
-  private static final Pattern PATTERN_FOR_EXCEPTION = Pattern.compile(REGEX_FOR_EXCEPTION, Pattern.CASE_INSENSITIVE);
+
   private static final String PATTERN_FOR_DRIVER_LOG_PROCESSING = "<td class=\"content\">";
   private AnalyticJob analyticJob;
   private List<StageData> failedStageData;
@@ -96,13 +96,16 @@ public class ExceptionFingerprintingSpark implements ExceptionFingerprinting {
       logger.error("Error process stages logs ", e);
     }
     long endTime = System.nanoTime();
-    logger.info(" Time taken for processing stage logs " + (startTime - endTime));
+    logger.info(" Total exception/error parsed so far - stage "+exceptions.size());
+    logger.info(" Time taken for processing stage logs " + (endTime-startTime)*1.0/(1000000000.0) +"s");
   }
 
   private void addExceptions(int uniqueID, String exceptionName, String exceptionStackTrace,
       ExceptionSource exceptionSource, List<ExceptionInfo> exceptions) {
     ExceptionInfo exceptionInfo = new ExceptionInfo(uniqueID, exceptionName, exceptionStackTrace, exceptionSource);
-    logger.info(" Exception Information " + exceptionInfo);
+    if(debugEnabled) {
+      logger.info(" Exception Information " + exceptionInfo);
+    }
     exceptions.add(exceptionInfo);
   }
 
@@ -136,7 +139,8 @@ public class ExceptionFingerprintingSpark implements ExceptionFingerprinting {
       logger.info(" Exception processing  driver logs ", e);
     }
     long endTime = System.nanoTime();
-    logger.info(" Time taken for driver logs " + (startTime - endTime));
+    logger.info(" Total exception/error parsed so far - driver "+exceptions.size());
+    logger.info(" Time taken for driver logs " + (endTime-startTime)*1.0/(1000000000.0) +"s");
   }
 
   /**
@@ -193,10 +197,7 @@ public class ExceptionFingerprintingSpark implements ExceptionFingerprinting {
     }
   }
 
-  private boolean isExceptionContains(String data) {
-    Matcher m = PATTERN_FOR_EXCEPTION.matcher(data);
-    return m.matches();
-  }
+
 
   @Override
   public LogClass classifyException(List<ExceptionInfo> exceptionInformation) {

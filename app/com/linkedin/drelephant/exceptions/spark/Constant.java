@@ -2,7 +2,8 @@ package com.linkedin.drelephant.exceptions.spark;
 
 /**
  * Thic class have Constants which are used across
- * exception fingerprinting classes.
+ * exception fingerprinting classes or which can be more often modifieable
+ * by developers
  */
 public final class Constant {
 
@@ -27,5 +28,17 @@ public final class Constant {
    *  Exception Fingerprinting will depend on execution engines .
    *  So different type of execution engines .
    */
-  public enum ExecutionEngineTypes {SPARK, MR}
+  public enum ExecutionEngineTypes {
+    SPARK, MR
+  }
+
+  public static final String[] REGEX_FOR_EXCEPTION_IN_LOGS =
+      {"^.+Exception.*[\n]+", "^.+Error.*[\n]+", ".*Container\\s+killed.*[\n]+"};
+
+  public static final String[] REGEX_AUTO_TUNING_FAULT =
+      {".*java.lang.OutOfMemoryError.*", ".*Container .* is running beyond virtual memory limits.*",
+          ".*Container killed on request. Exit code is 103.*", ".*Container killed on request. Exit code is 104.*",
+          ".*Container killed on request. Exit code is 143.*"};
+
+  public enum RulePriority {LOW, MEDIUM, HIGH}
 }

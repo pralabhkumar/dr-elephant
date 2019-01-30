@@ -31,7 +31,8 @@ import play.test.FakeApplication
 import org.apache.hadoop.conf.Configuration
 import play.test.Helpers._
 import com.linkedin.drelephant.exceptions.spark.Constant._
-
+import com.linkedin.drelephant.exceptions.spark.ExceptionUtils._
+import Array._
 
 class ExceptionFingerprintingSparkTest extends FunSpec with Matchers {
   private val sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss")
@@ -120,6 +121,19 @@ class ExceptionFingerprintingSparkTest extends FunSpec with Matchers {
         "http://hostname:8042/node/containerlogs/container_e24_1547063162911_185371_01_000001/dssadmin",
         "ltx1-hcl5294.grid.linkedin.com:8042")
       running(testServer(TEST_SERVER_PORT, fakeApp), new ExceptionFingerprintingRunnerTest(data, analyticJob))
+    }
+    it("check for exception regex ") {
+      val dataContainsException = Array("java.io.FileNotFoundException: File /jobs/emailopt/\n",
+        "java.lang.OutOfMemoryError: Java heap space\n",
+        "Reason: Container killed by YARN for\n","java.lang.OutOfMemoryError: Exception thrown in awaitResult:\n"
+          + "  at org.apache.spark.util.ThreadUtils$.awaitResult(ThreadUtils.scala:194)")
+      val dataContainsNoException = Array("SLF4J: Actual binding is of type [org.slf4j.impl.Log4jLoggerFactory]\n")
+      for (data <- dataContainsException) {
+        isExceptionContains(data) should be(true)
+      }
+      for (data <- dataContainsNoException) {
+        isExceptionContains(data) should be(false)
+      }
     }
 
 

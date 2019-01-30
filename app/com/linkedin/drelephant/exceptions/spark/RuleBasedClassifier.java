@@ -1,6 +1,9 @@
 package com.linkedin.drelephant.exceptions.spark;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import org.apache.log4j.Logger;
 
 import static com.linkedin.drelephant.exceptions.spark.Constant.*;
@@ -21,27 +24,43 @@ public class RuleBasedClassifier implements Classifier {
 
   }
 
+  /**
+   * This classify applies list of Rules (currently only regex)
+   * and the gettheMajority .
+   * @param exceptions : List of exceptions provided as input to this method
+   * @return
+   */
   @Override
   public LogClass classify(List<ExceptionInfo> exceptions) {
     this.dataToClassify = exceptions;
-    return outOfMemoryEarlyExitRule();
+    List<Rule> listOfRules = new ArrayList<Rule>();
+    listOfRules.add(new RegexRule().setPriority(RulePriority.HIGH));
+    Map<LogClass, Integer> listOfClassesCount = new HashMap<LogClass, Integer>();
+    logger.info(" Applying rules ");
+    for (Rule rule : listOfRules) {
+      LogClass logClass = rule.logic(this.dataToClassify);
+      Integer count = listOfClassesCount.get(logClass);
+      if (count == null) {
+        count = 0;
+      }
+      count++;
+      listOfClassesCount.put(logClass, count);
+    }
+    return getMajority(listOfClassesCount);
   }
 
-  /**
-   * This rule checks for Out of Memory and even if one log have Out of Memory. It will classify the
-   * exceptions to Auto Tune Enabled exception . Another variation of this rule is to check how many
-   * logs have out of memory exception/error and based on that decide whether its autotuning error or not.
-   * @return : If its out of memory error
-   */
-  private LogClass outOfMemoryEarlyExitRule() {
-    for (ExceptionInfo exceptionInfo : dataToClassify) {
-      if ((exceptionInfo.getExceptionName() + " " + exceptionInfo.getExcptionStackTrace()).contains(
-          "java.lang.OutOfMemoryError")) {
-        logger.info(" AutoTuning Fault ");
-        return LogClass.AUTOTUNING_ENABLED;
+  private LogClass getMajority(Map<LogClass, Integer> listOfClasses) {
+    int maxClass = 0;
+    LogClass maxLogClass = null;
+    for (LogClass logClass : listOfClasses.keySet()) {
+      int currentMax = listOfClasses.get(logClass);
+      if (currentMax > maxClass) {
+        maxClass = currentMax;
+        maxLogClass = logClass;
       }
     }
-    logger.info(" User Fault ");
-    return LogClass.USER_ENABLED;
+    logger.info(" Class for the exception " + maxLogClass);
+    return maxLogClass;
   }
 }
+
