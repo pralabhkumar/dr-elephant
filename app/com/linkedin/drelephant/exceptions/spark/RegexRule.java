@@ -13,6 +13,7 @@ import static com.linkedin.drelephant.exceptions.spark.Constant.*;
  */
 public class RegexRule implements Rule{
   private static final Logger logger = Logger.getLogger(RegexRule.class);
+  boolean debugEnabled = logger.isDebugEnabled();
   private List<ExceptionInfo> exceptions ;
   private static final List<Pattern> patterns = new ArrayList<Pattern>();
   RulePriority rulePriority;
@@ -33,8 +34,10 @@ public class RegexRule implements Rule{
   public LogClass logic (List<ExceptionInfo> exceptions){
     this.exceptions = exceptions;
     for (ExceptionInfo exceptionInfo : this.exceptions) {
-      logger.info("Exception Analysis "+exceptionInfo.getExceptionName() + " " + exceptionInfo.getExcptionStackTrace());
       if(checkForPattern((exceptionInfo.getExceptionName() + " " + exceptionInfo.getExcptionStackTrace()))) {
+        if(debugEnabled) {
+          logger.debug("Exception Analysis " + exceptionInfo.getExceptionName() + " " + exceptionInfo.getExcptionStackTrace());
+        }
         logger.info(" AutoTuning Fault ");
         return LogClass.AUTOTUNING_ENABLED;
       }

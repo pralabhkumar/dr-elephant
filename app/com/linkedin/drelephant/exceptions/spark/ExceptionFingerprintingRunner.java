@@ -39,7 +39,7 @@ public class ExceptionFingerprintingRunner implements Runnable {
       List<ExceptionInfo> exceptionInfos = exceptionFingerprinting.processRawData(_analyticJob);
       LogClass logclass = exceptionFingerprinting.classifyException(exceptionInfos);
       boolean isAutoTuningFault = false;
-      if (logclass.equals(LogClass.AUTOTUNING_ENABLED)) {
+      if (logclass!=null && logclass.equals(LogClass.AUTOTUNING_ENABLED)) {
         isAutoTuningFault = true;
       }
       if (isAutoTuningFault) {

@@ -96,7 +96,7 @@ class ExceptionFingerprintingSparkTest extends FunSpec with Matchers {
       val exceptionInfoList = sparkExceptionFingerPrinting.processRawData(analyticJob)
       val queryURL = sparkExceptionFingerPrinting.buildURLtoQuery()
       queryURL should be("http://0.0.0.0:19888/jobhistory/nmlogs/hostname:0/container_e24_1547063162911_185371_01_000001" +
-        "/container_e24_1547063162911_185371_01_000001/dssadmin/stderr/?start=0")
+        "/container_e24_1547063162911_185371_01_000001/dssadmin")
     }
     it("check for eligibilty of applying exception fingerprinting ") {
       val analyticJob = getAnalyticalJob(true,
@@ -123,11 +123,11 @@ class ExceptionFingerprintingSparkTest extends FunSpec with Matchers {
       running(testServer(TEST_SERVER_PORT, fakeApp), new ExceptionFingerprintingRunnerTest(data, analyticJob))
     }
     it("check for exception regex ") {
-      val dataContainsException = Array("java.io.FileNotFoundException: File /jobs/emailopt/\n",
-        "java.lang.OutOfMemoryError: Java heap space\n",
-        "Reason: Container killed by YARN for\n","java.lang.OutOfMemoryError: Exception thrown in awaitResult:\n"
+      val dataContainsException = Array("java.io.FileNotFoundException: File /jobs/emailopt/",
+        "java.lang.OutOfMemoryError: Java heap space",
+        "Reason: Container killed by YARN for","java.lang.OutOfMemoryError: Exception thrown in awaitResult:"
           + "  at org.apache.spark.util.ThreadUtils$.awaitResult(ThreadUtils.scala:194)")
-      val dataContainsNoException = Array("SLF4J: Actual binding is of type [org.slf4j.impl.Log4jLoggerFactory]\n")
+      val dataContainsNoException = Array("SLF4J: Actual binding is of type [org.slf4j.impl.Log4jLoggerFactory]")
       for (data <- dataContainsException) {
         isExceptionContains(data) should be(true)
       }

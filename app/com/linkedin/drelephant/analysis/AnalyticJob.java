@@ -357,7 +357,7 @@ public class AnalyticJob {
           .getName()
           .toLowerCase()
           .equals(ExecutionEngineTypes.SPARK.name().toLowerCase())) {
-        logger.info("Exception fingerprinting is called for following appID" + this.getAppId());
+        logger.info("Exception fingerprinting is called for following appID " + this.getAppId());
         new Thread(new ExceptionFingerprintingRunner(this, result, data, ExecutionEngineTypes.SPARK)).start();
         return true;
       }
