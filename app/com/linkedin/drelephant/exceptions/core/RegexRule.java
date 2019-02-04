@@ -1,24 +1,26 @@
-package com.linkedin.drelephant.exceptions.spark;
+package com.linkedin.drelephant.exceptions.core;
+import com.linkedin.drelephant.exceptions.util.ExceptionInfo;
+import com.linkedin.drelephant.exceptions.Rule;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.log4j.Logger;
 
-import static com.linkedin.drelephant.exceptions.spark.Constant.*;
-
+import static com.linkedin.drelephant.exceptions.util.Constant.*;
+import static com.linkedin.drelephant.exceptions.util.ExceptionUtils.ConfigurationBuilder.*;
 
 /**
  * Rule identifies exception class based on regex .
  */
-public class RegexRule implements Rule{
+public class RegexRule implements Rule {
   private static final Logger logger = Logger.getLogger(RegexRule.class);
   boolean debugEnabled = logger.isDebugEnabled();
   private List<ExceptionInfo> exceptions ;
   private static final List<Pattern> patterns = new ArrayList<Pattern>();
   RulePriority rulePriority;
   static {
-    for (String regex : REGEX_AUTO_TUNING_FAULT) {
+    for (String regex : REGEX_AUTO_TUNING_FAULT.getValue()) {
       patterns.add(Pattern.compile(regex, Pattern.CASE_INSENSITIVE));
     }
   }

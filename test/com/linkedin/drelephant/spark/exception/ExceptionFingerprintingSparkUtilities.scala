@@ -21,7 +21,7 @@ import java.util.Date
 
 import com.linkedin.drelephant.ElephantContext
 import com.linkedin.drelephant.analysis.{AnalyticJob, ApplicationType}
-import com.linkedin.drelephant.exceptions.spark.ExceptionFingerprintingSpark
+import com.linkedin.drelephant.exceptions.core.ExceptionFingerprintingSpark
 import com.linkedin.drelephant.spark.fetchers.SparkFetcher
 import com.linkedin.drelephant.spark.fetchers.statusapiv1.{StageDataImpl, StageStatus}
 import com.linkedin.drelephant.spark.heuristics.ConfigurationHeuristicsConstants._

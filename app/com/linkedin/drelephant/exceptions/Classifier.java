@@ -1,8 +1,9 @@
-package com.linkedin.drelephant.exceptions.spark;
+package com.linkedin.drelephant.exceptions;
 
+import com.linkedin.drelephant.exceptions.util.ExceptionInfo;
 import java.util.List;
 
-import static com.linkedin.drelephant.exceptions.spark.Constant.*;
+import static com.linkedin.drelephant.exceptions.util.Constant.*;
 
 
 /**
@@ -12,7 +13,7 @@ import static com.linkedin.drelephant.exceptions.spark.Constant.*;
  */
 public interface Classifier {
 
-  void preProcessingData(List<ExceptionInfo> exceptions);
+  void preProcessingData(List<com.linkedin.drelephant.exceptions.util.ExceptionInfo> exceptions);
 
   /**
    *

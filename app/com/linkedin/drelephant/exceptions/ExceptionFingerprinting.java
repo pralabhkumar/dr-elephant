@@ -1,9 +1,10 @@
-package com.linkedin.drelephant.exceptions.spark;
+package com.linkedin.drelephant.exceptions;
 
 import com.linkedin.drelephant.analysis.AnalyticJob;
+import com.linkedin.drelephant.exceptions.util.ExceptionInfo;
 import java.util.List;
 
-import static com.linkedin.drelephant.exceptions.spark.Constant.*;
+import static com.linkedin.drelephant.exceptions.util.Constant.*;
 
 
 /**
@@ -19,7 +20,7 @@ public interface ExceptionFingerprinting {
    * @param analyticJob
    * @return
    */
-  List<ExceptionInfo> processRawData(AnalyticJob analyticJob);
+  List<com.linkedin.drelephant.exceptions.util.ExceptionInfo> processRawData(AnalyticJob analyticJob);
 
   /**
    *

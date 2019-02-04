@@ -2,15 +2,14 @@ package com.linkedin.drelephant.spark.exception;
 
 import com.linkedin.drelephant.analysis.AnalyticJob;
 import com.linkedin.drelephant.analysis.HadoopApplicationData;
-import com.linkedin.drelephant.exceptions.spark.ExceptionFingerprintingRunner;
+import com.linkedin.drelephant.exceptions.core.ExceptionFingerprintingRunner;
 import models.AppResult;
 import models.JobExecution;
-import com.linkedin.drelephant.exceptions.spark.Constant.*;
+import com.linkedin.drelephant.exceptions.util.Constant.*;
 import static common.DBTestUtil.*;
 
 import static org.junit.Assert.*;
 import static play.test.Helpers.*;
-import static common.DBTestUtil.*;
 
 
 public class ExceptionFingerprintingRunnerTest implements Runnable {

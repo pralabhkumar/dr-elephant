@@ -1,7 +1,10 @@
-package com.linkedin.drelephant.exceptions.spark;
+package com.linkedin.drelephant.exceptions.core;
 
 import com.linkedin.drelephant.ElephantContext;
 import com.linkedin.drelephant.analysis.AnalyticJob;
+import com.linkedin.drelephant.exceptions.Classifier;
+import com.linkedin.drelephant.exceptions.ExceptionFingerprinting;
+import com.linkedin.drelephant.exceptions.util.ExceptionInfo;
 import com.linkedin.drelephant.spark.fetchers.statusapiv1.StageData;
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -11,15 +14,14 @@ import java.net.URL;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import models.JobExecution;
 import org.apache.log4j.Logger;
 import org.apache.hadoop.conf.Configuration;
 
-import static com.linkedin.drelephant.exceptions.spark.ExceptionInfo.*;
-import static com.linkedin.drelephant.exceptions.spark.Constant.*;
-import static com.linkedin.drelephant.exceptions.spark.ExceptionUtils.*;
+import static com.linkedin.drelephant.exceptions.util.ExceptionInfo.*;
+import static com.linkedin.drelephant.exceptions.util.Constant.*;
+import static com.linkedin.drelephant.exceptions.util.ExceptionUtils.*;
+import static com.linkedin.drelephant.exceptions.util.ExceptionUtils.ConfigurationBuilder.*;
 
 
 public class ExceptionFingerprintingSpark implements ExceptionFingerprinting {
@@ -33,14 +35,16 @@ public class ExceptionFingerprintingSpark implements ExceptionFingerprinting {
   private static final String HOSTNAME_PATTERN = ":";
   private static final String URL_PATTERN = "/";
   private static final String JOBHISTORY_ADDRESS_FOR_LOG = "http://{0}/jobhistory/nmlogs/{1}";
-  private static final int NUMBER_OF_STACKTRACE_LINE = 3;
-  private static final int TIME_OUT = 150000;
 
   private enum LogLengthSchema {LOG_LENGTH, LENGTH}
 
   private AnalyticJob analyticJob;
   private List<StageData> failedStageData;
   private boolean useRestAPI = true;
+
+  static{
+    ConfigurationBuilder.buildConfigurations(ElephantContext.instance().getAutoTuningConf());
+  }
 
   public ExceptionFingerprintingSpark(List<StageData> failedStageData) {
     this.failedStageData = failedStageData;
@@ -135,8 +139,8 @@ public class ExceptionFingerprintingSpark implements ExceptionFingerprinting {
       logger.error(" URL to query for driver logs  " + completeURLToQuery);
       URL amAddress = new URL(completeURLToQuery);
       connection = (HttpURLConnection) amAddress.openConnection();
-      connection.setConnectTimeout(TIME_OUT);
-      connection.setReadTimeout(TIME_OUT);
+      connection.setConnectTimeout(JHS_TIME_OUT.getValue());
+      connection.setReadTimeout(JHS_TIME_OUT.getValue());
       connection.connect();
       in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
       String inputLine;
@@ -176,8 +180,8 @@ public class ExceptionFingerprintingSpark implements ExceptionFingerprinting {
     try {
       URL amAddress = new URL(url);
       connection = (HttpURLConnection) amAddress.openConnection();
-      connection.setConnectTimeout(TIME_OUT);
-      connection.setReadTimeout(TIME_OUT);
+      connection.setConnectTimeout(JHS_TIME_OUT.getValue());
+      connection.setReadTimeout(JHS_TIME_OUT.getValue());
       connection.connect();
       in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
       String inputLine;
@@ -188,14 +192,14 @@ public class ExceptionFingerprintingSpark implements ExceptionFingerprinting {
           logLength = getLogLength(inputLine.toUpperCase());
           if (logLength == 0) {
             completeURLToQuery = url;
-          } else if (logLength <= FIRST_THRESHOLD_LOG_LENGTH_IN_BYTES) {
-            completeURLToQuery = url + "/stderr/?start="+MINIMUM_LOG_LENGTH_IN_BYTES_TO_SKIP;
-          } else if (logLength<=LAST_THRESHOLD_LOG_LENGTH_IN_BYTES) {
-            long startIndex = (long) Math.floor(logLength * THRESHOLD_PERCENTAGE_OF_LOG_TO_READ_FROM_LAST);
+          } else if (logLength <= FIRST_THRESHOLD_LOG_LENGTH_IN_BYTES.getValue()) {
+            completeURLToQuery = url + "/stderr/?start="+MINIMUM_LOG_LENGTH_TO_SKIP_IN_BYTES.getValue();
+          } else if (logLength<=LAST_THRESHOLD_LOG_LENGTH_IN_BYTES.getValue()) {
+            long startIndex = (long) Math.floor(logLength * THRESHOLD_PERCENTAGE_OF_LOG_TO_READ.getValue());
             completeURLToQuery = url+ "/stderr/?start=" + startIndex;
           }
           else {
-            completeURLToQuery = url+ "/stderr/?start=" + (logLength-THRESHOLD_LOG_INDEX_FROM_END_IN_BYTES);
+            completeURLToQuery = url+ "/stderr/?start=" + (logLength-THRESHOLD_LOG_INDEX_FROM_END_IN_BYTES.getValue());
           }
           break;
         }
@@ -267,12 +271,12 @@ public class ExceptionFingerprintingSpark implements ExceptionFingerprinting {
   private void driverLogProcessingForException(BufferedReader in, List<ExceptionInfo> exceptions) throws IOException {
     String inputLine;
     while ((inputLine = in.readLine()) != null) {
-      if (isExceptionContains(inputLine)) {
+      if (inputLine.length()<=THRESHOLD_LOG_LINE_LENGTH.getValue() && isExceptionContains(inputLine)) {
         if (debugEnabled) {
-          logger.debug(" ExceptionFingerprinting " + inputLine);
+          logger.debug(" ExceptionFingerprinting " + inputLine+"\t"+inputLine);
         }
         String exceptionName = inputLine;
-        int stackTraceLine = NUMBER_OF_STACKTRACE_LINE;
+        int stackTraceLine = NUMBER_OF_STACKTRACE_LINE.getValue();
         StringBuffer stackTrace = new StringBuffer();
         while (stackTraceLine >= 0 && inputLine != null) {
           stackTrace.append(inputLine);

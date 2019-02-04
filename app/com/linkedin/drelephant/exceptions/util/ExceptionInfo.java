@@ -1,4 +1,4 @@
-package com.linkedin.drelephant.exceptions.spark;
+package com.linkedin.drelephant.exceptions.util;
 
 /**
  * Class to store exception information
@@ -9,7 +9,7 @@ public class ExceptionInfo {
   private String exceptionName;
   private String exceptionStackTrace;
   private String exceptionSource;
-  enum ExceptionSource {DRIVER,EXECUTOR,SCHEDULER}
+  public enum ExceptionSource {DRIVER,EXECUTOR,SCHEDULER}
 
   public ExceptionInfo(int exceptionID, String exceptionName, String exceptionStackTrace, ExceptionSource exceptionSource) {
     this.exceptionID = exceptionID;

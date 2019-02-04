@@ -1,12 +1,15 @@
-package com.linkedin.drelephant.exceptions.spark;
+package com.linkedin.drelephant.exceptions.core;
 
+import com.linkedin.drelephant.exceptions.Classifier;
+import com.linkedin.drelephant.exceptions.util.ExceptionInfo;
+import com.linkedin.drelephant.exceptions.Rule;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.log4j.Logger;
 
-import static com.linkedin.drelephant.exceptions.spark.Constant.*;
+import static com.linkedin.drelephant.exceptions.util.Constant.*;
 
 
 public class RuleBasedClassifier implements Classifier {

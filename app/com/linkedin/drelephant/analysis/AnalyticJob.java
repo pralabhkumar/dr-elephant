@@ -17,10 +17,7 @@
 package com.linkedin.drelephant.analysis;
 
 import com.linkedin.drelephant.ElephantContext;
-import com.linkedin.drelephant.exceptions.spark.ExceptionFingerprintingFactory;
-import com.linkedin.drelephant.exceptions.spark.ExceptionFingerprintingRunner;
-import com.linkedin.drelephant.spark.data.SparkApplicationData;
-import com.linkedin.drelephant.spark.fetchers.SparkFetcher;
+import com.linkedin.drelephant.exceptions.core.ExceptionFingerprintingRunner;
 import com.linkedin.drelephant.util.InfoExtractor;
 import com.linkedin.drelephant.util.Utils;
 import java.util.ArrayList;
@@ -30,7 +27,7 @@ import models.AppHeuristicResult;
 import models.AppHeuristicResultDetails;
 import models.AppResult;
 import org.apache.log4j.Logger;
-import com.linkedin.drelephant.exceptions.spark.Constant.*;
+import com.linkedin.drelephant.exceptions.util.Constant.*;
 
 
 /**
@@ -358,7 +355,13 @@ public class AnalyticJob {
           .toLowerCase()
           .equals(ExecutionEngineTypes.SPARK.name().toLowerCase())) {
         logger.info("Exception fingerprinting is called for following appID " + this.getAppId());
-        new Thread(new ExceptionFingerprintingRunner(this, result, data, ExecutionEngineTypes.SPARK)).start();
+        /**
+         * Currently running as part of main thread as update of tuning table and dr elephant should be atomic
+         * process .
+         * ToDo: Create as seperate thread do all processing and then update data base will be atomic
+         * ToDo: process . For this InfoExtractor.loadInfo(result, data); has to be seperated out.
+         */
+        new ExceptionFingerprintingRunner(this, result, data, ExecutionEngineTypes.SPARK).run();
         return true;
       }
     } catch (Exception e) {

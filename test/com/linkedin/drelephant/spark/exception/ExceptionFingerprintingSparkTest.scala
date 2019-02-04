@@ -17,21 +17,24 @@
 package com.linkedin.drelephant.spark.exception
 
 import java.text.SimpleDateFormat
-import com.linkedin.drelephant.exceptions.spark.{ExceptionFingerprintingFactory, ExceptionFingerprintingSpark}
-import com.linkedin.drelephant.spark.fetchers.statusapiv1.{StageStatus}
+
+import com.linkedin.drelephant.spark.fetchers.statusapiv1.StageStatus
 import com.linkedin.drelephant.spark.exception.ExceptionFingerprintingSparkUtilities._
 import com.linkedin.drelephant.spark.heuristics.SparkTestUtilities._
 import org.scalatest.{FunSpec, Matchers}
 import org.apache.hadoop.conf.Configuration
 import java.util
+
+import com.linkedin.drelephant.exceptions.core.{ExceptionFingerprintingFactory, ExceptionFingerprintingSpark}
 import common.TestConstants._
 import play.Application
 import play.GlobalSettings
 import play.test.FakeApplication
 import org.apache.hadoop.conf.Configuration
 import play.test.Helpers._
-import com.linkedin.drelephant.exceptions.spark.Constant._
-import com.linkedin.drelephant.exceptions.spark.ExceptionUtils._
+import com.linkedin.drelephant.exceptions.util.Constant._
+import com.linkedin.drelephant.exceptions.util.ExceptionUtils._
+
 import Array._
 
 class ExceptionFingerprintingSparkTest extends FunSpec with Matchers {

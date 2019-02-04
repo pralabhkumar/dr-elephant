@@ -1,12 +1,14 @@
-package com.linkedin.drelephant.exceptions.spark;
+package com.linkedin.drelephant.exceptions.core;
 
 import com.linkedin.drelephant.analysis.AnalyticJob;
 import com.linkedin.drelephant.analysis.HadoopApplicationData;
+import com.linkedin.drelephant.exceptions.ExceptionFingerprinting;
+import com.linkedin.drelephant.exceptions.util.ExceptionInfo;
 import java.util.List;
 import models.AppResult;
 import org.apache.log4j.Logger;
 
-import static com.linkedin.drelephant.exceptions.spark.Constant.*;
+import static com.linkedin.drelephant.exceptions.util.Constant.*;
 
 
 /**

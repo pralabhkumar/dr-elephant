@@ -1,8 +1,9 @@
-package com.linkedin.drelephant.exceptions.spark;
+package com.linkedin.drelephant.exceptions.core;
 
+import com.linkedin.drelephant.exceptions.Classifier;
 import org.apache.log4j.Logger;
 
-import static com.linkedin.drelephant.exceptions.spark.Constant.*;
+import static com.linkedin.drelephant.exceptions.util.Constant.*;
 
 
 /**
