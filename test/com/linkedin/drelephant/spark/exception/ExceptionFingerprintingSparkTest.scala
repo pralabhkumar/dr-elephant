@@ -25,6 +25,7 @@ import org.scalatest.{FunSpec, Matchers}
 import org.apache.hadoop.conf.Configuration
 import java.util
 
+import com.linkedin.drelephant.ElephantContext
 import com.linkedin.drelephant.exceptions.core.{ExceptionFingerprintingFactory, ExceptionFingerprintingSpark}
 import common.TestConstants._
 import play.Application
@@ -137,6 +138,65 @@ class ExceptionFingerprintingSparkTest extends FunSpec with Matchers {
       for (data <- dataContainsNoException) {
         isExceptionContains(data) should be(false)
       }
+    }
+
+    it("check for start index based on log length"){
+      val exceptionFingerPrintingSpark = new ExceptionFingerprintingSpark(null)
+
+      /**
+        * If value is less than first threshold .
+        */
+      exceptionFingerPrintingSpark.getStartIndexOfDriverLogs(260059L) should be(3000L)
+
+      /**
+        * If value is greater than all the threshold values
+        */
+      exceptionFingerPrintingSpark.getStartIndexOfDriverLogs(1111111111111L) should be(1111111111111L-50000L)
+
+      /**
+        * If unable to parse log length then use default approach
+        */
+      exceptionFingerPrintingSpark.getStartIndexOfDriverLogs(0) should be (0)
+
+      /**
+        *  If the log length is greater than second threshold , then have 95 % of it.
+        */
+      exceptionFingerPrintingSpark.getStartIndexOfDriverLogs(260070) should be(247066)
+    }
+    it("check for exception utils functionality of configuration builder"){
+      /**
+        * Check for default values
+        */
+      ConfigurationBuilder.FIRST_THRESHOLD_LOG_LENGTH_IN_BYTES.getValue should be (260059L)
+      ConfigurationBuilder.LAST_THRESHOLD_LOG_LENGTH_IN_BYTES.getValue should be (1000000L)
+      ConfigurationBuilder.MINIMUM_LOG_LENGTH_TO_SKIP_IN_BYTES.getValue should be (3000L)
+      ConfigurationBuilder.THRESHOLD_LOG_INDEX_FROM_END_IN_BYTES.getValue should be (50000L)
+      ConfigurationBuilder.THRESHOLD_PERCENTAGE_OF_LOG_TO_READ.getValue should be (0.95F)
+      ConfigurationBuilder.THRESHOLD_LOG_LINE_LENGTH.getValue should be (1000)
+      ConfigurationBuilder.JHS_TIME_OUT.getValue should be (150000)
+      ConfigurationBuilder.NUMBER_OF_STACKTRACE_LINE.getValue should be (3)
+      val configuration = new Configuration()
+      /**
+        * Check for overriden values
+        */
+      configuration.setLong(ConfigurationBuilder.FIRST_THRESHOLD_LOG_LENGTH_IN_BYTES.getConfigurationName,26005)
+      configuration.setLong(ConfigurationBuilder.LAST_THRESHOLD_LOG_LENGTH_IN_BYTES.getConfigurationName,4353)
+      configuration.setLong(ConfigurationBuilder.MINIMUM_LOG_LENGTH_TO_SKIP_IN_BYTES.getConfigurationName,1000)
+      configuration.setFloat(ConfigurationBuilder.THRESHOLD_PERCENTAGE_OF_LOG_TO_READ.getConfigurationName,0.85F)
+      configuration.setLong(ConfigurationBuilder.THRESHOLD_LOG_INDEX_FROM_END_IN_BYTES.getConfigurationName,10000)
+      configuration.setInt(ConfigurationBuilder.JHS_TIME_OUT.getConfigurationName,11234)
+      configuration.setInt(ConfigurationBuilder.NUMBER_OF_STACKTRACE_LINE.getConfigurationName,5)
+      configuration.setInt(ConfigurationBuilder.THRESHOLD_LOG_LINE_LENGTH.getConfigurationName,100)
+      ConfigurationBuilder.buildConfigurations(configuration)
+
+      ConfigurationBuilder.FIRST_THRESHOLD_LOG_LENGTH_IN_BYTES.getValue should be (26005L)
+      ConfigurationBuilder.LAST_THRESHOLD_LOG_LENGTH_IN_BYTES.getValue should be (4353)
+      ConfigurationBuilder.MINIMUM_LOG_LENGTH_TO_SKIP_IN_BYTES.getValue should be (1000L)
+      ConfigurationBuilder.THRESHOLD_LOG_INDEX_FROM_END_IN_BYTES.getValue should be (10000L)
+      ConfigurationBuilder.THRESHOLD_PERCENTAGE_OF_LOG_TO_READ.getValue should be (0.85F)
+      ConfigurationBuilder.THRESHOLD_LOG_LINE_LENGTH.getValue should be (100)
+      ConfigurationBuilder.JHS_TIME_OUT.getValue should be (11234)
+      ConfigurationBuilder.NUMBER_OF_STACKTRACE_LINE.getValue should be (5)
     }
 
 

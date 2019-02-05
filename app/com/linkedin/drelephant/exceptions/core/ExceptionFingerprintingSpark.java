@@ -42,7 +42,7 @@ public class ExceptionFingerprintingSpark implements ExceptionFingerprinting {
   private List<StageData> failedStageData;
   private boolean useRestAPI = true;
 
-  static{
+  static {
     ConfigurationBuilder.buildConfigurations(ElephantContext.instance().getAutoTuningConf());
   }
 
@@ -190,25 +190,42 @@ public class ExceptionFingerprintingSpark implements ExceptionFingerprinting {
       while ((inputLine = in.readLine()) != null) {
         if (inputLine.toUpperCase().contains(logLengthTrigger)) {
           logLength = getLogLength(inputLine.toUpperCase());
-          if (logLength == 0) {
+          long startIndex = getStartIndexOfDriverLogs(logLength);
+          if (startIndex == 0) {
             completeURLToQuery = url;
-          } else if (logLength <= FIRST_THRESHOLD_LOG_LENGTH_IN_BYTES.getValue()) {
-            completeURLToQuery = url + "/stderr/?start="+MINIMUM_LOG_LENGTH_TO_SKIP_IN_BYTES.getValue();
-          } else if (logLength<=LAST_THRESHOLD_LOG_LENGTH_IN_BYTES.getValue()) {
-            long startIndex = (long) Math.floor(logLength * THRESHOLD_PERCENTAGE_OF_LOG_TO_READ.getValue());
-            completeURLToQuery = url+ "/stderr/?start=" + startIndex;
-          }
-          else {
-            completeURLToQuery = url+ "/stderr/?start=" + (logLength-THRESHOLD_LOG_INDEX_FROM_END_IN_BYTES.getValue());
+          } else {
+            completeURLToQuery = url + "/stderr/?start=" + startIndex;
           }
           break;
         }
-      } gracefullyCloseConnection(in, connection);
+      }
+      gracefullyCloseConnection(in, connection);
     } catch (Exception e) {
       logger.error(" Exception while creating complete URL to query ", e);
       gracefullyCloseConnection(in, connection);
       return url;
-    } return completeURLToQuery;
+    }
+    return completeURLToQuery;
+  }
+
+  /**
+   *  Based on the log length , it will give the start index . Driver logs
+   *  will be read from given starting index
+   * @param logLength
+   * @return
+   * public for the purpose of testing . Visible for testing is not working
+   * if the unit test case is in scala.
+   */
+  public  long getStartIndexOfDriverLogs(long logLength) {
+    if (logLength == 0) {
+      return 0;
+    } else if (logLength <= FIRST_THRESHOLD_LOG_LENGTH_IN_BYTES.getValue()) {
+      return MINIMUM_LOG_LENGTH_TO_SKIP_IN_BYTES.getValue();
+    } else if (logLength <= LAST_THRESHOLD_LOG_LENGTH_IN_BYTES.getValue()) {
+      return (long) Math.floor(logLength * THRESHOLD_PERCENTAGE_OF_LOG_TO_READ.getValue());
+    } else {
+      return (logLength - THRESHOLD_LOG_INDEX_FROM_END_IN_BYTES.getValue());
+    }
   }
 
   private long getLogLength(String logLenghtLine) {
@@ -271,9 +288,9 @@ public class ExceptionFingerprintingSpark implements ExceptionFingerprinting {
   private void driverLogProcessingForException(BufferedReader in, List<ExceptionInfo> exceptions) throws IOException {
     String inputLine;
     while ((inputLine = in.readLine()) != null) {
-      if (inputLine.length()<=THRESHOLD_LOG_LINE_LENGTH.getValue() && isExceptionContains(inputLine)) {
+      if (inputLine.length() <= THRESHOLD_LOG_LINE_LENGTH.getValue() && isExceptionContains(inputLine)) {
         if (debugEnabled) {
-          logger.debug(" ExceptionFingerprinting " + inputLine+"\t"+inputLine);
+          logger.debug(" ExceptionFingerprinting " + inputLine + "\t" + inputLine);
         }
         String exceptionName = inputLine;
         int stackTraceLine = NUMBER_OF_STACKTRACE_LINE.getValue();

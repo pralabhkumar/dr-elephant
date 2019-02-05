@@ -77,7 +77,7 @@ public class ExceptionUtils {
                   + "and generally important exceptions are at the end of the logs ");
       THRESHOLD_PERCENTAGE_OF_LOG_TO_READ =
           new com.linkedin.drelephant.exceptions.util.EFConfiguration<Float>().setConfigurationName(THRESHOLD_PERCENTAGE_OF_LOG_TO_READ_NAME)
-              .setValue(configuration.getFloat(LAST_THRESHOLD_LOG_LENGTH_NAME, 0.95f))
+              .setValue(configuration.getFloat(THRESHOLD_PERCENTAGE_OF_LOG_TO_READ_NAME, 0.95f))
               .setDoc("If the driver logs are bigger than first threshold and "
                   + "less then second threshold then just read this percentage of log ."
                   + " Note , this would be the starting index of the log and it will read till end");
