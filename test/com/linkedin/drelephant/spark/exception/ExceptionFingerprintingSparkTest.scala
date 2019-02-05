@@ -26,7 +26,7 @@ import org.apache.hadoop.conf.Configuration
 import java.util
 
 import com.linkedin.drelephant.ElephantContext
-import com.linkedin.drelephant.exceptions.core.{ExceptionFingerprintingFactory, ExceptionFingerprintingSpark}
+import com.linkedin.drelephant.exceptions.core.{ExceptionFingerprintingFactory, ExceptionFingerprintingSpark, RegexRule}
 import common.TestConstants._
 import play.Application
 import play.GlobalSettings
@@ -34,6 +34,7 @@ import play.test.FakeApplication
 import org.apache.hadoop.conf.Configuration
 import play.test.Helpers._
 import com.linkedin.drelephant.exceptions.util.Constant._
+import com.linkedin.drelephant.exceptions.util.{Constant, ExceptionInfo}
 import com.linkedin.drelephant.exceptions.util.ExceptionUtils._
 
 import Array._
@@ -138,6 +139,52 @@ class ExceptionFingerprintingSparkTest extends FunSpec with Matchers {
       for (data <- dataContainsNoException) {
         isExceptionContains(data) should be(false)
       }
+
+      val exceptionOutOfMemory = new ExceptionInfo(1,
+        "java.lang.OutOfMemoryError: Exception thrown in awaitResult:",
+        "  at org.apache.spark.util.ThreadUtils$.awaitResult(ThreadUtils.scala:194)",
+        ExceptionInfo.ExceptionSource.EXECUTOR)
+
+      val exceptionVirtualMemory = new ExceptionInfo(1,
+        "[pid=116086,containerID=container_1535113754342_0003_01_000002] " +
+          "is running beyond virtual memory limits. Current usage: 106.2 MB of 1 GB " +
+          "physical memory used; 5.8 GB of 2.1 GB virtual memory used. Killing container",
+        "",
+        ExceptionInfo.ExceptionSource.EXECUTOR)
+
+      val exceptionExitCode  = new ExceptionInfo(1,
+        "Container killed by the ApplicationMaster. " +
+          "Container killed on request. Exit code is " +
+          "103 Container exited with a non-zero exit code 103",
+        "",
+        ExceptionInfo.ExceptionSource.EXECUTOR)
+
+      val exceptionNonAutoTuningFault = new ExceptionInfo(1,
+        "java.io.FileNotFoundException: File webhdfs://nn1.grid.example.com:50070/logs/spark/application_1.lz4 does not exist.",
+        "at com.linkedin.drelephant.util.SparkUtils$class.com$linkedin$drelephant$util$SparkUtils$$openEventLog(SparkUtils.scala:313)",
+        ExceptionInfo.ExceptionSource.EXECUTOR)
+
+      val exceptionList = new java.util.ArrayList[ExceptionInfo]()
+      val rule = new RegexRule()
+      exceptionList.add(exceptionOutOfMemory)
+      rule.logic(exceptionList) should be (Constant.LogClass.AUTOTUNING_ENABLED)
+      exceptionList.clear()
+
+      exceptionList.add(exceptionVirtualMemory)
+      rule.logic(exceptionList) should be (Constant.LogClass.AUTOTUNING_ENABLED)
+      exceptionList.clear()
+
+      exceptionList.add(exceptionVirtualMemory)
+      rule.logic(exceptionList) should be (Constant.LogClass.AUTOTUNING_ENABLED)
+      exceptionList.clear()
+
+      exceptionList.add(exceptionExitCode)
+      rule.logic(exceptionList) should be (Constant.LogClass.AUTOTUNING_ENABLED)
+      exceptionList.clear()
+
+      exceptionList.add(exceptionNonAutoTuningFault)
+      rule.logic(exceptionList) should be (Constant.LogClass.USER_ENABLED)
+      exceptionList.clear()
     }
 
     it("check for start index based on log length"){

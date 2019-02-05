@@ -56,9 +56,8 @@ public class ExceptionUtils {
         {"^.+Exception.*", "^.+Error.*", ".*Container\\s+killed.*"};
 
     private static final String[] DEFAULT_REGEX_AUTO_TUNING_FAULT =
-        {".*java.lang.OutOfMemoryError.*", ".*Container .* is running beyond virtual memory limits.*",
-            ".*Container killed on request. Exit code is 103.*", ".*Container killed on request. Exit code is 104.*",
-            ".*exitCode=103.*", ".*exitCode=104.*"};
+        {".*java.lang.OutOfMemoryError.*", ".*is running beyond virtual memory limits.*",".*is running beyond physical memory limits.*",
+            ".*Container killed on request. Exit code is 103.*", ".*Container killed on request. Exit code is 104.*"};
 
     public static void buildConfigurations(Configuration configuration) {
       FIRST_THRESHOLD_LOG_LENGTH_IN_BYTES =
