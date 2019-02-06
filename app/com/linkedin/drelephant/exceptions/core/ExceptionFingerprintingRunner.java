@@ -13,7 +13,8 @@ import static com.linkedin.drelephant.exceptions.util.Constant.*;
 
 /**
  * This class is actually responsible to run exception fingerprinting . Class which
- * want to run exception fingerprinting should call this call and run as seperate thread;
+ * want to run exception fingerprinting should call this .;
+ * It implemented Runnable because it will run as separate thread in future versions
  */
 
 public class ExceptionFingerprintingRunner implements Runnable {
@@ -41,7 +42,7 @@ public class ExceptionFingerprintingRunner implements Runnable {
       List<ExceptionInfo> exceptionInfos = exceptionFingerprinting.processRawData(_analyticJob);
       LogClass logclass = exceptionFingerprinting.classifyException(exceptionInfos);
       boolean isAutoTuningFault = false;
-      if (logclass!=null && logclass.equals(LogClass.AUTOTUNING_ENABLED)) {
+      if (logclass != null && logclass.equals(LogClass.AUTOTUNING_ENABLED)) {
         isAutoTuningFault = true;
       }
       if (isAutoTuningFault) {
@@ -52,7 +53,7 @@ public class ExceptionFingerprintingRunner implements Runnable {
       logger.error(" Error while processing exception fingerprinting for app " + _analyticJob.getAppId(), e);
     }
     long endTime = System.nanoTime();
-    logger.info(
-        "Total time spent in exception fingerprinting in  " + _analyticJob.getAppId() + " " + + (endTime-startTime)*1.0/(1000000000.0) +"s");
+    logger.info("Total time spent in exception fingerprinting in  " + _analyticJob.getAppId() + " "
+        + +(endTime - startTime) * 1.0 / (1000000000.0) + "s");
   }
 }

@@ -1,5 +1,10 @@
 package com.linkedin.drelephant.exceptions.util;
 
+/**
+ * This class defines all the configuration
+ * required for exception fingerprinting.
+ * @param <T> : Type of the data
+ */
 public class EFConfiguration<T> {
 
   private String configurationName;

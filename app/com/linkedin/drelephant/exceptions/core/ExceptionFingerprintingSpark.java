@@ -19,7 +19,6 @@ import models.JobExecution;
 import models.TuningJobDefinition;
 import org.apache.log4j.Logger;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.oozie.client.Job;
 
 import static com.linkedin.drelephant.exceptions.util.ExceptionInfo.*;
 import static com.linkedin.drelephant.exceptions.util.Constant.*;
@@ -30,7 +29,7 @@ import static com.linkedin.drelephant.exceptions.util.ExceptionUtils.Configurati
 public class ExceptionFingerprintingSpark implements ExceptionFingerprinting {
 
   private static final Logger logger = Logger.getLogger(ExceptionFingerprintingSpark.class);
-  boolean debugEnabled = logger.isDebugEnabled();
+  private boolean debugEnabled = logger.isDebugEnabled();
   private static final String JOBHISTORY_WEBAPP_ADDRESS = "mapreduce.jobhistory.webapp.address";
   private static final String NODEMANAGER_ADDRESS = "yarn.nodemanager.address";
   private static final int STARTING_INDEX_FOR_URL = 2;
@@ -75,9 +74,9 @@ public class ExceptionFingerprintingSpark implements ExceptionFingerprinting {
     List<ExceptionInfo> exceptions = new ArrayList<ExceptionInfo>();
 
     processStageLogs(exceptions);
-    //ToDo : If there are enough information from stage log then we should not call
-    //ToDo : driver logs ,to optimize the process .But it can lead to false positivies  in the system,
-    //ToDo : since failure of stage may or may not be the reason for application failure
+    //TODO : If there are enough information from stage log then we should not call
+    //driver logs ,to optimize the process .But it can lead to false positivies  in the system,
+    //since failure of stage may or may not be the reason for application failure
     processDriverLogs(exceptions);
     return exceptions;
   }
@@ -96,6 +95,7 @@ public class ExceptionFingerprintingSpark implements ExceptionFingerprinting {
            * find out simillar exceptions . We might need to change from hashcode to some other id
            * which will give same id , if they similar exceptions .
            */
+          //TODO : ID should be same for simillar exceptions
           addExceptions((stageData.failureReason().get() + "" + stageData.details()).hashCode(),
               stageData.failureReason().get(), stageData.details(), ExceptionSource.EXECUTOR, exceptions);
         }
@@ -120,13 +120,13 @@ public class ExceptionFingerprintingSpark implements ExceptionFingerprinting {
   }
 
   /**
-   * process driver / Application master logs for exceptions
-   * //ToDo: In case of unable to get log length there are
-   * //ToDo: multiple calls to same URL (we can optimize this)
-   * //Note : Above case should not happen unless there are some changes
-   * // in JHS APIs .
+   * process driver / Application master logs for exception
    * @param exceptions
    */
+  //ToDo: In case of unable to get log length there are
+  //multiple calls to same URL (we can optimize this)
+  // This case shouldn't happen in unless there are some changes
+  //in JHS APIs
   private void processDriverLogs(List<ExceptionInfo> exceptions) {
     long startTime = System.nanoTime();
     HttpURLConnection connection = null;
@@ -139,7 +139,7 @@ public class ExceptionFingerprintingSpark implements ExceptionFingerprinting {
       logger.info(
           " Time taken for first query " + (endTimeForFirstQuery - startTimeForFirstQuery) * 1.0 / (1000000000.0)
               + "s");
-      logger.error(" URL to query for driver logs  " + completeURLToQuery);
+      logger.info(" URL to query for driver logs  " + completeURLToQuery);
       URL amAddress = new URL(completeURLToQuery);
       connection = (HttpURLConnection) amAddress.openConnection();
       connection.setConnectTimeout(JHS_TIME_OUT.getValue());
@@ -171,7 +171,7 @@ public class ExceptionFingerprintingSpark implements ExceptionFingerprinting {
 
   /**
    * If unable to get log length , then read by default last 4096 bytes
-   * If log length is greater than threshold then read last 20 percentage of logs
+   * If log length is greater than threshold then read last some percentage of logs
    * If log length is less than threshold then real complete logs .
    * @param url
    * @return

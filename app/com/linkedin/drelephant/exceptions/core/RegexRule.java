@@ -30,7 +30,7 @@ public class RegexRule implements Rule {
    * exceptions to Auto Tune Enabled exception . Another extension to this logic is to check how many
    * logs have out of memory exception/error (percentage out of total)
    * and based on that decide whether its autotuning error or not.
-   * @return : If its out of memory error
+   * @return : Class in which the exception classified.
    */
 
   public LogClass logic (List<ExceptionInfo> exceptions){

@@ -2,7 +2,14 @@ package com.linkedin.drelephant.exceptions;
 
 import com.linkedin.drelephant.exceptions.util.ExceptionInfo;
 import java.util.List;
+
 import static com.linkedin.drelephant.exceptions.util.Constant.*;
+
+
+/**
+ * For rule based classification , there can be different rules to classify the
+ * exceptions . One such implementation is RegexRule .
+ */
 
 public interface Rule {
   /**
@@ -20,6 +27,4 @@ public interface Rule {
   Rule setPriority(RulePriority priority);
 
   RulePriority getPriority();
-
-
 }

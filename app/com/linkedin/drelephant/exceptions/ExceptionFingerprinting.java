@@ -20,7 +20,7 @@ public interface ExceptionFingerprinting {
    * @param analyticJob
    * @return
    */
-  List<com.linkedin.drelephant.exceptions.util.ExceptionInfo> processRawData(AnalyticJob analyticJob);
+  List<ExceptionInfo> processRawData(AnalyticJob analyticJob);
 
   /**
    *
@@ -35,6 +35,7 @@ public interface ExceptionFingerprinting {
    * @param jobExecutionID
    * @return true if the information is successfully saved .
    * @throws Exception : Return exception if information is not been saved successfully.
+   * return false if the job is not auto tuning enabled.
    */
   boolean saveData(String jobExecutionID) throws Exception;
 }

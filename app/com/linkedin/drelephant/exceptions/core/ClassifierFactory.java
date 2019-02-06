@@ -24,6 +24,7 @@ public class ClassifierFactory {
       case RULE_BASE_CLASSIFIER:
         logger.info(" Rule Based classifier is called ");
         return new RuleBasedClassifier();
+      //TODO: Create a ML based classifier to classify exceptions into one of the classes
       case ML_BASED_CLASSIFIER:
         logger.info(" ML Based classifier is called ");
         return null;

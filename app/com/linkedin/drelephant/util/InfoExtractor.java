@@ -28,7 +28,6 @@ import com.linkedin.drelephant.mapreduce.data.MapReduceApplicationData;
 import com.linkedin.drelephant.schedulers.Scheduler;
 import com.linkedin.drelephant.spark.data.SparkApplicationData;
 
-
 import java.lang.reflect.InvocationTargetException;
 import java.util.HashSet;
 import java.util.List;

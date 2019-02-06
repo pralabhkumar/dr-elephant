@@ -12,8 +12,12 @@ import static com.linkedin.drelephant.exceptions.util.Constant.*;
  * Base classifier , another one could be ML based classified
  */
 public interface Classifier {
-
-  void preProcessingData(List<com.linkedin.drelephant.exceptions.util.ExceptionInfo> exceptions);
+  /**
+   *  It will be used to preprocess the data . For e.g
+   *  to remove some of the exceptions or for feature selection.
+   * @param exceptions
+   */
+  void preProcessingData(List<ExceptionInfo> exceptions);
 
   /**
    *

@@ -25,13 +25,12 @@ public class ExceptionFingerprintingFactory {
         logger.info(" Spark Exception Fingerprinting is called ");
         Seq<StageData> stagesWithFailedTasks = ((SparkApplicationData) data).stagesWithFailedTasks();
         if (stagesWithFailedTasks != null) {
-          logger.info(
-              " Size of stages with failed task " + stagesWithFailedTasks.size());
+          logger.info(" Size of stages with failed task " + stagesWithFailedTasks.size());
           return new ExceptionFingerprintingSpark(WrapAsJava$.MODULE$.seqAsJavaList(stagesWithFailedTasks));
-        }else{
+        } else {
           return new ExceptionFingerprintingSpark(null);
         }
-
+        //TODO : Create MR exception fingerprinting for Map Reduce jobs
       case MR:
         logger.info(" MR Exception Fingerprinting  is called ");
         return null;
