@@ -26,15 +26,18 @@ public class ExceptionFingerprintingRunnerTest implements Runnable {
       e.printStackTrace();
     }
   }
+
   public void run() {
     populateTestData();
     AppResult _appResult = AppResult.find.byId("application_1458194917883_1453361");
-    ExceptionFingerprintingRunner runner = new ExceptionFingerprintingRunner(_analyticJob,_appResult,data,
-        ExecutionEngineTypes.SPARK);
+    ExceptionFingerprintingRunner runner =
+        new ExceptionFingerprintingRunner(_analyticJob, _appResult, data, ExecutionEngineTypes.SPARK);
     runner.run();
-    JobExecution jobExecution =
-        JobExecution.find.where().eq(JobExecution.TABLE.jobExecId, "https://ltx1-holdemaz01.grid.linkedin.com:8443/executor?execid=5416293&job=countByCountryFlow_countByCountry&attempt=0").findUnique();
-    assertTrue("job execution status  "+jobExecution.autoTuningFault, jobExecution.autoTuningFault == true);
+    JobExecution jobExecution = JobExecution.find.where()
+        .eq(JobExecution.TABLE.jobExecId,
+            "https://ltx1-holdemaz01.grid.linkedin.com:8443/executor?execid=5416293&job=countByCountryFlow_countByCountry&attempt=0")
+        .findUnique();
+    assertTrue("Auto tuning fault " + jobExecution.autoTuningFault, jobExecution.autoTuningFault == true);
   }
 
 }

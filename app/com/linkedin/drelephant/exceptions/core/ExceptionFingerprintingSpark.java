@@ -14,9 +14,12 @@ import java.net.URL;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
+import models.JobDefinition;
 import models.JobExecution;
+import models.TuningJobDefinition;
 import org.apache.log4j.Logger;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.oozie.client.Job;
 
 import static com.linkedin.drelephant.exceptions.util.ExceptionInfo.*;
 import static com.linkedin.drelephant.exceptions.util.Constant.*;
@@ -216,7 +219,7 @@ public class ExceptionFingerprintingSpark implements ExceptionFingerprinting {
    * public for the purpose of testing . Visible for testing is not working
    * if the unit test case is in scala.
    */
-  public  long getStartIndexOfDriverLogs(long logLength) {
+  public long getStartIndexOfDriverLogs(long logLength) {
     if (logLength == 0) {
       return 0;
     } else if (logLength <= FIRST_THRESHOLD_LOG_LENGTH_IN_BYTES.getValue()) {
@@ -327,10 +330,23 @@ public class ExceptionFingerprintingSpark implements ExceptionFingerprinting {
       logger.error(" Job Execution with following id doesn't exist " + jobExecId);
       throw new Exception("Job execution with " + jobExecId + " doesn't exist");
     } else {
-      logger.error(" Job Execution is not null " + jobExecution);
-      jobExecution.autoTuningFault = true;
-      jobExecution.update();
+      TuningJobDefinition tuningJobDefinition = TuningJobDefinition.find.where()
+          .eq(TuningJobDefinition.TABLE.job + "." + JobDefinition.TABLE.jobDefId, jobExecution.job.jobDefId)
+          .findUnique();
+      if (tuningJobDefinition == null) {
+        logger.error("Job definition with following job execution id doesnt' exisit. " + jobExecId);
+        throw new Exception("Job definition with following job execution id doesnt' exisit. " + jobExecId);
+      } else {
+        if (!tuningJobDefinition.autoApply) {
+          logger.info(" Auto tuning is not enabled on the job");
+          return false;
+        } else {
+          logger.info(" Saving the changes " + jobExecution);
+          jobExecution.autoTuningFault = true;
+          jobExecution.update();
+          return true;
+        }
+      }
     }
-    return true;
   }
 }
