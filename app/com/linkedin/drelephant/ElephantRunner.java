@@ -221,9 +221,8 @@ public class ElephantRunner implements Runnable {
       } else {
         if (_analyticJob != null) {
           MetricsController.markSkippedJob();
-          logger.error(
-              "Drop the analytic job. Reason: reached the max retries for application id = [" + _analyticJob.getAppId()
-                  + "].");
+          logger.error("Drop the analytic job. Reason: reached the max retries for application id = ["
+              + _analyticJob.getAppId() + "].");
         }
       }
     }

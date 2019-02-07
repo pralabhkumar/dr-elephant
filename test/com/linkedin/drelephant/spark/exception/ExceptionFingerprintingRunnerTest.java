@@ -31,7 +31,7 @@ public class ExceptionFingerprintingRunnerTest implements Runnable {
     populateTestData();
     AppResult _appResult = AppResult.find.byId("application_1458194917883_1453361");
     ExceptionFingerprintingRunner runner =
-        new ExceptionFingerprintingRunner(_analyticJob, _appResult, data, ExecutionEngineTypes.SPARK);
+        new ExceptionFingerprintingRunner(_analyticJob, _appResult, data, ExecutionEngineType.SPARK);
     runner.run();
     JobExecution jobExecution = JobExecution.find.where()
         .eq(JobExecution.TABLE.jobExecId,

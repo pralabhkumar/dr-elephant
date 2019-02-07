@@ -64,7 +64,7 @@ class SparkFetcher(fetcherConfigurationData: FetcherConfigurationData)
       .exists(_.toBoolean)
     if (!eventLogEnabled) {
       EventLogSource.None
-    } else if (useRestForLogs) EventLogSource.Rest else  EventLogSource.WebHdfs
+    } else if (useRestForLogs) EventLogSource.Rest else EventLogSource.WebHdfs
   }
 
   private[fetchers] lazy val shouldProcessLogsLocally = (eventLogSource == EventLogSource.Rest) &&

@@ -38,8 +38,7 @@ public class AnalyticJob {
   private static final Logger logger = Logger.getLogger(AnalyticJob.class);
 
   private static final String UNKNOWN_JOB_TYPE = "Unknown";   // The default job type when the data matches nothing.
-  private static final int _RETRY_LIMIT = 3;
-  // Number of times a job needs to be tried before going into second retry queue
+  private static final int _RETRY_LIMIT = 3;                  // Number of times a job needs to be tried before going into second retry queue
   private static final int _SECOND_RETRY_LIMIT = 5;           // Number of times a job needs to be tried before dropping
   private static final String EXCLUDE_JOBTYPE = "exclude_jobtypes_filter"; // excluded Job Types for heuristic
 
@@ -268,8 +267,8 @@ public class AnalyticJob {
       for (Heuristic heuristic : heuristics) {
         String confExcludedApps = heuristic.getHeuristicConfData().getParamMap().get(EXCLUDE_JOBTYPE);
 
-        if (confExcludedApps == null || confExcludedApps.length() == 0 || !Arrays.asList(confExcludedApps.split(","))
-            .contains(jobTypeName)) {
+        if (confExcludedApps == null || confExcludedApps.length() == 0 ||
+            !Arrays.asList(confExcludedApps.split(",")).contains(jobTypeName)) {
           HeuristicResult result = heuristic.apply(data);
           if (result != null) {
             analysisResults.add(result);
@@ -278,8 +277,7 @@ public class AnalyticJob {
       }
     }
 
-    HadoopMetricsAggregator hadoopMetricsAggregator =
-        ElephantContext.instance().getAggregatorForApplicationType(getAppType());
+    HadoopMetricsAggregator hadoopMetricsAggregator = ElephantContext.instance().getAggregatorForApplicationType(getAppType());
     hadoopMetricsAggregator.aggregate(data);
     HadoopAggregatedData hadoopAggregatedData = hadoopMetricsAggregator.getResult();
 
@@ -303,11 +301,10 @@ public class AnalyticJob {
     Severity worstSeverity = Severity.NONE;
     for (HeuristicResult heuristicResult : analysisResults) {
       AppHeuristicResult detail = new AppHeuristicResult();
-      detail.heuristicClass =
-          Utils.truncateField(heuristicResult.getHeuristicClassName(), AppHeuristicResult.HEURISTIC_CLASS_LIMIT,
-              getAppId());
-      detail.heuristicName =
-          Utils.truncateField(heuristicResult.getHeuristicName(), AppHeuristicResult.HEURISTIC_NAME_LIMIT, getAppId());
+      detail.heuristicClass = Utils.truncateField(heuristicResult.getHeuristicClassName(),
+          AppHeuristicResult.HEURISTIC_CLASS_LIMIT, getAppId());
+      detail.heuristicName = Utils.truncateField(heuristicResult.getHeuristicName(),
+          AppHeuristicResult.HEURISTIC_NAME_LIMIT, getAppId());
       detail.severity = heuristicResult.getSeverity();
       detail.score = heuristicResult.getScore();
 
@@ -315,13 +312,12 @@ public class AnalyticJob {
       for (HeuristicResultDetails heuristicResultDetails : heuristicResult.getHeuristicResultDetails()) {
         AppHeuristicResultDetails heuristicDetail = new AppHeuristicResultDetails();
         heuristicDetail.yarnAppHeuristicResult = detail;
-        heuristicDetail.name =
-            Utils.truncateField(heuristicResultDetails.getName(), AppHeuristicResultDetails.NAME_LIMIT, getAppId());
-        heuristicDetail.value =
-            Utils.truncateField(heuristicResultDetails.getValue(), AppHeuristicResultDetails.VALUE_LIMIT, getAppId());
-        heuristicDetail.details =
-            Utils.truncateField(heuristicResultDetails.getDetails(), AppHeuristicResultDetails.DETAILS_LIMIT,
-                getAppId());
+        heuristicDetail.name = Utils.truncateField(heuristicResultDetails.getName(),
+            AppHeuristicResultDetails.NAME_LIMIT, getAppId());
+        heuristicDetail.value = Utils.truncateField(heuristicResultDetails.getValue(),
+            AppHeuristicResultDetails.VALUE_LIMIT, getAppId());
+        heuristicDetail.details = Utils.truncateField(heuristicResultDetails.getDetails(),
+            AppHeuristicResultDetails.DETAILS_LIMIT, getAppId());
         // This was added for AnalyticTest. Commenting this out to fix a bug. Also disabling AnalyticJobTest.
         //detail.yarnAppHeuristicResultDetails = new ArrayList<AppHeuristicResultDetails>();
         detail.yarnAppHeuristicResultDetails.add(heuristicDetail);
@@ -338,7 +334,7 @@ public class AnalyticJob {
     /**
      * Exception fingerprinting is applied (if required)
      */
-    boolean isExceptionFingerPrintingApplied = applyExceptionFingerPrinting(result, data);
+    boolean isExceptionFingerPrintingApplied = applyExceptionFingerprinting(result, data);
     if (isExceptionFingerPrintingApplied) {
       logger.debug(" Exception Fingerprinting is successfully applied ");
     }
@@ -352,21 +348,17 @@ public class AnalyticJob {
    * @return true if the exception fingerprinting is applied else false
    */
 
-  public boolean applyExceptionFingerPrinting(AppResult result, HadoopApplicationData data) {
+  public boolean applyExceptionFingerprinting(AppResult result, HadoopApplicationData data) {
     try {
       if (!this.isSucceeded() && this.getAppType()
           .getName()
           .toLowerCase()
-          .equals(ExecutionEngineTypes.SPARK.name().toLowerCase())) {
+          .equals(ExecutionEngineType.SPARK.name().toLowerCase())) {
         logger.info("Exception fingerprinting is called for following appID " + this.getAppId());
-        /**
-         * Currently running as part of main thread as update of tuning table and dr elephant should be atomic
-         * process .
-         */
         // TODO: Create a separate thread do all EF heavy processing and then update data base will in the main
         // thread . For this to be done InfoExtractor.loadInfo(result, data); has to be separated out.
         // As job_execution_id is the common key between auto tuning and dr elephant processing
-        new ExceptionFingerprintingRunner(this, result, data, ExecutionEngineTypes.SPARK).run();
+        new ExceptionFingerprintingRunner(this, result, data, ExecutionEngineType.SPARK).run();
         return true;
       }
     } catch (Exception e) {

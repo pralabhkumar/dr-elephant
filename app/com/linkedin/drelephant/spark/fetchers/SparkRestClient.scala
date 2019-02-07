@@ -159,7 +159,7 @@ class SparkRestClient(sparkConf: SparkConf) {
   }
 
   private def getLogData(attemptTarget: WebTarget): Option[SparkLogDerivedData] = {
-      val target = attemptTarget.path("logs")
+    val target = attemptTarget.path("logs")
     logger.info(s"calling REST API at ${target.getUri} to get eventlogs")
     resource.managed {
       getApplicationLogs(target)
