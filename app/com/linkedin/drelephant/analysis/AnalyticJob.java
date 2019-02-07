@@ -268,7 +268,7 @@ public class AnalyticJob {
         String confExcludedApps = heuristic.getHeuristicConfData().getParamMap().get(EXCLUDE_JOBTYPE);
 
         if (confExcludedApps == null || confExcludedApps.length() == 0 ||
-            !Arrays.asList(confExcludedApps.split(",")).contains(jobTypeName)) {
+                !Arrays.asList(confExcludedApps.split(",")).contains(jobTypeName)) {
           HeuristicResult result = heuristic.apply(data);
           if (result != null) {
             analysisResults.add(result);
@@ -372,7 +372,7 @@ public class AnalyticJob {
    *
    * @return true if should retry, else false
    */
-  public boolean isSecondPhaseRetry() {
+  public boolean isSecondPhaseRetry(){
     return (_secondRetries++) < _SECOND_RETRY_LIMIT;
   }
 

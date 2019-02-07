@@ -210,7 +210,7 @@ public class ElephantRunner implements Runnable {
       }
     }
 
-    private void jobFate() {
+    private void jobFate () {
       if (_analyticJob != null && _analyticJob.retry()) {
         logger.warn("Add analytic job id [" + _analyticJob.getAppId() + "] into the retry list.");
         _analyticJobGenerator.addIntoRetries(_analyticJob);
@@ -222,7 +222,7 @@ public class ElephantRunner implements Runnable {
         if (_analyticJob != null) {
           MetricsController.markSkippedJob();
           logger.error("Drop the analytic job. Reason: reached the max retries for application id = ["
-              + _analyticJob.getAppId() + "].");
+                  + _analyticJob.getAppId() + "].");
         }
       }
     }
