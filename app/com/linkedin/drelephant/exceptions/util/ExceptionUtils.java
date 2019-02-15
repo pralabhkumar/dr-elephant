@@ -16,6 +16,12 @@
 
 package com.linkedin.drelephant.exceptions.util;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -24,6 +30,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.log4j.Logger;
 
 import static com.linkedin.drelephant.exceptions.util.Constant.*;
+import static com.linkedin.drelephant.exceptions.util.ExceptionUtils.ConfigurationBuilder.*;
 
 
 /**
@@ -50,6 +57,28 @@ public class ExceptionUtils {
       }
     }
     return false;
+  }
+
+  public static HttpURLConnection intializeHTTPConnection(String url) throws IOException {
+    URL amAddress = new URL(url);
+    HttpURLConnection connection = (HttpURLConnection) amAddress.openConnection();
+    connection.setConnectTimeout(JHS_TIME_OUT.getValue());
+    connection.setReadTimeout(JHS_TIME_OUT.getValue());
+    connection.connect();
+    return connection;
+  }
+
+  public static void gracefullyCloseConnection(BufferedReader in, HttpURLConnection connection) {
+    try {
+      if (in != null) {
+        in.close();
+      }
+      if (connection != null) {
+        connection.disconnect();
+      }
+    } catch (Exception e1) {
+      logger.error(" Exception while closing the connections ", e1);
+    }
   }
 
   /**

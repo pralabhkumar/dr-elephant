@@ -31,7 +31,6 @@ import static com.linkedin.drelephant.exceptions.util.ExceptionUtils.Configurati
  */
 public class RegexRule implements Rule {
   private static final Logger logger = Logger.getLogger(RegexRule.class);
-  boolean debugEnabled = logger.isDebugEnabled();
   private List<ExceptionInfo> exceptions ;
   private static final List<Pattern> patterns = new ArrayList<Pattern>();
   RulePriority rulePriority;
@@ -53,14 +52,13 @@ public class RegexRule implements Rule {
     this.exceptions = exceptions;
     for (ExceptionInfo exceptionInfo : this.exceptions) {
       if(checkForPattern((exceptionInfo.getExceptionName() + " " + exceptionInfo.getExcptionStackTrace()))) {
-        if(debugEnabled) {
-          logger.debug("Exception Analysis " + exceptionInfo.getExceptionName() + " " + exceptionInfo.getExcptionStackTrace());
-        }
-        logger.info(" AutoTuning Fault ");
+        logger.info(
+            "Exception Found " + exceptionInfo.getExceptionName() + " " + exceptionInfo.getExcptionStackTrace());
+        logger.info(" Exceptions which can be because of Auto tuning is found .Hence classifying it AutoTuning Fault ");
         return LogClass.AUTOTUNING_ENABLED;
       }
     }
-    logger.info(" User Fault ");
+    logger.info(" No Auto tuning related exception found ,hence classifying into User fault. ");
     return LogClass.USER_ENABLED;
   }
 

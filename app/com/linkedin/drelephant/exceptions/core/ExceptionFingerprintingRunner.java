@@ -37,14 +37,14 @@ public class ExceptionFingerprintingRunner implements Runnable {
   private AnalyticJob _analyticJob;
   private AppResult _appResult;
   private HadoopApplicationData data;
-  private ExecutionEngineType executionTypes;
+  private ExecutionEngineType executionType;
 
   public ExceptionFingerprintingRunner(AnalyticJob analyticJob, AppResult appResult, HadoopApplicationData data,
-      ExecutionEngineType exceutionTypes) {
+      ExecutionEngineType executionType) {
     this._analyticJob = analyticJob;
     this._appResult = appResult;
     this.data = data;
-    this.executionTypes = exceutionTypes;
+    this.executionType = executionType;
   }
 
   @Override
@@ -53,11 +53,11 @@ public class ExceptionFingerprintingRunner implements Runnable {
     try {
       logger.info(" Exception Fingerprinting thread started for app " + _analyticJob.getAppId());
       ExceptionFingerprinting exceptionFingerprinting =
-          ExceptionFingerprintingFactory.getExceptionFingerprinting(executionTypes, data);
+          ExceptionFingerprintingFactory.getExceptionFingerprinting(executionType, data);
       List<ExceptionInfo> exceptionInfos = exceptionFingerprinting.processRawData(_analyticJob);
-      LogClass logclass = exceptionFingerprinting.classifyException(exceptionInfos);
+      LogClass logClass = exceptionFingerprinting.classifyException(exceptionInfos);
       boolean isAutoTuningFault = false;
-      if (logclass != null && logclass.equals(LogClass.AUTOTUNING_ENABLED)) {
+      if (logClass != null && logClass.equals(LogClass.AUTOTUNING_ENABLED)) {
         isAutoTuningFault = true;
       }
       if (isAutoTuningFault) {

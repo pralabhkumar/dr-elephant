@@ -116,7 +116,7 @@ public class ExceptionFingerprintingSpark implements ExceptionFingerprinting {
               stageData.failureReason().get(), stageData.details(), ExceptionSource.EXECUTOR, exceptions);
         }
       } else {
-        logger.info(" There is not failed stage data ");
+        logger.info(" There are no failed stages data ");
       }
     } catch (Exception e) {
       logger.error("Error process stages logs ", e);
@@ -130,7 +130,7 @@ public class ExceptionFingerprintingSpark implements ExceptionFingerprinting {
       ExceptionSource exceptionSource, List<ExceptionInfo> exceptions) {
     ExceptionInfo exceptionInfo = new ExceptionInfo(uniqueID, exceptionName, exceptionStackTrace, exceptionSource);
     if (debugEnabled) {
-      logger.info(" Exception Information " + exceptionInfo);
+      logger.debug(" Exception Information " + exceptionInfo);
     }
     exceptions.add(exceptionInfo);
   }
@@ -156,18 +156,16 @@ public class ExceptionFingerprintingSpark implements ExceptionFingerprinting {
           " Time taken for first query " + (endTimeForFirstQuery - startTimeForFirstQuery) * 1.0 / (1000000000.0)
               + "s");
       logger.info(" URL to query for driver logs  " + completeURLToQuery);
-      URL amAddress = new URL(completeURLToQuery);
-      connection = (HttpURLConnection) amAddress.openConnection();
-      connection.setConnectTimeout(JHS_TIME_OUT.getValue());
-      connection.setReadTimeout(JHS_TIME_OUT.getValue());
-      connection.connect();
+      connection =  intializeHTTPConnection(completeURLToQuery);
       in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
       String inputLine;
       String logLengthTrigger = LogLengthSchema.LOG_LENGTH.name().replace("_", " ");
       try {
         while ((inputLine = in.readLine()) != null) {
           if (inputLine.toUpperCase().contains(logLengthTrigger)) {
-            logger.debug(" Processing of logs ");
+            if (debugEnabled) {
+              logger.debug(" Processing of logs ");
+            }
             driverLogProcessingForException(in, exceptions);
             break;
           }
@@ -175,9 +173,9 @@ public class ExceptionFingerprintingSpark implements ExceptionFingerprinting {
       } catch (IOException e) {
         logger.error(" IO Exception while processing driver logs for ", e);
       }
-      gracefullyCloseConnection(in, connection);
     } catch (Exception e) {
       logger.info(" Exception processing  driver logs ", e);
+    } finally {
       gracefullyCloseConnection(in, connection);
     }
     long endTime = System.nanoTime();
@@ -197,11 +195,7 @@ public class ExceptionFingerprintingSpark implements ExceptionFingerprinting {
     BufferedReader in = null;
     HttpURLConnection connection = null;
     try {
-      URL amAddress = new URL(url);
-      connection = (HttpURLConnection) amAddress.openConnection();
-      connection.setConnectTimeout(JHS_TIME_OUT.getValue());
-      connection.setReadTimeout(JHS_TIME_OUT.getValue());
-      connection.connect();
+      connection =  intializeHTTPConnection(url);
       in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
       String inputLine;
       long logLength = 0l;
@@ -218,11 +212,12 @@ public class ExceptionFingerprintingSpark implements ExceptionFingerprinting {
           break;
         }
       }
-      gracefullyCloseConnection(in, connection);
     } catch (Exception e) {
       logger.error(" Exception while creating complete URL to query ", e);
-      gracefullyCloseConnection(in, connection);
       return url;
+    }
+    finally{
+      gracefullyCloseConnection(in, connection);
     }
     return completeURLToQuery;
   }
@@ -259,19 +254,6 @@ public class ExceptionFingerprintingSpark implements ExceptionFingerprinting {
     }
     logger.info(" log length in bytes " + logLength);
     return logLength;
-  }
-
-  private void gracefullyCloseConnection(BufferedReader in, HttpURLConnection connection) {
-    try {
-      if (in != null) {
-        in.close();
-      }
-      if (connection != null) {
-        connection.disconnect();
-      }
-    } catch (Exception e1) {
-      logger.error(" Exception while closing the connections ", e1);
-    }
   }
 
   /**
@@ -350,14 +332,14 @@ public class ExceptionFingerprintingSpark implements ExceptionFingerprinting {
           .eq(TuningJobDefinition.TABLE.job + "." + JobDefinition.TABLE.jobDefId, jobExecution.job.jobDefId)
           .findUnique();
       if (tuningJobDefinition == null) {
-        logger.error("Job definition with following job execution id doesnt' exisit. " + jobExecId);
-        throw new Exception("Job definition with following job execution id doesnt' exisit. " + jobExecId);
+        logger.error("Job definition with following job execution id doesnt' exist. " + jobExecId);
+        throw new Exception("Job definition with following job execution id doesnt' exist. " + jobExecId);
       } else {
         if (!tuningJobDefinition.autoApply) {
           logger.info(" Auto tuning is not enabled on the job");
           return false;
         } else {
-          logger.info(" Saving the changes " + jobExecution);
+          logger.info(" Job execution is failed because of autotuning . Saving this result to DB" + jobExecution);
           jobExecution.autoTuningFault = true;
           jobExecution.update();
           return true;

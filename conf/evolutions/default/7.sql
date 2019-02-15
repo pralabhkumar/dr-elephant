@@ -19,4 +19,8 @@ INSERT INTO tuning_parameter VALUES (26,'spark.dynamicAllocation.maxExecutors',5
 INSERT INTO tuning_parameter VALUES (27,'spark.executor.instances',5,1,1,900,1,0, current_timestamp(0), current_timestamp(0));
 
 
-ALTER TABLE job_execution add column auto_tuning_fault tinyint(4) default 0 AFTER input_size_in_bytes;
+ALTER TABLE job_execution ADD COLUMN auto_tuning_fault TINYINT(4) DEFAULT 0 AFTER input_size_in_bytes;
+
+# --- !Downs
+
+ALTER TABLE job_execution DROP COLUMN auto_tuning_fault;

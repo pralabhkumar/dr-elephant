@@ -24,7 +24,7 @@ public class ExceptionInfo {
   private int exceptionID;
   private String exceptionName;
   private String exceptionStackTrace;
-  private String exceptionSource;
+  private ExceptionSource exceptionSource;
 
   public enum ExceptionSource {DRIVER, EXECUTOR, SCHEDULER}
 
@@ -33,7 +33,7 @@ public class ExceptionInfo {
     this.exceptionID = exceptionID;
     this.exceptionName = exceptionName;
     this.exceptionStackTrace = exceptionStackTrace;
-    this.exceptionSource = exceptionSource.name();
+    this.exceptionSource = exceptionSource;
   }
 
   //TODO: Currently this has not been used . But the idea to have ID of two excpetion same
@@ -58,13 +58,9 @@ public class ExceptionInfo {
 
   //TODO : Use exception source to prioritize  the exception
 
-  public String getExceptionSource() {
-    return exceptionSource;
-  }
-
   @Override
   public String toString() {
     return "ExceptionInfo{" + "exceptionID=" + exceptionID + ", exceptionName='" + exceptionName + '\''
-        + ", excptionStackTrace='" + exceptionStackTrace + '\'' + ", exceptionSource='" + exceptionSource + '\'' + '}';
+        + ", exceptionStackTrace='" + exceptionStackTrace + '\'' + ", exceptionSource='" + exceptionSource.name() + '\'' + '}';
   }
 }

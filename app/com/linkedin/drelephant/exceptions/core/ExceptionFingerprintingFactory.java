@@ -34,9 +34,9 @@ import scala.collection.convert.WrapAsJava$;
 public class ExceptionFingerprintingFactory {
   private static final Logger logger = Logger.getLogger(ExceptionFingerprintingFactory.class);
 
-  public static ExceptionFingerprinting getExceptionFingerprinting(ExecutionEngineType executionEngineTypes,
+  public static ExceptionFingerprinting getExceptionFingerprinting(ExecutionEngineType executionEngineType,
       HadoopApplicationData data) {
-    switch (executionEngineTypes) {
+    switch (executionEngineType) {
       case SPARK:
         logger.info(" Spark Exception Fingerprinting is called ");
         Seq<StageData> stagesWithFailedTasks = ((SparkApplicationData) data).stagesWithFailedTasks();

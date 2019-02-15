@@ -121,7 +121,7 @@ public class ElephantRunner implements Runnable {
           _threadPoolExecutorFailure = new ThreadPoolExecutor(numberofThreadsforFailedJobs, numberofThreadsforFailedJobs, 0L, TimeUnit.MILLISECONDS,
               new LinkedBlockingQueue<Runnable>(), factory);
 
-          logger.info(" Executor num is for failure "+numberofThreadsforFailedJobs);
+          logger.info(" Number of threads for failure  "+numberofThreadsforFailedJobs);
           while (_running.get() && !Thread.currentThread().isInterrupted()) {
             _analyticJobGenerator.updateResourceManagerAddresses();
             lastRun = System.currentTimeMillis();

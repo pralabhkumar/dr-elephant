@@ -29,7 +29,7 @@ import static com.linkedin.drelephant.exceptions.util.Constant.*;
 
 
 public class RuleBasedClassifier implements Classifier {
-  private static final Logger logger = Logger.getLogger(ExceptionFingerprintingSpark.class);
+  private static final Logger logger = Logger.getLogger(RuleBasedClassifier.class);
   private List<ExceptionInfo> dataToClassify = null;
 
   /**
