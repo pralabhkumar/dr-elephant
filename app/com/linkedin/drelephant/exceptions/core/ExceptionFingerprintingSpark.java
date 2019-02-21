@@ -332,8 +332,8 @@ public class ExceptionFingerprintingSpark implements ExceptionFingerprinting {
           .eq(TuningJobDefinition.TABLE.job + "." + JobDefinition.TABLE.jobDefId, jobExecution.job.jobDefId)
           .findUnique();
       if (tuningJobDefinition == null) {
-        logger.error("Job definition with following job execution id doesnt' exist. " + jobExecId);
-        throw new Exception("Job definition with following job execution id doesnt' exist. " + jobExecId);
+        logger.warn("Job definition with following job execution id doesnt' exist. " + jobExecId);
+        return false;
       } else {
         if (!tuningJobDefinition.autoApply) {
           logger.info(" Auto tuning is not enabled on the job");
