@@ -325,8 +325,8 @@ public class ExceptionFingerprintingSpark implements ExceptionFingerprinting {
   public boolean saveData(String jobExecId) throws Exception {
     JobExecution jobExecution = JobExecution.find.where().eq(JobExecution.TABLE.jobExecId, jobExecId).findUnique();
     if (jobExecution == null) {
-      logger.error(" Job Execution with following id doesn't exist " + jobExecId);
-      throw new Exception("Job execution with " + jobExecId + " doesn't exist");
+      logger.warn(" Job Execution with following id doesn't exist " + jobExecId);
+      return false;
     } else {
       TuningJobDefinition tuningJobDefinition = TuningJobDefinition.find.where()
           .eq(TuningJobDefinition.TABLE.job + "." + JobDefinition.TABLE.jobDefId, jobExecution.job.jobDefId)
@@ -336,7 +336,7 @@ public class ExceptionFingerprintingSpark implements ExceptionFingerprinting {
         return false;
       } else {
         if (!tuningJobDefinition.autoApply) {
-          logger.info(" Auto tuning is not enabled on the job");
+          logger.info(" Auto tuning is not enabled on the job "+tuningJobDefinition);
           return false;
         } else {
           logger.info(" Job execution is failed because of autotuning . Saving this result to DB" + jobExecution);
