@@ -162,7 +162,7 @@ INSERT INTO job_execution(id, job_exec_id, job_exec_url, job_definition_id, flow
 (1541,'https://ltx1-holdemaz01.grid.linkedin.com:8443/executor?execid=5416293&job=countByCountryFlow_countByCountry&attempt=0','https://ltx1-holdemaz01.grid.linkedin.com:8443/executor?execid=5416293&job=countByCountryFlow_countByCountry&attempt=0',100003,1541,'SUCCEEDED',21.132545572916666,3.2694833333333335,324713861757,'2018-02-14 05:30:42','2018-02-14 05:30:42');
 
 INSERT INTO job_suggested_param_set VALUES
-(1137,100003,4,'FITNESS_COMPUTED', 0 ,1 , 0 ,  0 ,   0 ,20 , 1086,'2018-09-17 23:22:31' ,'2018-09-17 11:09:31');
+(1137,100003,4,'FITNESS_COMPUTED', 0 ,1 , 0 ,  1 ,   0 ,10000 , 1086,'2018-09-17 23:22:31' ,'2018-09-17 11:09:31');
 
 INSERT INTO tuning_job_execution_param_set (job_suggested_param_set_id,job_execution_id,tuning_enabled,created_ts,updated_ts) VALUES
 (1137,1541,1,'2018-09-17 23:22:31','2018-09-17 10:52:31');

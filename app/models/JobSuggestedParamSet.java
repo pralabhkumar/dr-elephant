@@ -129,4 +129,14 @@ public class JobSuggestedParamSet extends Model {
     this.updatedTs = new Timestamp(System.currentTimeMillis());
     super.update();
   }
+
+  @Override
+  public String toString() {
+    return "JobSuggestedParamSet{" + "id=" + id + ", jobDefinition=" + jobDefinition + ", fitnessJobExecution="
+        + fitnessJobExecution + ", tuningAlgorithm=" + tuningAlgorithm + ", paramSetState=" + paramSetState
+        + ", isParamSetDefault=" + isParamSetDefault + ", isParamSetSuggested=" + isParamSetSuggested + ", fitness="
+        + fitness + ", isParamSetBest=" + isParamSetBest + ", isManuallyOverridenParameter="
+        + isManuallyOverridenParameter + ", areConstraintsViolated=" + areConstraintsViolated + ", createdTs="
+        + createdTs + ", updatedTs=" + updatedTs + '}';
+  }
 }

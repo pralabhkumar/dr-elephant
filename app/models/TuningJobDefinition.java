@@ -133,4 +133,5 @@ public class TuningJobDefinition extends Model {
     this.updatedTs = new Timestamp(System.currentTimeMillis());
     super.update();
   }
+
 }
