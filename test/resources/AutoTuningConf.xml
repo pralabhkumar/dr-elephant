@@ -58,4 +58,33 @@
   <!--<value>/path/to/python/binary</value>-->
   <!--<description>Root directory for python</description>-->
   <!--</property>-->
+<property>
+    <name>alerting.enabled</name>
+    <value>false</value>
+    <description>If you enable this property and all the alert property have to be set by user</description>
+  </property>
+
+<property>
+    <name>alerting.mail.host</name>
+    <value>mail.corp.com</value>
+    <description>alerting mail host</description>
+</property>
+
+<property>
+    <name>alerting.email.address</name>
+    <value>abcd@efg.com</value>
+    <description>sender email address</description>
+</property>
+
+<property>
+    <name>alerting.developers.email.address</name>
+    <value>abcd@efg.com</value>
+    <description>developers email address</description>
+</property>
+
+<property>
+    <name>alerting.domain.name</name>
+    <value>corp.com</value>
+    <description>company domain email address</description>
+</property>
 </configuration>

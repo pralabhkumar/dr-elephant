@@ -118,4 +118,8 @@ public class TuningManagerTest {
   public void testAutoTunerApiHelper() throws InterruptedException {
     running(testServer(TEST_SERVER_PORT, fakeApp), new AutoTunerApiTestRunner());
   }
+  @Test
+  public void testAlerting() throws InterruptedException {
+    running(testServer(TEST_SERVER_PORT, fakeApp), new AlertingTest());
+  }
 }
