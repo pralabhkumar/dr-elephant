@@ -1,14 +1,28 @@
+/*
+ * Copyright 2016 LinkedIn Corp.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ */
+
 package com.linkedin.drelephant.tuning.alerting;
 
 import com.linkedin.drelephant.tuning.NotificationData;
 import com.linkedin.drelephant.tuning.NotificationManager;
+import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Properties;
-import models.JobDefinition;
-import models.JobSuggestedParamSet;
-import models.JobSuggestedParamValue;
-import models.TuningJobDefinition;
+import java.util.Map;
 import java.util.Properties;
 import javax.mail.BodyPart;
 import javax.mail.Message;
@@ -19,103 +33,72 @@ import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
-import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.log4j.Logger;
-import java.sql.Timestamp;
 import org.apache.hadoop.conf.Configuration;
 
+import static com.linkedin.drelephant.tuning.alerting.Constant.*;
 
+
+/**
+ * This class will be used to send email notifications
+ * There are two types of notifications
+ * 1) Developers : Notification will go to developers
+ * 2) StakeHolder : Notification will go to the user whoes jobs are onboarded onto
+ * cluster
+ */
 public class EmailNotificationManager implements NotificationManager {
   private static final Logger logger = Logger.getLogger(EmailNotificationManager.class);
   boolean debugEnabled = logger.isDebugEnabled();
-  private List<NotificationData> notificationMessages = null;
   private static boolean isAlertingEnabled = false;
   private static final String MAIL_HOST = "mail.host";
   private static String MAIL_HOST_URL = null;
   private static String FROM_EMAIL_ADDRESS = null;
-  private long startWindowTimeMS = 0;
   private long endTimeWindowTimeMS = 0;
-  private static String DEVELOPERS_EMAIL_ADDRESS = null;
-  private static String EMAIL_DOMAIN_NAME = null;
+  private Configuration configuration = null;
 
   public EmailNotificationManager(Configuration configuration) {
-    isAlertingEnabled = configuration.getBoolean("alerting.enabled", false);
-    MAIL_HOST_URL = configuration.get("alerting.mail.host");
-    FROM_EMAIL_ADDRESS = configuration.get("alerting.email.address");
-    DEVELOPERS_EMAIL_ADDRESS = configuration.get("alerting.developers.email.address");
-    EMAIL_DOMAIN_NAME = configuration.get("alerting.domain.name");
+    this.configuration = configuration;
+    //todo : Creating configuration builder and with information about each property
+    isAlertingEnabled = configuration.getBoolean(ALERTING_ENABLED_PROPERTY, false);
+    MAIL_HOST_URL = configuration.get(ALERTING_EMAIL_HOST_PROPERTY);
+    FROM_EMAIL_ADDRESS = configuration.get(ALERTING_FROM_EMAIL_ADDRESS_PROPERTY);
   }
 
+  /**
+   * Entry point , or main method which is called to execute this class.
+   * @return
+   */
+  @Override
+  public boolean execute() {
+    try {
+      long startWindowTimeMS =
+          endTimeWindowTimeMS == 0 ? System.currentTimeMillis() - 3600000 : endTimeWindowTimeMS + 1;
+      endTimeWindowTimeMS = System.currentTimeMillis();
+      List<NotificationData> notifications = generateNotificationData(startWindowTimeMS, endTimeWindowTimeMS);
+      sendNotification(notifications);
+    } catch (Exception e) {
+      logger.error(" Exception occurred while generating alerts ", e);
+      return false;
+    }
+    return true;
+  }
+
+  /**
+   * Generate Notification data for the window .
+   * @param startWindowTimeMS
+   * @param endTimeWindowTimeMS
+   * @return
+   */
   @Override
   public List<NotificationData> generateNotificationData(long startWindowTimeMS, long endTimeWindowTimeMS) {
     if (!arePrerequisteMatch()) {
       return null;
     }
-    logger.info(" Generating Notification ");
-    notificationMessages = new ArrayList<NotificationData>();
-    generateDevelopersNotificationData(startWindowTimeMS, endTimeWindowTimeMS);
-    generateStakeHolderNotificationData(startWindowTimeMS, endTimeWindowTimeMS);
-    logger.info(" Notification messages  " + notificationMessages.size());
-    return notificationMessages;
-  }
-
-  private void generateDevelopersNotificationData(long startWindowTimeMS, long endTimeWindowTimeMS) {
-    List<JobSuggestedParamSet> jobSuggestedParamSets = JobSuggestedParamSet.find.select("*")
-        .fetch(JobSuggestedParamSet.TABLE.jobDefinition, "*")
-        .where()
-        .between(JobSuggestedParamSet.TABLE.updatedTs, new Timestamp(startWindowTimeMS),
-            new Timestamp(endTimeWindowTimeMS))
-        .eq(JobSuggestedParamSet.TABLE.isParamSetBest, true)
-        .eq(JobSuggestedParamSet.TABLE.fitness, 10000)
-        .findList();
-    if (jobSuggestedParamSets.size() > 0) {
-      NotificationData data = new NotificationData(DEVELOPERS_EMAIL_ADDRESS);
-      data.setSubject(" Following jobs have penalty parameter as the best parmeter . Please fix this");
-      data.setNotificationType("developer");
-      for (JobSuggestedParamSet jobSuggestedParamSet : jobSuggestedParamSets) {
-        data.addContent(jobSuggestedParamSet.toString());
-      }
-      notificationMessages.add(data);
-    }
-    logger.info("Developer Notification " + jobSuggestedParamSets.size());
-  }
-
-  private void generateStakeHolderNotificationData(long startWindowTimeMS, long endTimeWindowTimeMS) {
-    List<TuningJobDefinition> tuningJobDefinitions = TuningJobDefinition.find.select("*")
-        .where()
-        .between(TuningJobDefinition.TABLE.updatedTs, startWindowTimeMS, endTimeWindowTimeMS)
-        .eq(TuningJobDefinition.TABLE.autoApply, true)
-        .eq(TuningJobDefinition.TABLE.tuningEnabled, false)
-        .findList();
-    if (tuningJobDefinitions.size() > 0) {
-      NotificationData data = new NotificationData(DEVELOPERS_EMAIL_ADDRESS);
-      data.setSubject(" Following jobs are tunned ");
-      data.setNotificationType("stakeholder");
-      for (TuningJobDefinition tuningJobDefinition : tuningJobDefinitions) {
-        data.addContent(tuningJobDefinition.job.jobDefId);
-      }
-    }
-    logger.info("StakeHolder Notification " + tuningJobDefinitions.size());
-  }
-
-  @Override
-  public boolean sendNotification(List<NotificationData> notificationDatas) {
-    try {
-      if (notificationDatas == null || notificationDatas.size() == 0) {
-        logger.info(" No notification to send ");
-        return false;
-      } else {
-        Properties props = new Properties();
-        props.put(MAIL_HOST, MAIL_HOST_URL);
-        Session session = Session.getDefaultInstance(props);
-        InternetAddress fromAddress = new InternetAddress(DEVELOPERS_EMAIL_ADDRESS);
-        return sendEmail(session, fromAddress, notificationDatas);
-      }
-    } catch (Exception e) {
-      logger.error(" Exception while sending notification ", e);
-      return false;
-    }
+    logger.debug(" Generating Notification ");
+    NotificationDataGenerator notificationDataGenerator =
+        new NotificationDataGenerator(startWindowTimeMS, endTimeWindowTimeMS, configuration);
+    return notificationDataGenerator.generateNotificationData();
   }
 
   private boolean arePrerequisteMatch() {
@@ -134,49 +117,104 @@ public class EmailNotificationManager implements NotificationManager {
     return true;
   }
 
-  private boolean sendEmail(Session session, InternetAddress fromAddress, List<NotificationData> notificationDatas) {
+  /**
+   * Sending/Emailing the notifications
+   * @param notificationDatas
+   * @return
+   */
+  @Override
+  public boolean sendNotification(List<NotificationData> notificationDatas) {
     try {
-      for (NotificationData notificationData : notificationDatas) {
-        Message message = new MimeMessage(session);
-        message.setFrom(fromAddress);
-        InternetAddress addressInternet = new InternetAddress(notificationData.getSenderAddress());
-        InternetAddress[] address = {addressInternet};
-        message.setRecipients(Message.RecipientType.TO, address);
-        message.setSubject(notificationData.getSubject());
-        createBodyOfMessage(message, notificationData);
-        Transport.send(message);
-        logger.info("Sending email to recipients " + notificationData.getSenderAddress());
+      if (notificationDatas == null || notificationDatas.size() == 0) {
+        logger.info(" No notification to send ");
+        return false;
+      } else {
+        Properties props = new Properties();
+        props.put(MAIL_HOST, MAIL_HOST_URL);
+        Session session = Session.getDefaultInstance(props);
+        InternetAddress fromAddress = new InternetAddress(FROM_EMAIL_ADDRESS);
+        Map<String, List<NotificationData>> notificationsBySenders =
+            mergeNotificationBasedOnSendersAddress(notificationDatas);
+        return sendEmail(session, fromAddress, notificationsBySenders);
       }
-    } catch (MessagingException messageException) {
-      logger.error(" Exception while sending messages " + messageException);
+    } catch (Exception e) {
+      logger.error(" Exception while sending notification ", e);
       return false;
     }
-    return true;
   }
 
-  private void createBodyOfMessage(Message message, NotificationData notificationData) throws MessagingException {
-    MimeMultipart multipart = new MimeMultipart("related");
-    BodyPart messageBodyPart = new MimeBodyPart();
-    StringBuilder content = new StringBuilder();
-    for (String data : notificationData.getContent()) {
-      content.append(data).append("\n");
+  /**
+   * Merge all the notification based on the To email address . It will make sure
+   * only one email will be send to the intended person
+   * @param notificationDatas
+   * @return
+   */
+  private Map<String, List<NotificationData>> mergeNotificationBasedOnSendersAddress(
+      List<NotificationData> notificationDatas) {
+    Map<String, List<NotificationData>> messagedNotificationData = new HashMap<String, List<NotificationData>>();
+    for (NotificationData notificationData : notificationDatas) {
+      List<NotificationData> notificationsBySender;
+      if (messagedNotificationData.containsKey(notificationData.getSenderAddress())) {
+        notificationsBySender = messagedNotificationData.get(notificationData.getSenderAddress());
+      } else {
+        notificationsBySender = new ArrayList<NotificationData>();
+      }
+      notificationsBySender.add(notificationData);
+      messagedNotificationData.put(notificationData.getSenderAddress(), notificationsBySender);
     }
-    messageBodyPart.setContent(content.toString(), "text/html; charset=utf-8");
-    multipart.addBodyPart(messageBodyPart);
-    message.setContent(multipart);
+    return messagedNotificationData;
   }
 
-  @Override
-  public boolean execute() {
-    startWindowTimeMS = endTimeWindowTimeMS == 0 ? System.currentTimeMillis() - 3600000 : endTimeWindowTimeMS + 1;
-    endTimeWindowTimeMS = System.currentTimeMillis();
-    List<NotificationData> notifications = generateNotificationData(startWindowTimeMS, endTimeWindowTimeMS);
-    sendNotification(notifications);
-    return false;
+  private boolean sendEmail(Session session, InternetAddress fromAddress,
+      Map<String, List<NotificationData>> notificationsBySenders) {
+    boolean hasExceptionOccurred = false;
+    for (String senderAddress : notificationsBySenders.keySet()) {
+      try {
+        Message message = new MimeMessage(session);
+        message.setFrom(fromAddress);
+        InternetAddress addressInternet = new InternetAddress(senderAddress);
+        InternetAddress[] address = {addressInternet};
+        message.setRecipients(Message.RecipientType.TO, address);
+        message.setSubject(SUBJECT_HEADER);
+        StringBuilder messageData = new StringBuilder();
+        String headerOfMessage = MessageFormat.format(MESSAGE_HEADER_TEMPLATE,
+            senderAddress.split(DELIMITER_BETWEEN_USERNAME_EMAIL)[SenderEmailSchema.USERNAME.ordinal()]);
+        messageData.append(headerOfMessage);
+        for (NotificationData notificationData : notificationsBySenders.get(senderAddress)) {
+          messageData.append(MessageFormat.format(MESSAGE_SUBJECT_TEMPLATE, notificationData.getSubject()));
+          appendBodyOfMessage(notificationData.getContent(), messageData);
+        }
+        messageData.append(MESSAGE_FOOTER_TEMPLATE);
+        MimeMultipart multipart = new MimeMultipart("related");
+        BodyPart messageBodyPart = new MimeBodyPart();
+        messageBodyPart.setContent(messageData.toString(), "text/html; charset=utf-8");
+        multipart.addBodyPart(messageBodyPart);
+        message.setContent(multipart);
+        Transport.send(message);
+        logger.info("Sending email to recipients " + senderAddress);
+      } catch (Exception messageException) {
+        logger.error(" Exception while sending message " + messageException);
+        hasExceptionOccurred = true;
+      }
+    }
+    if (hasExceptionOccurred) {
+      logger.warn(" At least one exception have occurred while sending messages ");
+      return false;
+    } else {
+      return true;
+    }
+  }
+
+  private void appendBodyOfMessage(List<String> notificationContent, StringBuilder messageData) {
+    int count = 0;
+    for (String data : notificationContent) {
+      count++;
+      messageData.append(MessageFormat.format(MESSAGE_BODY_TEMPLATE, count, data));
+    }
   }
 
   @Override
   public String getManagerName() {
-    return null;
+    return "EmailNotificationManager";
   }
 }

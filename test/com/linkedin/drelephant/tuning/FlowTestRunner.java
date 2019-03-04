@@ -32,7 +32,7 @@ public class FlowTestRunner implements Runnable {
 
   private void testPipeline(AutoTuningFlow autoTuningFlow) {
     List<List<Manager>> pipelines = autoTuningFlow.getPipeline();
-    assertTrue(" Total Number of pipeline ", pipelines.size() == 4);
+    assertTrue(" Total Number of pipeline ", pipelines.size() == 5);
   }
 
   private void testCreateBaseLineManagersPipeline(AutoTuningFlow autoTuningFlow) {

@@ -1,5 +1,7 @@
 package com.linkedin.drelephant.tuning;
 
+import com.linkedin.drelephant.ElephantContext;
+import com.linkedin.drelephant.tuning.alerting.EmailNotificationManager;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.log4j.Logger;
@@ -24,6 +26,7 @@ public class AutoTuningFlow {
     createJobStatusManagersPipeline();
     createFitnessManagersPipeline();
     createTuningTypeManagersPipeline();
+    createAlertingManagerPipeline();
   }
 
   public List<List<Manager>> getPipeline() {
@@ -96,6 +99,12 @@ public class AutoTuningFlow {
       }
     }
     this.pipelines.add(algorithmManagers);
+  }
+
+  private void createAlertingManagerPipeline() {
+    List<Manager> alertingManager = new ArrayList<Manager>();
+    alertingManager.add(new EmailNotificationManager(ElephantContext.instance().getAutoTuningConf()));
+    this.pipelines.add(alertingManager);
   }
 
 
