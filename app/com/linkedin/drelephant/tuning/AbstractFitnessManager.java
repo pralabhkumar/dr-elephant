@@ -62,7 +62,7 @@ public abstract class AbstractFitnessManager implements Manager {
    * @param jobSuggestedParamSet : Status of the suggested param set , so that fitness can be computed.
    */
   protected abstract void calculateAndUpdateFitness(JobExecution jobExecution, List<AppResult> results,
-      TuningJobDefinition tuningJobDefinition, JobSuggestedParamSet jobSuggestedParamSet);
+      TuningJobDefinition tuningJobDefinition, JobSuggestedParamSet jobSuggestedParamSet, boolean isRetried);
 
   /**
    *  This methods disable tuning , if certain prereuistes matched.
@@ -79,7 +79,7 @@ public abstract class AbstractFitnessManager implements Manager {
       try {
         TuningJobDefinition tuningJobDefinition = getTuningJobDefinition(job);
         List<AppResult> results = getAppResults(jobExecution);
-        handleFitnessCalculation(jobExecution, results, tuningJobDefinition, jobSuggestedParamSet);
+        handleFitnessCalculation(jobExecution, results, tuningJobDefinition, jobSuggestedParamSet,completedJobExecutionParamSet.isRetried);
       } catch (Exception e) {
         logger.error("Error updating fitness of execution: " + jobExecution.id + "\n Stacktrace: ", e);
       }
@@ -114,9 +114,9 @@ public abstract class AbstractFitnessManager implements Manager {
   }
 
   private void handleFitnessCalculation(JobExecution jobExecution, List<AppResult> results,
-      TuningJobDefinition tuningJobDefinition, JobSuggestedParamSet jobSuggestedParamSet) {
+      TuningJobDefinition tuningJobDefinition, JobSuggestedParamSet jobSuggestedParamSet,boolean isRetried) {
     if (results != null && results.size() > 0) {
-      calculateAndUpdateFitness(jobExecution, results, tuningJobDefinition, jobSuggestedParamSet);
+      calculateAndUpdateFitness(jobExecution, results, tuningJobDefinition, jobSuggestedParamSet,isRetried);
     } else {
       handleEmptyResultScenario(jobExecution, jobSuggestedParamSet);
     }
@@ -127,7 +127,6 @@ public abstract class AbstractFitnessManager implements Manager {
     jobExecution.executionTime = totalExecutionTime * 1.0 / MIN_TO_MS;
     jobExecution.resourceUsage = totalResourceUsed * 1.0 / (FileUtils.ONE_KB * HOUR_TO_SEC);
     jobExecution.inputSizeInBytes = totalInputBytesInBytes;
-    jobExecution.update();
     logger.debug("Metric Values for execution " + jobExecution.jobExecId + ": Execution time = " + totalExecutionTime
         + ", Resource usage = " + totalResourceUsed + " and total input size = " + totalInputBytesInBytes);
   }
@@ -162,15 +161,12 @@ public abstract class AbstractFitnessManager implements Manager {
       logger.debug("Resetting parameter set to created: " + jobSuggestedParamSet.id);
       jobSuggestedParamSet.paramSetState = JobSuggestedParamSet.ParamSetStatus.CREATED;
       jobSuggestedParamSet.save();
-      JobExecution latestJobExecution = JobExecution.find.where()
-          .eq(JobExecution.TABLE.id,
-              jobExecution.id)
-          .findUnique();
-      latestJobExecution.resourceUsage = 0D;
-      latestJobExecution.executionTime = 0D;
-      latestJobExecution.inputSizeInBytes = 1D;
-      latestJobExecution.update();
-      logger.info("Updated JobExecution: " + latestJobExecution.id + " after resetting param set to CREATED");
+
+      jobExecution.resourceUsage = 0D;
+      jobExecution.executionTime = 0D;
+      jobExecution.inputSizeInBytes = 1D;
+      jobExecution.update();
+      logger.info("Updated JobExecution: " + jobExecution.id + " after resetting param set to CREATED");
     }
   }
 

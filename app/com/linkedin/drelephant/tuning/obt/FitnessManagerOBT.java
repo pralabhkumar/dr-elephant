@@ -63,7 +63,7 @@ public abstract class FitnessManagerOBT extends AbstractFitnessManager {
 
   @Override
   protected void calculateAndUpdateFitness(JobExecution jobExecution, List<AppResult> results,
-      TuningJobDefinition tuningJobDefinition, JobSuggestedParamSet jobSuggestedParamSet) {
+      TuningJobDefinition tuningJobDefinition, JobSuggestedParamSet jobSuggestedParamSet,boolean isRetried) {
     Double totalResourceUsed = 0D;
     Double totalInputBytesInBytes = 0D;
     for (AppResult appResult : results) {

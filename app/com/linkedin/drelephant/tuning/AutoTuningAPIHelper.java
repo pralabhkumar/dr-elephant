@@ -155,25 +155,31 @@ public class AutoTuningAPIHelper {
     TuningJobDefinition tuningJobDefinition = TuningJobDefinition.find.where()
         .eq(TuningJobDefinition.TABLE.job + '.' + JobDefinition.TABLE.id, jobDefinition.id)
         .findUnique();
-
+    /**
+     * Deferring applying penalty to FitnessCompute. Based on the exception
+     * fingerprinting outcome , it will be decided whether to apply penalty or not
+     * todo: Do the same logic for OBT .
+     */
     if (tuningJobDefinition.tuningAlgorithm.optimizationAlgo == OptimizationAlgo.HBT) {
       //For HBT we are using score as fitness. setting it to high value
-      jobSuggestedParamSet.fitness = 10000D;
-    } else {
+      //  jobSuggestedParamSet.fitness = 10000D;
+      tuningJobExecutionParamSet.isRetried = true;
+      tuningJobExecutionParamSet.save();
+    }
+    else {
       Double averageResourceUsagePerGBInput =
           tuningJobDefinition.averageResourceUsage * FileUtils.ONE_GB / tuningJobDefinition.averageInputSizeInBytes;
       Double maxDesiredResourceUsagePerGBInput =
           averageResourceUsagePerGBInput * tuningJobDefinition.allowedMaxResourceUsagePercent / 100.0;
       jobSuggestedParamSet.fitness = penaltyConstant * maxDesiredResourceUsagePerGBInput;
+      jobSuggestedParamSet.paramSetState = ParamSetStatus.FITNESS_COMPUTED;
+      jobSuggestedParamSet.fitnessJobExecution = jobExecution;
+      jobSuggestedParamSet.update();
+      jobExecution.resourceUsage = 0D;
+      jobExecution.executionTime = 0D;
+      jobExecution.inputSizeInBytes = 1D;
+      jobExecution.save();
     }
-
-    jobSuggestedParamSet.paramSetState = ParamSetStatus.FITNESS_COMPUTED;
-    jobSuggestedParamSet.fitnessJobExecution = jobExecution;
-    jobSuggestedParamSet.update();
-    jobExecution.resourceUsage = 0D;
-    jobExecution.executionTime = 0D;
-    jobExecution.inputSizeInBytes = 1D;
-    jobExecution.save();
   }
 
   /**

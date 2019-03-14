@@ -42,6 +42,7 @@ public class TuningJobExecutionParamSet extends Model {
     public static final String jobSuggestedParamSet = "jobSuggestedParamSet";
     public static final String jobExecution = "jobExecution";
     public static final String tuningEnabled = "tuningEnabled";
+    public static final String isRetried = "isRetried";
     public static final String createdTs = "createdTs";
     public static final String updatedTs = "updatedTs";
   }
@@ -55,6 +56,9 @@ public class TuningJobExecutionParamSet extends Model {
   public JobExecution jobExecution;
 
   public Boolean tuningEnabled;
+
+  @Column(nullable = false)
+  public boolean isRetried;
 
   @Column(nullable = false)
   public Timestamp createdTs;

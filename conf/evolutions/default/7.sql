@@ -26,7 +26,9 @@ INSERT INTO tuning_parameter VALUES (27,'spark.executor.instances',5,1,1,900,1,0
  */
 
 ALTER TABLE job_execution ADD COLUMN auto_tuning_fault TINYINT(4) DEFAULT 0 AFTER input_size_in_bytes;
+ALTER TABLE tuning_job_execution_param_set ADD COLUMN is_retried TINYINT(4) DEFAULT 0 AFTER tuning_enabled;
 
 # --- !Downs
 
 ALTER TABLE job_execution DROP COLUMN auto_tuning_fault;
+ALTER TABLE tuning_job_execution_param_set DROP COLUMN is_retried;
