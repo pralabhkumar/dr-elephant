@@ -23,6 +23,7 @@ import models.TuningParameter;
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
 
+
 /**
  * This class computes the fitness of the suggested parameters after the execution is complete. This uses
  * Dr Elephant's DB to compute the fitness.
@@ -79,7 +80,8 @@ public abstract class AbstractFitnessManager implements Manager {
       try {
         TuningJobDefinition tuningJobDefinition = getTuningJobDefinition(job);
         List<AppResult> results = getAppResults(jobExecution);
-        handleFitnessCalculation(jobExecution, results, tuningJobDefinition, jobSuggestedParamSet,completedJobExecutionParamSet.isRetried);
+        handleFitnessCalculation(jobExecution, results, tuningJobDefinition, jobSuggestedParamSet,
+            completedJobExecutionParamSet.isRetried);
       } catch (Exception e) {
         logger.error("Error updating fitness of execution: " + jobExecution.id + "\n Stacktrace: ", e);
       }
@@ -114,9 +116,9 @@ public abstract class AbstractFitnessManager implements Manager {
   }
 
   private void handleFitnessCalculation(JobExecution jobExecution, List<AppResult> results,
-      TuningJobDefinition tuningJobDefinition, JobSuggestedParamSet jobSuggestedParamSet,boolean isRetried) {
+      TuningJobDefinition tuningJobDefinition, JobSuggestedParamSet jobSuggestedParamSet, boolean isRetried) {
     if (results != null && results.size() > 0) {
-      calculateAndUpdateFitness(jobExecution, results, tuningJobDefinition, jobSuggestedParamSet,isRetried);
+      calculateAndUpdateFitness(jobExecution, results, tuningJobDefinition, jobSuggestedParamSet, isRetried);
     } else {
       handleEmptyResultScenario(jobExecution, jobSuggestedParamSet);
     }
@@ -155,19 +157,43 @@ public abstract class AbstractFitnessManager implements Manager {
    * Resets the param set to CREATED state if its fitness is not already computed
    * @param jobSuggestedParamSet Param set which is to be reset
    */
-  protected void resetParamSetToCreated(JobSuggestedParamSet jobSuggestedParamSet, JobExecution jobExecution) {
+  public void resetParamSetToCreated(JobSuggestedParamSet jobSuggestedParamSet, JobExecution jobExecution) {
+    logger.debug("Resetting parameter set to created: " + jobSuggestedParamSet.id);
+    jobSuggestedParamSet.paramSetState = JobSuggestedParamSet.ParamSetStatus.CREATED;
+    logger.info("Updated JobExecution: " + jobExecution.id + " after resetting param set to CREATED");
+    assignDefaultValuesToJobExecution(jobExecution);
+  }
+
+  public boolean alreadyFitnessComputed(JobSuggestedParamSet jobSuggestedParamSet) {
     if (!jobSuggestedParamSet.paramSetState.equals(JobSuggestedParamSet.ParamSetStatus.FITNESS_COMPUTED)
         && !jobSuggestedParamSet.paramSetState.equals(JobSuggestedParamSet.ParamSetStatus.DISCARDED)) {
-      logger.debug("Resetting parameter set to created: " + jobSuggestedParamSet.id);
-      jobSuggestedParamSet.paramSetState = JobSuggestedParamSet.ParamSetStatus.CREATED;
-      jobSuggestedParamSet.save();
-
-      jobExecution.resourceUsage = 0D;
-      jobExecution.executionTime = 0D;
-      jobExecution.inputSizeInBytes = 1D;
-      jobExecution.update();
-      logger.info("Updated JobExecution: " + jobExecution.id + " after resetting param set to CREATED");
+      return false;
+    } else {
+      return true;
     }
+  }
+
+  /**
+   * Applying the penalty to parameters
+   * @param jobSuggestedParamSet
+   * @param jobExecution
+   */
+  public void applyPenalty(JobSuggestedParamSet jobSuggestedParamSet, JobExecution jobExecution) {
+    jobSuggestedParamSet.fitness = 10000D;
+    jobSuggestedParamSet.paramSetState = JobSuggestedParamSet.ParamSetStatus.FITNESS_COMPUTED;
+    jobSuggestedParamSet.fitnessJobExecution = jobExecution;
+    assignDefaultValuesToJobExecution(jobExecution);
+  }
+
+  /**
+   * Assign the default values to job execution parameters
+   * @param jobExecution
+   */
+
+  public void assignDefaultValuesToJobExecution(JobExecution jobExecution) {
+    jobExecution.resourceUsage = 0D;
+    jobExecution.executionTime = 0D;
+    jobExecution.inputSizeInBytes = 1D;
   }
 
   /**

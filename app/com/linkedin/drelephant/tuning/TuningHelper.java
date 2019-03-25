@@ -8,6 +8,7 @@ import models.TuningAlgorithm;
 import models.TuningJobDefinition;
 import models.TuningJobExecutionParamSet;
 import models.TuningParameter;
+import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
 
 
@@ -80,5 +81,27 @@ public class TuningHelper {
       logger.debug(" Total number of executions after auto applied enabled " + autoAppliedExecution);
     }
     return autoAppliedExecution;
+  }
+
+  public static boolean isNewParamBestParam(JobSuggestedParamSet jobSuggestedParamSet,
+      JobSuggestedParamSet currentBestJobSuggestedParamSet) {
+    boolean newParamBestParam = false;
+    if (currentBestJobSuggestedParamSet.fitnessJobExecution.inputSizeInBytes > 1
+        && jobSuggestedParamSet.fitnessJobExecution.inputSizeInBytes > 1) {
+      Double currentBestResourceUsagePerGBInput =
+          currentBestJobSuggestedParamSet.fitnessJobExecution.resourceUsage * FileUtils.ONE_GB
+              / currentBestJobSuggestedParamSet.fitnessJobExecution.inputSizeInBytes;
+      Double newResourceUsagePerGBInput = jobSuggestedParamSet.fitnessJobExecution.resourceUsage * FileUtils.ONE_GB
+          / jobSuggestedParamSet.fitnessJobExecution.inputSizeInBytes;
+      if (newResourceUsagePerGBInput < currentBestResourceUsagePerGBInput) {
+        newParamBestParam = true;
+      }
+    } else {
+      if (currentBestJobSuggestedParamSet.fitnessJobExecution.resourceUsage
+          > jobSuggestedParamSet.fitnessJobExecution.resourceUsage) {
+        newParamBestParam = true;
+      }
+    }
+    return newParamBestParam;
   }
 }

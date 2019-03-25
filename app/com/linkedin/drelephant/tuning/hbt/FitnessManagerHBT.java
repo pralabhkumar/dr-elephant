@@ -30,7 +30,6 @@ public class FitnessManagerHBT extends AbstractFitnessManager {
   private final Logger logger = Logger.getLogger(getClass());
   private boolean isDebugEnabled = logger.isDebugEnabled();
   private final int MINIMUM_HBT_EXECUTION = 3;
-  private final int PARAMETER_RETRY_THRESHOLD = 2;
 
   public FitnessManagerHBT() {
     Configuration configuration = ElephantContext.instance().getAutoTuningConf();
@@ -96,91 +95,62 @@ public class FitnessManagerHBT extends AbstractFitnessManager {
     Long totalDelay = Utils.getTotalWaittime(results);
     Long totalExecutionTime = totalRunTime - totalDelay;
 
+    if (tuningJobDefinition.averageResourceUsage == null && totalExecutionTime != 0) {
+      updateTuningJobDefinition(tuningJobDefinition, jobExecution);
+    }
+
     if (totalExecutionTime != 0) {
       jobExecution.score = score;
       updateJobExecution(jobExecution, totalResourceUsed, totalInputBytesInBytes, totalExecutionTime);
     }
-    if (tuningJobDefinition.averageResourceUsage == null && totalExecutionTime != 0) {
-      updateTuningJobDefinition(tuningJobDefinition, jobExecution);
-    }
-    //Compute fitness
-    computeFitness(jobSuggestedParamSet, jobExecution, tuningJobDefinition, results, isRetried);
-  }
 
-  protected void computeFitness(JobSuggestedParamSet jobSuggestedParamSet, JobExecution jobExecution,
-      TuningJobDefinition tuningJobDefinition, List<AppResult> results, boolean isRetried) {
-    if (!jobSuggestedParamSet.paramSetState.equals(JobSuggestedParamSet.ParamSetStatus.FITNESS_COMPUTED)
-        && !jobSuggestedParamSet.paramSetState.equals(JobSuggestedParamSet.ParamSetStatus.DISCARDED)) {
-      if (jobExecution.executionState.equals(JobExecution.ExecutionState.SUCCEEDED)) {
-        logger.debug("Execution id: " + jobExecution.id + " succeeded");
-        if (isRetried) {
-          logger.info("Job is retried , so handling retry cases ");
-          handleRetriedCases(jobSuggestedParamSet, jobExecution);
-        } else {
-          updateJobSuggestedParamSetSucceededExecution(jobExecution, jobSuggestedParamSet, tuningJobDefinition);
-          jobExecution.update();
-        }
-      } else {
-        // Resetting param set to created state because this case captures the scenarios when
-        // either the job failed for reasons other than auto tuning or was killed/cancelled/skipped etc.
-        // In all the above scenarios, fitness cannot be computed for the param set correctly.
-        // Note that the penalty on failures caused by auto tuning is applied when the job execution is retried
-        // after failure.
-        logger.info("HBT Execution id: " + jobExecution.id + " was not successful for reason other than tuning."
-            + "Resetting param set: " + jobSuggestedParamSet.id + " to CREATED state");
-        resetParamSetToCreated(jobSuggestedParamSet, jobExecution);
-      }
-    }
-  }
-
-  /**
-   * It AutoTuining fault in retry , then apply Penalty.
-   * If Its not autotuning fault , then check , how many times
-   * this parameter applied to the retried execution . If its greater
-   * than threshold , then apply penalty else this parameter is eligible
-   * for rebirth
-   * @param jobSuggestedParamSet
-   * @param jobExecution
-   */
-  private void handleRetriedCases(JobSuggestedParamSet jobSuggestedParamSet, JobExecution jobExecution) {
-    if (jobExecution.autoTuningFault) {
-      logger.info(" AutoTuning fault and hence applying penalty to the parameter ");
-      applyPenalty(jobSuggestedParamSet, jobExecution);
+    if (isRetried) {
+      handleRetryScenarios(jobSuggestedParamSet, jobExecution);
     } else {
-      logger.info(" Retry is not because of AutoTuning  ");
-      List<TuningJobExecutionParamSet> tuningJobExecutionParamSets = TuningJobExecutionParamSet.find.select("*")
-          .where()
-          .eq(TuningJobExecutionParamSet.TABLE.jobSuggestedParamSet + "." + JobSuggestedParamSet.TABLE.id,
-              jobSuggestedParamSet.id)
-          .eq(TuningJobExecutionParamSet.TABLE.isRetried, true)
-          .findList();
-      logger.info("Number of times this parameter retried " + tuningJobExecutionParamSets.size());
-      if (tuningJobExecutionParamSets.size() >= PARAMETER_RETRY_THRESHOLD) {
-        applyPenalty(jobSuggestedParamSet, jobExecution);
-      } else {
-        logger.info(" Since parameter have no fault , no need to apply penalty ");
-        resetParamSetToCreated(jobSuggestedParamSet, jobExecution);
-      }
+      normalFlowToComputeFitness(jobSuggestedParamSet, jobExecution);
     }
   }
 
-  private void applyPenalty(JobSuggestedParamSet jobSuggestedParamSet, JobExecution jobExecution) {
-    jobSuggestedParamSet.fitness = 10000D;
-    jobSuggestedParamSet.paramSetState = JobSuggestedParamSet.ParamSetStatus.FITNESS_COMPUTED;
-    jobSuggestedParamSet.fitnessJobExecution = jobExecution;
-    jobSuggestedParamSet.update();
-    jobExecution.resourceUsage = 0D;
-    jobExecution.executionTime = 0D;
-    jobExecution.inputSizeInBytes = 1D;
+  private void normalFlowToComputeFitness(JobSuggestedParamSet jobSuggestedParamSet, JobExecution jobExecution) {
+    if(alreadyFitnessComputed(jobSuggestedParamSet)){
+      logger.info(" Fitness is already computed for this parameter "+jobSuggestedParamSet.id);
+    }
+    else{
+      updateJobSuggestedParamSetSucceededExecution(jobExecution, jobSuggestedParamSet, null);
+    }
+    jobExecution.update();
+  }
+
+  private void handleRetryScenarios(JobSuggestedParamSet jobSuggestedParamSet, JobExecution jobExecution) {
+    if (jobExecution.executionState.equals(JobExecution.ExecutionState.SUCCEEDED)) {
+      handleJobSucceededAfterRetryScenarios(jobSuggestedParamSet, jobExecution);
+    } else {
+      handleJobFailedAfterRetryScenarios(jobSuggestedParamSet,jobExecution);
+    }
+  }
+
+  private void handleJobFailedAfterRetryScenarios(JobSuggestedParamSet jobSuggestedParamSet, JobExecution jobExecution){
+    if (alreadyFitnessComputed(jobSuggestedParamSet)) {
+      assignDefaultValuesToJobExecution(jobExecution);
+    } else {
+      resetParamSetToCreated(jobSuggestedParamSet, jobExecution);
+      jobSuggestedParamSet.save();
+    }
     jobExecution.save();
   }
 
-  /**
-   * Updates the job suggested param set when the corresponding execution was succeeded
-   * @param jobExecution JobExecution: succeeded job execution corresponding to the param set which is to be updated
-   * @param jobSuggestedParamSet param set which is to be updated
-   * @param tuningJobDefinition TuningJobDefinition of the job to which param set corresponds
-   */
+  private void handleJobSucceededAfterRetryScenarios(JobSuggestedParamSet jobSuggestedParamSet, JobExecution jobExecution) {
+    FailureHandlerContext failureHandlerContext = new FailureHandlerContext();
+    if(jobExecution.autoTuningFault){
+      failureHandlerContext.setFailureHandler(new AutoTuningFailureHandler());
+    }
+    else{
+      failureHandlerContext.setFailureHandler(new NonAutoTuningFailureHandler());
+    }
+    failureHandlerContext.execute(jobExecution, jobSuggestedParamSet, this);
+  }
+
+  
   protected void updateJobSuggestedParamSetSucceededExecution(JobExecution jobExecution,
       JobSuggestedParamSet jobSuggestedParamSet, TuningJobDefinition tuningJobDefinition) {
     jobSuggestedParamSet.fitness = jobExecution.score;
@@ -310,7 +280,7 @@ public class FitnessManagerHBT extends AbstractFitnessManager {
         jobSuggestedParamSet.isParamSetBest = true;
         currentBestJobSuggestedParamSet.save();
       } else if (currentBestJobSuggestedParamSet.fitness.longValue() == jobSuggestedParamSet.fitness.longValue()) {
-        if (isNewParamBestParam(jobSuggestedParamSet, currentBestJobSuggestedParamSet)) {
+        if (TuningHelper.isNewParamBestParam(jobSuggestedParamSet, currentBestJobSuggestedParamSet)) {
           logger.debug("Param set: " + jobSuggestedParamSet.id
               + " is the new best param set for job because of better resource usage: "
               + jobSuggestedParamSet.jobDefinition.jobDefId);
@@ -325,27 +295,5 @@ public class FitnessManagerHBT extends AbstractFitnessManager {
       jobSuggestedParamSet.isParamSetBest = true;
     }
     return jobSuggestedParamSet;
-  }
-
-  private boolean isNewParamBestParam(JobSuggestedParamSet jobSuggestedParamSet,
-      JobSuggestedParamSet currentBestJobSuggestedParamSet) {
-    boolean newParamBestParam = false;
-    if (currentBestJobSuggestedParamSet.fitnessJobExecution.inputSizeInBytes > 1
-        && jobSuggestedParamSet.fitnessJobExecution.inputSizeInBytes > 1) {
-      Double currentBestResourceUsagePerGBInput =
-          currentBestJobSuggestedParamSet.fitnessJobExecution.resourceUsage * FileUtils.ONE_GB
-              / currentBestJobSuggestedParamSet.fitnessJobExecution.inputSizeInBytes;
-      Double newResourceUsagePerGBInput = jobSuggestedParamSet.fitnessJobExecution.resourceUsage * FileUtils.ONE_GB
-          / jobSuggestedParamSet.fitnessJobExecution.inputSizeInBytes;
-      if (newResourceUsagePerGBInput < currentBestResourceUsagePerGBInput) {
-        newParamBestParam = true;
-      }
-    } else {
-      if (currentBestJobSuggestedParamSet.fitnessJobExecution.resourceUsage
-          > jobSuggestedParamSet.fitnessJobExecution.resourceUsage) {
-        newParamBestParam = true;
-      }
-    }
-    return newParamBestParam;
   }
 }
