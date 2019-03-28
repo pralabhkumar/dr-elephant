@@ -27,13 +27,12 @@ import models.JobSuggestedParamSet;
 public class FailureHandlerContext {
   private FailureHandler _failureHandler;
 
-  public void setFailureHandler(FailureHandler failureHandler){
-    this._failureHandler=failureHandler;
+   void setFailureHandler(FailureHandler failureHandler) {
+    this._failureHandler = failureHandler;
   }
 
-  public void execute(JobExecution jobExecution, JobSuggestedParamSet jobSuggestedParamSet,AbstractFitnessManager abstractFitnessManager){
-    _failureHandler.calculateFitness(jobExecution,jobSuggestedParamSet,abstractFitnessManager);
+  public void execute(JobExecution jobExecution, JobSuggestedParamSet jobSuggestedParamSet,
+      AbstractFitnessManager abstractFitnessManager) {
+    _failureHandler.calculateFitness(jobExecution, jobSuggestedParamSet, abstractFitnessManager);
   }
-
-
 }

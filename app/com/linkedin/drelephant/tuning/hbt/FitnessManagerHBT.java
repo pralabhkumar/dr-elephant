@@ -107,11 +107,11 @@ public class FitnessManagerHBT extends AbstractFitnessManager {
     if (isRetried) {
       handleRetryScenarios(jobSuggestedParamSet, jobExecution);
     } else {
-      normalFlowToComputeFitness(jobSuggestedParamSet, jobExecution);
+      handleNonRetryScenarios(jobSuggestedParamSet, jobExecution);
     }
   }
 
-  private void normalFlowToComputeFitness(JobSuggestedParamSet jobSuggestedParamSet, JobExecution jobExecution) {
+  private void handleNonRetryScenarios(JobSuggestedParamSet jobSuggestedParamSet, JobExecution jobExecution) {
     if(alreadyFitnessComputed(jobSuggestedParamSet)){
       logger.info(" Fitness is already computed for this parameter "+jobSuggestedParamSet.id);
     }
@@ -150,7 +150,7 @@ public class FitnessManagerHBT extends AbstractFitnessManager {
     failureHandlerContext.execute(jobExecution, jobSuggestedParamSet, this);
   }
 
-  
+
   protected void updateJobSuggestedParamSetSucceededExecution(JobExecution jobExecution,
       JobSuggestedParamSet jobSuggestedParamSet, TuningJobDefinition tuningJobDefinition) {
     jobSuggestedParamSet.fitness = jobExecution.score;

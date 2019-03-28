@@ -15,6 +15,7 @@
  */
 package com.linkedin.drelephant.tuning.hbt;
 
+import com.avaje.ebean.OrderBy;
 import com.linkedin.drelephant.tuning.AbstractFitnessManager;
 import com.linkedin.drelephant.tuning.TuningHelper;
 import java.util.List;
@@ -31,21 +32,25 @@ public class AutoTuningFailureHandler implements FailureHandler {
   private JobExecution jobExecution;
   private JobSuggestedParamSet jobSuggestedParamSet;
   private AbstractFitnessManager _abstractFitnessManager;
+
   @Override
-  public void calculateFitness(JobExecution jobExecution, JobSuggestedParamSet jobSuggestedParamSet, AbstractFitnessManager fitnessManager) {
+  public void calculateFitness(JobExecution jobExecution, JobSuggestedParamSet jobSuggestedParamSet,
+      AbstractFitnessManager fitnessManager) {
     this.jobExecution = jobExecution;
-    this.jobSuggestedParamSet=jobSuggestedParamSet;
-    this._abstractFitnessManager=fitnessManager;
+    this.jobSuggestedParamSet = jobSuggestedParamSet;
+    this._abstractFitnessManager = fitnessManager;
     handleAutoTuningFailure();
   }
 
   private void handleAutoTuningFailure() {
     _abstractFitnessManager.applyPenalty(jobSuggestedParamSet, jobExecution);
+    boolean isCurrentParameterBest = jobSuggestedParamSet.isParamSetBest;
+    jobSuggestedParamSet.isParamSetSuggested = false;
     jobSuggestedParamSet.update();
     jobExecution.update();
-    if (jobSuggestedParamSet.isParamSetBest) {
+    if (isCurrentParameterBest) {
       JobSuggestedParamSet bestParameter = calculateNewBestParameter(jobSuggestedParamSet.jobDefinition.id);
-      bestParameter.isParamSetBest=true;
+      bestParameter.isParamSetBest = true;
       bestParameter.save();
     }
   }
@@ -56,7 +61,6 @@ public class AutoTuningFailureHandler implements FailureHandler {
         .eq(JobSuggestedParamSet.TABLE.jobDefinition + "." + JobDefinition.TABLE.id, jobDefinitionID)
         .eq(JobSuggestedParamSet.TABLE.paramSetState, JobSuggestedParamSet.ParamSetStatus.FITNESS_COMPUTED)
         .lt(JobSuggestedParamSet.TABLE.fitness, 10000D)
-        .eq(JobSuggestedParamSet.TABLE.isParamSetSuggested, true)
         .findList();
     if (jobSuggestedParamSets != null && jobSuggestedParamSets.size() > 0) {
       return getBestParameter(jobSuggestedParamSets);
@@ -85,5 +89,4 @@ public class AutoTuningFailureHandler implements FailureHandler {
     }
     return currentMax;
   }
-
 }
