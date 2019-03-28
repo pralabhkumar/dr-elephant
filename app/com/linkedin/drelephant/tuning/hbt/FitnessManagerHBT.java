@@ -95,14 +95,16 @@ public class FitnessManagerHBT extends AbstractFitnessManager {
     Long totalDelay = Utils.getTotalWaittime(results);
     Long totalExecutionTime = totalRunTime - totalDelay;
 
-    if (tuningJobDefinition.averageResourceUsage == null && totalExecutionTime != 0) {
-      updateTuningJobDefinition(tuningJobDefinition, jobExecution);
-    }
-
     if (totalExecutionTime != 0) {
       jobExecution.score = score;
       updateJobExecution(jobExecution, totalResourceUsed, totalInputBytesInBytes, totalExecutionTime);
     }
+
+
+    if (tuningJobDefinition.averageResourceUsage == null && totalExecutionTime != 0) {
+      updateTuningJobDefinition(tuningJobDefinition, jobExecution);
+    }
+
 
     if (isRetried) {
       handleRetryScenarios(jobSuggestedParamSet, jobExecution);
