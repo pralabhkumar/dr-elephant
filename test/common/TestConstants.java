@@ -29,7 +29,7 @@ public class TestConstants {
   public static final String TEST_FITNESS_CALCULATION_DATA_FILE = "test/resources/test-fitness-calculation-data.sql";
   public static final String TEST_PARAM_GENERATE_DATA_FILE = "test/resources/test-param-generate-data.sql";
   public static final String TEST_SPARK_HBT_PARAM_RECOMMENDER = "test/resources/test-SparkHBTParamRecommender.sql";
-
+  public static final String TEST_AUTO_TUNING_MR_HBT="test/resources/test-init-MRHBT.sql";
   public static final int RESPONSE_TIMEOUT = 3000; // milliseconds
 
   public static final String TEST_JOB_ID1 = "application_1458194917883_1453361";

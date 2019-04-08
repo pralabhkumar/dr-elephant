@@ -349,6 +349,7 @@ public class AutoTuningAPIHelper {
         .findUnique();
 
     if (jobExecution == null) {
+      logger.info(" New job execution is added "+tuningInput.getJobExecId());
       jobExecution = addNewExecution(tuningInput);
     }
     return jobExecution;
@@ -366,6 +367,7 @@ public class AutoTuningAPIHelper {
       setMaxAllowedMetricIncreasePercentage(tuningInput);
     }
     String jobDefId = tuningInput.getJobDefId();
+    logger.info(" Job definition id is "+jobDefId);
     TuningJobDefinition tuningJobDefinition = TuningJobDefinition.find.select("*")
         .fetch(TuningJobDefinition.TABLE.job, "*")
         .where()
