@@ -4,6 +4,7 @@ import com.avaje.ebean.Expr;
 import com.avaje.ebean.ExpressionList;
 import com.linkedin.drelephant.mapreduce.heuristics.CommonConstantsHeuristic;
 import com.linkedin.drelephant.tuning.ExecutionEngine;
+import com.linkedin.drelephant.tuning.hbt.MRJob;
 import com.linkedin.drelephant.util.MemoryFormatUtils;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -333,30 +334,20 @@ public class MRExecutionEngine implements ExecutionEngine {
 
   @Override
   public String parameterGenerationsHBT(List<AppResult> results, List<TuningParameter> tuningParameters) {
-    Map<String, Map<String, Double>> previousUsedMetrics = extractParameterInformationIPSO(results);
+    MRJob mrJob = new MRJob(results);
+    mrJob.analyzeAllApplications();
+    mrJob.processJobForParameter();
+    Map<String, Double> suggestedParameter = mrJob.getJobSuggestedParameter();
     StringBuffer idParameters = new StringBuffer();
     for (TuningParameter tuningParameter : tuningParameters) {
-      if (tuningParameter.paramName.equals(
-          CommonConstantsHeuristic.ParameterKeys.MAPPER_MEMORY_HADOOP_CONF.getValue())) {
-        idParameters.append(tuningParameter.id)
-            .append("\t")
-            .append(Math.max(previousUsedMetrics.get("map")
-                .get(CommonConstantsHeuristic.UtilizedParameterKeys.MAX_PHYSICAL_MEMORY.getValue()), previousUsedMetrics
-                .get("map")
-                .get(CommonConstantsHeuristic.UtilizedParameterKeys.MAX_VIRTUAL_MEMORY.getValue()) / 2.1));
-        idParameters.append("\n");
-      }
-      if (tuningParameter.paramName.equals(
-          CommonConstantsHeuristic.ParameterKeys.MAPPER_HEAP_HADOOP_CONF.getValue())) {
-        idParameters.append(tuningParameter.id)
-            .append("\t")
-            .append(previousUsedMetrics.get("map")
-                .get(CommonConstantsHeuristic.UtilizedParameterKeys.MAX_TOTAL_COMMITTED_HEAP_USAGE_MEMORY.getValue()));
-        idParameters.append("\n");
+      Double paramValue = suggestedParameter.get(tuningParameter.paramName);
+      if (paramValue != null && paramValue != 0.0) {
+        idParameters.append(tuningParameter.id).append("\t").append(paramValue).append("\n");
       }
     }
     logger.info(" New Suggested Parameter " + idParameters);
     return idParameters.toString();
+
   }
 
   @Override

@@ -1013,7 +1013,7 @@ public class Application extends Controller {
 
   public static String getAlgoBasedOnVersion(String jobType) {
     if (jobType.equals(JobType.PIG.name())) {
-      return TuningAlgorithm.OptimizationAlgo.PSO_IPSO.name();
+      return TuningAlgorithm.OptimizationAlgo.HBT.name();
     } else if (jobType.equals(JobType.SPARK.name())) {
       return TuningAlgorithm.OptimizationAlgo.HBT.name();
     } else {

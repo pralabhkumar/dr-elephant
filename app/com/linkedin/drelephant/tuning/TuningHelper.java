@@ -106,6 +106,7 @@ public class TuningHelper {
     return newParamBestParam;
   }
 
+
   public static void updateJobSuggestedParamSet(JobSuggestedParamSet jobSuggestedParamSet, JobExecution jobExecution) {
     try {
       jobSuggestedParamSet.update();
@@ -121,5 +122,16 @@ public class TuningHelper {
     } catch (Exception e) {
       logger.error("Exception updating job execution " + jobExecution.id, e);
     }
+  }
+
+  public static Double getContainerSize(Double memory) {
+    return Math.ceil(memory / 1024.0) * 1024;
+  }
+  public static Double getHeapSize(Double heapSize){
+    if(heapSize<600){
+      heapSize=600.0;
+    }
+    return heapSize;
+
   }
 }
