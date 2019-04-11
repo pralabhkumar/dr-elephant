@@ -121,6 +121,8 @@ public abstract class AbstractFitnessManager implements Manager {
       calculateAndUpdateFitness(jobExecution, results, tuningJobDefinition, jobSuggestedParamSet, isRetried);
     } else {
       handleEmptyResultScenario(jobExecution, jobSuggestedParamSet);
+      jobExecution.update();
+      jobSuggestedParamSet.update();
     }
   }
 
