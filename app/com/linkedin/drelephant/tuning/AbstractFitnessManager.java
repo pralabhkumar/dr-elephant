@@ -121,8 +121,6 @@ public abstract class AbstractFitnessManager implements Manager {
       calculateAndUpdateFitness(jobExecution, results, tuningJobDefinition, jobSuggestedParamSet, isRetried);
     } else {
       handleEmptyResultScenario(jobExecution, jobSuggestedParamSet);
-      jobExecution.update();
-      jobSuggestedParamSet.update();
     }
   }
 
@@ -151,7 +149,14 @@ public abstract class AbstractFitnessManager implements Manager {
           "Fitness of param set " + jobSuggestedParamSet.id + " corresponding to execution id: " + jobExecution.id
               + " not computed for more than the maximum duration specified to compute fitness. "
               + "Resetting the param set to CREATED state");
-      resetParamSetToCreated(jobSuggestedParamSet, jobExecution);
+
+      if (alreadyFitnessComputed(jobSuggestedParamSet)) {
+        assignDefaultValuesToJobExecution(jobExecution);
+      } else {
+        resetParamSetToCreated(jobSuggestedParamSet, jobExecution);
+        jobSuggestedParamSet.update();
+      }
+      jobExecution.update();
     }
   }
 
