@@ -186,7 +186,7 @@ public class ParameterGenerateManagerHBT extends AbstractParameterGenerateManage
         logger.debug(" Job Suggested list " + jobSuggestedParamValueList.size());
         saveSuggestedParams(jobSuggestedParamValueList);
       } catch(Exception e){
-        logger.error(" Error in updating database "+jobTuningInfo);
+        logger.error(" Error in updating database "+jobTuningInfo ,e);
       }
     }
 
