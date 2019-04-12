@@ -126,8 +126,12 @@ public abstract class AbstractParameterGenerateManager implements Manager {
   protected List<JobTuningInfo> generateParameters(List<JobTuningInfo> jobsForParameterSuggestion) {
     List<JobTuningInfo> updatedJobTuningInfoList = new ArrayList<JobTuningInfo>();
     for (JobTuningInfo jobTuningInfo : jobsForParameterSuggestion) {
-      JobTuningInfo newJobTuningInfo = generateParamSet(jobTuningInfo);
-      updatedJobTuningInfoList.add(newJobTuningInfo);
+      try {
+        JobTuningInfo newJobTuningInfo = generateParamSet(jobTuningInfo);
+        updatedJobTuningInfoList.add(newJobTuningInfo);
+      }catch(Exception e){
+        logger.info(" Error in generating parameter " + jobTuningInfo);
+      }
     }
     return updatedJobTuningInfoList;
   }

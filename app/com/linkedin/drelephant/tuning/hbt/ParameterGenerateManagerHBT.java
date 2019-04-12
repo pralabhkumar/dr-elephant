@@ -145,46 +145,49 @@ public class ParameterGenerateManagerHBT extends AbstractParameterGenerateManage
     }
 
     for (JobTuningInfo jobTuningInfo : jobTuningInfoList) {
-      logger.debug("Updating new parameter suggestion for job:" + jobTuningInfo.getTuningJob().jobDefId);
+      try {
+        logger.debug("Updating new parameter suggestion for job:" + jobTuningInfo.getTuningJob().jobDefId);
 
-      JobDefinition job = jobTuningInfo.getTuningJob();
-      List<TuningParameter> paramList = jobTuningInfo.getParametersToTune();
-      String stringTunerState = jobTuningInfo.getTunerState();
-      if (stringTunerState == null || stringTunerState.length() == 0) {
-        logger.error("Suggested parameter suggestion is empty for job id: " + job.jobDefId);
-        continue;
+        JobDefinition job = jobTuningInfo.getTuningJob();
+        List<TuningParameter> paramList = jobTuningInfo.getParametersToTune();
+        String stringTunerState = jobTuningInfo.getTunerState();
+        if (stringTunerState == null || stringTunerState.length() == 0) {
+          logger.error("Suggested parameter suggestion is empty for job id: " + job.jobDefId);
+          continue;
+        }
+
+        TuningJobDefinition tuningJobDefinition = TuningHelper.getTuningJobDefinition(job);
+
+        List<TuningParameter> derivedParameterList = TuningHelper.getDerivedParameterList(tuningJobDefinition);
+
+        logger.debug("No. of derived tuning params for job " + tuningJobDefinition.job.jobName + ": " + derivedParameterList.size());
+
+        List<JobSuggestedParamValue> jobSuggestedParamValueList = getParamValueList(stringTunerState);
+        _executionEngine.computeValuesOfDerivedConfigurationParameters(derivedParameterList, jobSuggestedParamValueList);
+        JobSuggestedParamSet jobSuggestedParamSet = new JobSuggestedParamSet();
+        jobSuggestedParamSet.jobDefinition = job;
+        jobSuggestedParamSet.tuningAlgorithm = tuningJobDefinition.tuningAlgorithm;
+        jobSuggestedParamSet.isParamSetDefault = false;
+        jobSuggestedParamSet.isParamSetBest = false;
+        jobSuggestedParamSet.isParamSetSuggested = true;
+        if (isParamConstraintViolated(jobSuggestedParamValueList)) {
+          penaltyApplication(jobSuggestedParamSet, tuningJobDefinition);
+        } else {
+          logger.debug(" Parameters constraints not violeted ");
+          jobSuggestedParamSet.areConstraintsViolated = false;
+          jobSuggestedParamSet.paramSetState = JobSuggestedParamSet.ParamSetStatus.CREATED;
+          //processParamSetStatus(jobSuggestedParamSet);
+        }
+        saveSuggestedParamSet(jobSuggestedParamSet);
+
+        for (JobSuggestedParamValue jobSuggestedParamValue : jobSuggestedParamValueList) {
+          jobSuggestedParamValue.jobSuggestedParamSet = jobSuggestedParamSet;
+        }
+        logger.debug(" Job Suggested list " + jobSuggestedParamValueList.size());
+        saveSuggestedParams(jobSuggestedParamValueList);
+      } catch(Exception e){
+        logger.error(" Error in updating database "+jobTuningInfo);
       }
-
-      TuningJobDefinition tuningJobDefinition = TuningHelper.getTuningJobDefinition(job);
-
-      List<TuningParameter> derivedParameterList = TuningHelper.getDerivedParameterList(tuningJobDefinition);
-
-      logger.debug("No. of derived tuning params for job " + tuningJobDefinition.job.jobName + ": "
-          + derivedParameterList.size());
-
-      List<JobSuggestedParamValue> jobSuggestedParamValueList = getParamValueList(stringTunerState);
-      _executionEngine.computeValuesOfDerivedConfigurationParameters(derivedParameterList, jobSuggestedParamValueList);
-      JobSuggestedParamSet jobSuggestedParamSet = new JobSuggestedParamSet();
-      jobSuggestedParamSet.jobDefinition = job;
-      jobSuggestedParamSet.tuningAlgorithm = tuningJobDefinition.tuningAlgorithm;
-      jobSuggestedParamSet.isParamSetDefault = false;
-      jobSuggestedParamSet.isParamSetBest = false;
-      jobSuggestedParamSet.isParamSetSuggested = true;
-      if (isParamConstraintViolated(jobSuggestedParamValueList)) {
-        penaltyApplication(jobSuggestedParamSet, tuningJobDefinition);
-      } else {
-        logger.debug(" Parameters constraints not violeted ");
-        jobSuggestedParamSet.areConstraintsViolated = false;
-        jobSuggestedParamSet.paramSetState = JobSuggestedParamSet.ParamSetStatus.CREATED;
-        //processParamSetStatus(jobSuggestedParamSet);
-      }
-      saveSuggestedParamSet(jobSuggestedParamSet);
-
-      for (JobSuggestedParamValue jobSuggestedParamValue : jobSuggestedParamValueList) {
-        jobSuggestedParamValue.jobSuggestedParamSet = jobSuggestedParamSet;
-      }
-      logger.debug(" Job Suggested list " + jobSuggestedParamValueList.size());
-      saveSuggestedParams(jobSuggestedParamValueList);
     }
 
     return true;
