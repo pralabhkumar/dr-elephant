@@ -100,38 +100,44 @@ public class FitnessManagerHBT extends AbstractFitnessManager {
       updateJobExecution(jobExecution, totalResourceUsed, totalInputBytesInBytes, totalExecutionTime);
     }
 
-
     if (tuningJobDefinition.averageResourceUsage == null && totalExecutionTime != 0) {
       updateTuningJobDefinition(tuningJobDefinition, jobExecution);
     }
 
-
     if (isRetried) {
+      logger.info(" Retried execution " + jobExecution.id + " for parameter " + jobSuggestedParamSet.id);
       handleRetryScenarios(jobSuggestedParamSet, jobExecution);
     } else {
+      logger.info(" Non Retried execution " + jobExecution.id + " for parameter " + jobSuggestedParamSet.id);
       handleNonRetryScenarios(jobSuggestedParamSet, jobExecution);
     }
   }
 
   private void handleNonRetryScenarios(JobSuggestedParamSet jobSuggestedParamSet, JobExecution jobExecution) {
-    if(alreadyFitnessComputed(jobSuggestedParamSet)){
-      logger.info(" Fitness is already computed for this parameter "+jobSuggestedParamSet.id);
-    }
-    else{
+    if (alreadyFitnessComputed(jobSuggestedParamSet)) {
+      logger.info(" Fitness is already computed for this parameter " + jobSuggestedParamSet.id);
+    } else {
+      logger.info(" Fitness not computed "+jobSuggestedParamSet.id);
       updateJobSuggestedParamSetSucceededExecution(jobExecution, jobSuggestedParamSet, null);
     }
+    logger.info("Updated job execution "+jobSuggestedParamSet.fitnessJobExecution.id+" "+jobExecution.id);
     jobExecution.update();
   }
 
   private void handleRetryScenarios(JobSuggestedParamSet jobSuggestedParamSet, JobExecution jobExecution) {
     if (jobExecution.executionState.equals(JobExecution.ExecutionState.SUCCEEDED)) {
+      logger.info(
+          "Job is succeeded after retry : jobexecution" + jobExecution.id + " parameter " + jobSuggestedParamSet.id);
       handleJobSucceededAfterRetryScenarios(jobSuggestedParamSet, jobExecution);
     } else {
-      handleJobFailedAfterRetryScenarios(jobSuggestedParamSet,jobExecution);
+      logger.info(
+          "Job is Failed after retry : jobexecution" + jobExecution.id + " parameter " + jobSuggestedParamSet.id);
+      handleJobFailedAfterRetryScenarios(jobSuggestedParamSet, jobExecution);
     }
   }
 
-  private void handleJobFailedAfterRetryScenarios(JobSuggestedParamSet jobSuggestedParamSet, JobExecution jobExecution){
+  private void handleJobFailedAfterRetryScenarios(JobSuggestedParamSet jobSuggestedParamSet,
+      JobExecution jobExecution) {
     if (alreadyFitnessComputed(jobSuggestedParamSet)) {
       assignDefaultValuesToJobExecution(jobExecution);
     } else {
@@ -141,20 +147,22 @@ public class FitnessManagerHBT extends AbstractFitnessManager {
     jobExecution.save();
   }
 
-  private void handleJobSucceededAfterRetryScenarios(JobSuggestedParamSet jobSuggestedParamSet, JobExecution jobExecution) {
+  private void handleJobSucceededAfterRetryScenarios(JobSuggestedParamSet jobSuggestedParamSet,
+      JobExecution jobExecution) {
     FailureHandlerContext failureHandlerContext = new FailureHandlerContext();
-    if(jobExecution.autoTuningFault){
+    if (jobExecution.autoTuningFault) {
+      logger.info(" Job execution was failed because of autotuning but retry worked"+jobExecution.id);
       failureHandlerContext.setFailureHandler(new AutoTuningFailureHandler());
-    }
-    else{
+    } else {
+      logger.info(" Job execution was failed because of other reasons but retry worked"+jobExecution.id);
       failureHandlerContext.setFailureHandler(new NonAutoTuningFailureHandler());
     }
     failureHandlerContext.execute(jobExecution, jobSuggestedParamSet, this);
   }
 
-
   protected void updateJobSuggestedParamSetSucceededExecution(JobExecution jobExecution,
       JobSuggestedParamSet jobSuggestedParamSet, TuningJobDefinition tuningJobDefinition) {
+    logger.info("Updating Job Suggested param set "+jobSuggestedParamSet.id);
     jobSuggestedParamSet.fitness = jobExecution.score;
     jobSuggestedParamSet.paramSetState = JobSuggestedParamSet.ParamSetStatus.FITNESS_COMPUTED;
     jobSuggestedParamSet.fitnessJobExecution = jobExecution;

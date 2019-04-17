@@ -33,6 +33,7 @@ public class NonAutoTuningFailureHandler  implements FailureHandler  {
   private JobSuggestedParamSet jobSuggestedParamSet;
   private AbstractFitnessManager _abstractFitnessManager;
   private final int PARAMETER_RETRY_THRESHOLD = 2;
+
   @Override
   public void calculateFitness(JobExecution jobExecution, JobSuggestedParamSet jobSuggestedParamSet, AbstractFitnessManager fitnessManager) {
     this.jobExecution = jobExecution;
@@ -42,6 +43,7 @@ public class NonAutoTuningFailureHandler  implements FailureHandler  {
   }
   private void handleFailure(){
     if(_abstractFitnessManager.alreadyFitnessComputed(jobSuggestedParamSet)){
+      logger.info(" Fitness for parameter is already computed "+jobSuggestedParamSet.id);
       _abstractFitnessManager.assignDefaultValuesToJobExecution(jobExecution);
       this.jobExecution.save();
     }

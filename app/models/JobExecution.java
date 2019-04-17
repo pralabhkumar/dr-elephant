@@ -16,6 +16,8 @@
 
 package models;
 
+import com.avaje.ebean.annotation.ConcurrencyMode;
+import com.avaje.ebean.annotation.EntityConcurrencyMode;
 import java.sql.Timestamp;
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
@@ -38,6 +40,7 @@ import play.db.ebean.Model;
  * This table have information about the exeuction of the job.
  */
 @Entity
+@EntityConcurrencyMode(ConcurrencyMode.NONE)
 @Table(name = "job_execution")
 public class JobExecution extends Model {
 
