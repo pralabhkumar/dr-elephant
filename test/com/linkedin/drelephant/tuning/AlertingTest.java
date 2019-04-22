@@ -49,6 +49,7 @@ public class AlertingTest implements Runnable {
 
     JobSuggestedParamSet jobSuggestedParamSet = JobSuggestedParamSet.find.select("*").where().findUnique();
     jobSuggestedParamSet.updatedTs = new Timestamp(startTime + 100);
+    jobSuggestedParamSet.createdTs = new Timestamp(endTime+1-259200000);
     jobSuggestedParamSet.update();
 
     JobExecution jobExecution = JobExecution.find.select("*").where().eq(JobExecution.TABLE.id,"1541").findUnique();
@@ -95,11 +96,11 @@ public class AlertingTest implements Runnable {
     List<NotificationData> notificationData =
         manager.generateNotificationData(startTime, endTime);
 
-    assertTrue(" Notification data size "+notificationData.size(), notificationData.size() == 1);
+    assertTrue(" Notification data size "+notificationData.size(), notificationData.size() == 0);
 
-    NotificationType notificationType = notificationData.get(0).getNotificationType();
+   /* NotificationType notificationType = notificationData.get(0).getNotificationType();
     assertTrue(" Developers Notification  ",
-        notificationType.name().equals(NotificationType.STAKEHOLDER.name()));
+        notificationType.name().equals(NotificationType.STAKEHOLDER.name()));*/
 
     /**
      * If user want to test email functionality

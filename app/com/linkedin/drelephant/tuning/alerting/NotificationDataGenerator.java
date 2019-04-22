@@ -42,6 +42,7 @@ public class NotificationDataGenerator {
   private static String DEVELOPERS_RECIPIENT_ADDRESS = null;
   private List<NotificationData> notificationMessages = null;
   private static String EMAIL_DOMAIN_NAME = null;
+  private static long RECENCY_WINDOW_IN_MS = 259200000;
 
   public NotificationDataGenerator(long windowStartTimeMS, long windowEndTimeMS, Configuration configuration) {
     this.windowStartTimeMS = windowStartTimeMS;
@@ -69,10 +70,12 @@ public class NotificationDataGenerator {
    *   and developer should be informed about the same.
    */
   private void bestParameterPenaltyDeveloperRule() {
+    long recencyWindow = windowEndTimeMS - RECENCY_WINDOW_IN_MS;
     List<JobSuggestedParamSet> jobSuggestedParamSets = JobSuggestedParamSet.find.select("*")
         .fetch(JobSuggestedParamSet.TABLE.jobDefinition, "*")
         .where()
         .between(JobSuggestedParamSet.TABLE.updatedTs, new Timestamp(windowStartTimeMS), new Timestamp(windowEndTimeMS))
+        .between(JobSuggestedParamSet.TABLE.createdTs,new Timestamp(recencyWindow),new Timestamp(windowEndTimeMS))
         .eq(JobSuggestedParamSet.TABLE.isParamSetBest, true)
         .eq(JobSuggestedParamSet.TABLE.fitness, 10000)
         .findList();
@@ -81,7 +84,7 @@ public class NotificationDataGenerator {
       data.setSubject(" Following jobs have penalty parameter as the best parameter . Please fix this");
       data.setNotificationType(NotificationType.DEVELOPER);
       for (JobSuggestedParamSet jobSuggestedParamSet : jobSuggestedParamSets) {
-        data.addContent(jobSuggestedParamSet.toString());
+        data.addContent(jobSuggestedParamSet.toString() + "\t" + jobSuggestedParamSet.jobDefinition.jobDefId);
       }
       notificationMessages.add(data);
     }
@@ -92,7 +95,7 @@ public class NotificationDataGenerator {
    *   This rule alerts if the execution is failed because of autotuining.
    */
   private void failureBecauseOfAutotuningDeveloperRule() {
-    List<JobExecution> jobExecutions  = JobExecution.find.select("*")
+    List<JobExecution> jobExecutions = JobExecution.find.select("*")
         .fetch(JobExecution.TABLE.jobExecId, "*")
         .where()
         .between(JobExecution.TABLE.updatedTs, new Timestamp(windowStartTimeMS), new Timestamp(windowEndTimeMS))
@@ -125,11 +128,13 @@ public class NotificationDataGenerator {
       for (TuningJobDefinition tuningJobDefinition : tuningJobDefinitions) {
         String emailSendToAddress = getUserEmailAddress(tuningJobDefinition);
         if (emailSendToAddress != null) {
-          NotificationData data = new NotificationData(emailSendToAddress + DELIMITER_BETWEEN_USERNAME_EMAIL + EMAIL_DOMAIN_NAME);
+          logger.info(" Sending email to developer "+emailSendToAddress);
+          /*NotificationData data =
+              new NotificationData(emailSendToAddress + DELIMITER_BETWEEN_USERNAME_EMAIL + EMAIL_DOMAIN_NAME);
           data.setSubject(" Job is tuned and deboarded  ");
           data.setNotificationType(NotificationType.STAKEHOLDER);
           data.addContent(tuningJobDefinition.job.jobDefId + "\t" + tuningJobDefinition.job.jobName);
-          notificationMessages.add(data);
+          notificationMessages.add(data);*/
         }
       }
       logger.info(" Job Tuned  " + tuningJobDefinitions.size());
