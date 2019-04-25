@@ -3,6 +3,7 @@ package com.linkedin.drelephant.tuning;
 import java.util.ArrayList;
 import java.util.List;
 import models.JobDefinition;
+import models.JobExecution;
 import models.JobSuggestedParamSet;
 import models.TuningAlgorithm;
 import models.TuningJobDefinition;
@@ -103,5 +104,22 @@ public class TuningHelper {
       }
     }
     return newParamBestParam;
+  }
+
+  public static void updateJobSuggestedParamSet(JobSuggestedParamSet jobSuggestedParamSet, JobExecution jobExecution) {
+    try {
+      jobSuggestedParamSet.update();
+    } catch (Exception e) {
+      logger.error("Exception updating job suggested param set " + jobSuggestedParamSet.id + " "
+          + jobSuggestedParamSet.fitnessJobExecution.id + " " + jobExecution.id, e);
+    }
+  }
+
+  public static void updateJobExecution(JobExecution jobExecution) {
+    try {
+      jobExecution.update();
+    } catch (Exception e) {
+      logger.error("Exception updating job execution " + jobExecution.id, e);
+    }
   }
 }

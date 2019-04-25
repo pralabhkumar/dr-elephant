@@ -104,6 +104,9 @@ public class FitnessManagerHBT extends AbstractFitnessManager {
       updateTuningJobDefinition(tuningJobDefinition, jobExecution);
     }
 
+    logger.info(
+        " Calculating Fitness for " + jobSuggestedParamSet.id + " " + jobSuggestedParamSet.fitnessJobExecution.id + " "
+            + jobExecution.id);
     if (isRetried) {
       logger.info(" Retried execution " + jobExecution.id + " for parameter " + jobSuggestedParamSet.id);
       handleRetryScenarios(jobSuggestedParamSet, jobExecution);
@@ -116,22 +119,25 @@ public class FitnessManagerHBT extends AbstractFitnessManager {
   private void handleNonRetryScenarios(JobSuggestedParamSet jobSuggestedParamSet, JobExecution jobExecution) {
     if (alreadyFitnessComputed(jobSuggestedParamSet)) {
       logger.info(" Fitness is already computed for this parameter " + jobSuggestedParamSet.id);
+      TuningHelper.updateJobExecution(jobExecution);
     } else {
-      logger.info(" Fitness not computed "+jobSuggestedParamSet.id);
+      logger.info(" Fitness not computed " + jobSuggestedParamSet.id);
+      TuningHelper.updateJobExecution(jobExecution);
       updateJobSuggestedParamSetSucceededExecution(jobExecution, jobSuggestedParamSet, null);
     }
-    logger.info("Updated job execution "+jobSuggestedParamSet.fitnessJobExecution.id+" "+jobExecution.id);
-    jobExecution.update();
+    logger.info("Updated job execution " + jobSuggestedParamSet.fitnessJobExecution.id + " " + jobExecution.id);
   }
+
+
 
   private void handleRetryScenarios(JobSuggestedParamSet jobSuggestedParamSet, JobExecution jobExecution) {
     if (jobExecution.executionState.equals(JobExecution.ExecutionState.SUCCEEDED)) {
       logger.info(
-          "Job is succeeded after retry : jobexecution" + jobExecution.id + " parameter " + jobSuggestedParamSet.id);
+          "Job is succeeded after retry : job execution" + jobExecution.id + " parameter " + jobSuggestedParamSet.id);
       handleJobSucceededAfterRetryScenarios(jobSuggestedParamSet, jobExecution);
     } else {
       logger.info(
-          "Job is Failed after retry : jobexecution" + jobExecution.id + " parameter " + jobSuggestedParamSet.id);
+          "Job is Failed after retry : job execution" + jobExecution.id + " parameter " + jobSuggestedParamSet.id);
       handleJobFailedAfterRetryScenarios(jobSuggestedParamSet, jobExecution);
     }
   }
@@ -140,11 +146,12 @@ public class FitnessManagerHBT extends AbstractFitnessManager {
       JobExecution jobExecution) {
     if (alreadyFitnessComputed(jobSuggestedParamSet)) {
       assignDefaultValuesToJobExecution(jobExecution);
+      TuningHelper.updateJobExecution(jobExecution);
     } else {
       resetParamSetToCreated(jobSuggestedParamSet, jobExecution);
-      jobSuggestedParamSet.save();
+      TuningHelper.updateJobExecution(jobExecution);
+      TuningHelper.updateJobSuggestedParamSet(jobSuggestedParamSet,jobExecution);
     }
-    jobExecution.save();
   }
 
   private void handleJobSucceededAfterRetryScenarios(JobSuggestedParamSet jobSuggestedParamSet,
@@ -162,12 +169,12 @@ public class FitnessManagerHBT extends AbstractFitnessManager {
 
   protected void updateJobSuggestedParamSetSucceededExecution(JobExecution jobExecution,
       JobSuggestedParamSet jobSuggestedParamSet, TuningJobDefinition tuningJobDefinition) {
-    logger.info("Updating Job Suggested param set "+jobSuggestedParamSet.id);
-    jobSuggestedParamSet.fitness = jobExecution.score;
-    jobSuggestedParamSet.paramSetState = JobSuggestedParamSet.ParamSetStatus.FITNESS_COMPUTED;
-    jobSuggestedParamSet.fitnessJobExecution = jobExecution;
-    jobSuggestedParamSet = updateBestJobSuggestedParamSet(jobSuggestedParamSet);
-    jobSuggestedParamSet.update();
+      logger.info("Updating Job Suggested param set " + jobSuggestedParamSet.id);
+      jobSuggestedParamSet.fitness = jobExecution.score;
+      jobSuggestedParamSet.paramSetState = JobSuggestedParamSet.ParamSetStatus.FITNESS_COMPUTED;
+      jobSuggestedParamSet.fitnessJobExecution = jobExecution;
+      jobSuggestedParamSet = updateBestJobSuggestedParamSet(jobSuggestedParamSet);
+      TuningHelper.updateJobSuggestedParamSet(jobSuggestedParamSet,jobExecution);
   }
 
   @Override

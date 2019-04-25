@@ -154,11 +154,13 @@ public abstract class AbstractFitnessManager implements Manager {
 
       if (alreadyFitnessComputed(jobSuggestedParamSet)) {
         assignDefaultValuesToJobExecution(jobExecution);
+        TuningHelper.updateJobExecution(jobExecution);
       } else {
         resetParamSetToCreated(jobSuggestedParamSet, jobExecution);
-        jobSuggestedParamSet.update();
+        TuningHelper.updateJobExecution(jobExecution);
+        TuningHelper.updateJobSuggestedParamSet(jobSuggestedParamSet,jobExecution);
       }
-      jobExecution.update();
+
     }
   }
 
@@ -366,4 +368,6 @@ public abstract class AbstractFitnessManager implements Manager {
     }
     return false;
   }
+
+
 }
