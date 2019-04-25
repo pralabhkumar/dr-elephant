@@ -16,6 +16,8 @@
 
 package models;
 
+import com.avaje.ebean.annotation.ConcurrencyMode;
+import com.avaje.ebean.annotation.EntityConcurrencyMode;
 import com.avaje.ebean.annotation.UpdatedTimestamp;
 import java.sql.Timestamp;
 import javax.persistence.CascadeType;
@@ -42,6 +44,7 @@ import play.db.ebean.Model;
  * overridden.
  */
 @Entity
+@EntityConcurrencyMode(ConcurrencyMode.NONE)
 @Table(name = "job_suggested_param_set")
 public class JobSuggestedParamSet extends Model {
 

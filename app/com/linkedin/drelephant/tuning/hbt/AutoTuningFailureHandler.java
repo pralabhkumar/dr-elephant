@@ -46,7 +46,7 @@ public class AutoTuningFailureHandler implements FailureHandler {
   private void handleAutoTuningFailure() {
     _abstractFitnessManager.applyPenalty(jobSuggestedParamSet, jobExecution);
     boolean isCurrentParameterBest = jobSuggestedParamSet.isParamSetBest;
-    jobSuggestedParamSet.isParamSetSuggested = false;
+    jobSuggestedParamSet.isParamSetBest = false;
     jobSuggestedParamSet.update();
     jobExecution.update();
     if (isCurrentParameterBest) {
