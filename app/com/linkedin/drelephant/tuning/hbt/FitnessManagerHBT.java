@@ -103,9 +103,7 @@ public class FitnessManagerHBT extends AbstractFitnessManager {
     if (tuningJobDefinition.averageResourceUsage == null && totalExecutionTime != 0) {
       updateTuningJobDefinition(tuningJobDefinition, jobExecution);
     }
-
     try {
-
       if (isRetried) {
         logger.info(" Retried execution " + jobExecution.id + " for parameter " + jobSuggestedParamSet.id);
         handleRetryScenarios(jobSuggestedParamSet, jobExecution);
@@ -113,7 +111,6 @@ public class FitnessManagerHBT extends AbstractFitnessManager {
         logger.info(" Non Retried execution " + jobExecution.id + " for parameter " + jobSuggestedParamSet.id);
         handleNonRetryScenarios(jobSuggestedParamSet, jobExecution);
       }
-
       logger.info(
           " Calculated Fitness for " + jobExecution.id + " for parameter " + jobSuggestedParamSet.id);
     } catch (Exception e) {
