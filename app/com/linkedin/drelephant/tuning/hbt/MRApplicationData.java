@@ -126,17 +126,17 @@ public class MRApplicationData {
         usedHeapMemoryMB);
 
     logDebuggingStatement(
-        " Used Physical Memory " + yarnAppHeuristicResult.id + "_" + functionType + " " + usedPhysicalMemoryMB,
-        " Used Virtual Memory " + yarnAppHeuristicResult.id + "_" + functionType + " " + usedVirtualMemoryMB,
-        " Used heap Memory " + yarnAppHeuristicResult.id + "_" + functionType + " " + usedHeapMemoryMB);
+        " Used Physical Memory " + yarnAppHeuristicResult.yarnAppResult.id + "_" + functionType + " " + usedPhysicalMemoryMB,
+        " Used Virtual Memory " + yarnAppHeuristicResult.yarnAppResult.id + "_" + functionType + " " + usedVirtualMemoryMB,
+        " Used heap Memory " + yarnAppHeuristicResult.yarnAppResult.id + "_" + functionType + " " + usedHeapMemoryMB);
 
     Double memoryMB = max(usedPhysicalMemoryMB, usedVirtualMemoryMB / (2.1));
     Double heapSizeMax = TuningHelper.getHeapSize(min(0.75 * memoryMB, usedHeapMemoryMB));
     Double containerSize = TuningHelper.getContainerSize(memoryMB);
-    addParameterToSuggestedParameter(heapSizeMax, containerSize, yarnAppHeuristicResult.id, functionType);
+    addParameterToSuggestedParameter(heapSizeMax, containerSize, yarnAppHeuristicResult.yarnAppResult.id, functionType);
   }
 
-  private void addParameterToSuggestedParameter(Double heapSizeMax, Double containerSize, int id, String functionType) {
+  private void addParameterToSuggestedParameter(Double heapSizeMax, Double containerSize, String id, String functionType) {
     if (functionType.equals("Mapper")) {
       addMapperMemoryAndHeapToSuggestedParameter(heapSizeMax, containerSize, id);
     } else {
@@ -145,7 +145,7 @@ public class MRApplicationData {
   }
 
   private void addMapperMemoryAndHeapToSuggestedParameter(Double heapSizeMax, Double containerSize,
-      int heuristicsResultID) {
+      String heuristicsResultID) {
     suggestedParameter.put("mapreduce.map.memory.mb", containerSize);
     suggestedParameter.put("mapreduce.map.java.opts", heapSizeMax);
     logDebuggingStatement(
@@ -154,7 +154,7 @@ public class MRApplicationData {
   }
 
   private void addReducerMemoryAndHeapToSuggestedParameter(Double heapSizeMax, Double containerSize,
-      int heuristicsResultID) {
+      String heuristicsResultID) {
     suggestedParameter.put("mapreduce.reduce.memory.mb", containerSize);
     suggestedParameter.put("mapreduce.reduce.java.opts", heapSizeMax);
     logDebuggingStatement(
@@ -322,9 +322,9 @@ public class MRApplicationData {
   }
 
   private void logDebuggingStatement(String... statements) {
-    if (debugEnabled) {
+    if (true) {
       for (String log : statements) {
-        logger.debug(log);
+        logger.info(log);
       }
     }
   }
