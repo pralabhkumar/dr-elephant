@@ -46,6 +46,9 @@ function require_programs() {
   fi
 }
 
+set -v
+set -ex
+
 require_programs zip unzip
 
 # Default configurations
@@ -154,8 +157,8 @@ play_command $OPTS clean compile dist
 
 cd target/universal
 
-ZIP_NAME=`/bin/ls *.zip`
-unzip ${ZIP_NAME}
+ZIP_NAME=`ls *.zip`
+unzip -o ${ZIP_NAME}
 rm ${ZIP_NAME}
 DIST_NAME=${ZIP_NAME%.zip}
 
@@ -170,7 +173,7 @@ cp $stop_script ${DIST_NAME}/bin/
 
 cp -r $app_conf ${DIST_NAME}
 
-mkdir ${DIST_NAME}/scripts/
+mkdir -p ${DIST_NAME}/scripts/
 
 cp -r $pso_dir ${DIST_NAME}/scripts/
 cp -r $mysql_dir ${DIST_NAME}/scripts/

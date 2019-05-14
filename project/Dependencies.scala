@@ -23,13 +23,14 @@ object Dependencies {
   lazy val commonsCodecVersion = "1.10"
   lazy val commonsIoVersion = "2.4"
   lazy val gsonVersion = "2.2.4"
-  lazy val guavaVersion = "18.0"          // Hadoop defaultly are using guava 11.0, might raise NoSuchMethodException
+  lazy val guavaVersion = "18.0"          // Hadoop by default uses Guava 11.0, might raise NoSuchMethodException
   lazy val jacksonMapperAslVersion = "1.7.3"
   lazy val jacksonVersion = "2.5.3"
   lazy val jerseyVersion = "2.24"
   lazy val jsoupVersion = "1.7.3"
   lazy val mysqlConnectorVersion = "5.1.36"
   lazy val oozieClientVersion = "4.2.0"
+  lazy val tonyVersion = "0.3.6"
 
   lazy val HADOOP_VERSION = "hadoopversion"
   lazy val SPARK_VERSION = "sparkversion"
@@ -97,7 +98,11 @@ object Dependencies {
     "com.github.tomakehurst" % "wiremock-standalone" % "2.21.0" % Test excludeAll(
       ExclusionRule(organization = "org.apache.httpcomponents")
       ),
-    "javax.mail" % "mail" % "1.4"
+    "javax.mail" % "mail" % "1.4",
+    "com.linkedin.tony" % "tony-core" % tonyVersion excludeAll(
+      ExclusionRule(organization = "com.fasterxml.jackson.core"),
+      ExclusionRule(organization = "org.apache.hadoop")
+    )
   ) :+ sparkExclusion
 
   var dependencies = Seq(javaJdbc, javaEbean, cache)
