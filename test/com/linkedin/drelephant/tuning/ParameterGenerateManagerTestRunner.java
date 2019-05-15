@@ -176,12 +176,12 @@ public class ParameterGenerateManagerTestRunner implements Runnable {
   }
 
   private void testJobRecommendedMemoryParameter(Map<String, Double> suggestedParameter) {
-    assertTrue(" Total  Parameter Suggested ", suggestedParameter.keySet().size() == 6);
+    assertTrue(" Total  Parameter Suggested ", suggestedParameter.keySet().size() == 7);
     assertTrue(" Mapper Memory Suggested ", suggestedParameter.get("mapreduce.map.memory.mb") == 2048.0);
     assertTrue(" Mapper Memory Heap Recommended ", suggestedParameter.get("mapreduce.map.java.opts") == 600.0);
     assertTrue(" Reducer Memory Suggested ", suggestedParameter.get("mapreduce.reduce.memory.mb") == 1024.0);
     assertTrue(" Reducer Memory Heap Recommended ", suggestedParameter.get("mapreduce.reduce.java.opts") == 600.0);
-    assertTrue(" Split Size Recommneded ", suggestedParameter.get("pig.maxCombinedSplitSize") == 161480704);
+    assertTrue(" Split Size Recommneded ", suggestedParameter.get("mapreduce.input.fileinputformat.split.maxsize") == 161480704);
     assertTrue(" Number of Reducer ", suggestedParameter.get("mapreduce.job.reduces") == 370);
   }
 
@@ -197,7 +197,7 @@ public class ParameterGenerateManagerTestRunner implements Runnable {
         assertTrue(
             "Mapper Average task runtime " + Math.round(usedParameter.get("Mapper Average task runtime") * 100) / 100.0,
             Math.round(usedParameter.get("Mapper Average task runtime") * 100) / 100.0 == 0.47);
-        assertTrue(" Split Size Recommneded ", suggestedParameter.get("pig.maxCombinedSplitSize") == 161480704);
+        assertTrue(" Split Size Recommneded ", suggestedParameter.get("mapreduce.input.fileinputformat.split.maxsize") == 161480704);
       }
       if (mrApplicationData.getApplicationID().equals("application_1458194917883_1453362")) {
         assertTrue("Reducer Number of tasks) " + usedParameter.get("Reducer Number of tasks"),
