@@ -209,6 +209,7 @@ public class MapReduceFSFetcherHadoop2 extends MapReduceFetcher {
     String histFile = files.getJobHistPath();
     String appId = job.getAppId();
     String jobId = Utils.getJobIdFromApplicationId(appId);
+    logger.info(" AppID "+appId);
 
     MapReduceApplicationData jobData = new MapReduceApplicationData();
     jobData.setAppId(appId).setJobId(jobId);
@@ -235,6 +236,7 @@ public class MapReduceFSFetcherHadoop2 extends MapReduceFetcher {
     // Analyze job history file
     JobHistoryParser parser = new JobHistoryParser(_fs, histFile);
     JobHistoryParser.JobInfo jobInfo = parser.parse();
+    logger.info(" Parse the history file "+jobInfo);
     IOException parseException = parser.getParseException();
     if (parseException != null) {
       throw new RuntimeException("Could not parse history file " + histFile, parseException);
@@ -271,10 +273,10 @@ public class MapReduceFSFetcherHadoop2 extends MapReduceFetcher {
       }
     }
     if (jobInfo.getTotalMaps() > MAX_SAMPLE_SIZE) {
-      logger.debug(jobId + " total mappers: " + mapperInfoList.size());
+      logger.info(jobId + " total mappers: " + mapperInfoList.size());
     }
     if (jobInfo.getTotalReduces() > MAX_SAMPLE_SIZE) {
-      logger.debug(jobId + " total reducers: " + reducerInfoList.size());
+      logger.info(jobId + " total reducers: " + reducerInfoList.size());
     }
     MapReduceTaskData[] mapperList = getTaskData(jobId, mapperInfoList);
     MapReduceTaskData[] reducerList = getTaskData(jobId, reducerInfoList);

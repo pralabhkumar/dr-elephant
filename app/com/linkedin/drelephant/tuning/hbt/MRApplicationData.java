@@ -168,6 +168,7 @@ public class MRApplicationData {
     if (functionType.equals("Mapper")) {
       splitSize = getNewSplitSize(yarnAppHeuristicResult);
       if (splitSize > 0) {
+        suggestedParameter.put("mapreduce.input.fileinputformat.split.maxsize", splitSize * 1.0);
         suggestedParameter.put("pig.maxCombinedSplitSize", splitSize * 1.0);
       }
     }
