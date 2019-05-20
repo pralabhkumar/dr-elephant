@@ -1,3 +1,20 @@
+/*
+ * Copyright 2016 LinkedIn Corp.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ */
+
+
 package com.linkedin.drelephant.tuning.hbt;
 
 import com.linkedin.drelephant.tuning.TuningHelper;
@@ -16,27 +33,73 @@ import org.apache.log4j.Logger;
 import static java.lang.Math.*;
 
 
+/**
+ * This class represent one Map Reduce Application . It contains
+ * suggested parameters per application.
+ */
 public class MRApplicationData {
   private final Logger logger = Logger.getLogger(getClass());
   boolean debugEnabled = logger.isDebugEnabled();
   private String applicationID;
   private Map<String, Double> suggestedParameter;
   private AppResult _result;
-  Map<String, AppHeuristicResult> failedHeuristics = null;
+  private Map<String, AppHeuristicResult> failedHeuristics = null;
   private static Set<String> validHeuristic = null;
   private Map<String, String> appliedParameter = null;
   private Map<String, Double> counterValues = null;
 
+  private enum HeuristicName {
+    MAPPER_TIME("Mapper Time"),
+    MAPPER_SPEED("Mapper Speed"),
+    MAPPER_MEMORY("Mapper Memory"),
+    MAPPER_SPILL("Mapper Spill"),
+    REDUCER_TIME("Reducer Time"),
+    REDUCER_MEMORY("Reducer Memory");
+    private final String HeuristicNameValue;
+
+    HeuristicName(String HeuristicNameValue) {
+      this.HeuristicNameValue = HeuristicNameValue;
+    }
+
+    public String getHeuristicNameValue() {
+      return HeuristicNameValue;
+    }
+  }
+
+  private enum MRApplicationParameter {
+    MAPPER_MEMORY("mapreduce.map.memory.mb"),
+    MAPPER_HEAP("mapreduce.map.java.opts"),
+    REDUCER_MEMORY("mapreduce.reduce.memory.mb"),
+    REDUCER_HEAP("mapreduce.reduce.java.opts"),
+    MAP_SPLIT_SIZE("mapreduce.input.fileinputformat.split.maxsize"),
+    PIG_SPLIT_SIZE("pig.maxCombinedSplitSize"),
+    REDUCER_NUMBER("mapreduce.job.reduces"),
+    MAP_BUFFER_SIZE("mapreduce.task.io.sort.mb"),
+    MAP_SPILL_PERCENTAGE("mapreduce.map.sort.spill.percent");
+    private final String propertyName;
+
+    MRApplicationParameter(String propertyName) {
+      this.propertyName = propertyName;
+    }
+
+    public String getPropertyName() {
+      return propertyName;
+    }
+  }
+
+  /**
+   * Rest of the heuristics , may requires code changes
+   * and cannot be fixed by just changing parameters and tuning
+   * may not be able to tune those heuristics
+   */
   static {
     validHeuristic = new HashSet<String>();
-    //validHeuristic.add("Mapper GC");
-    validHeuristic.add("Mapper Time");
-    validHeuristic.add("Mapper Speed");
-    validHeuristic.add("Mapper Memory");
-    validHeuristic.add("Mapper Spill");
-    // validHeuristic.add("Reducer GC");
-    validHeuristic.add("Reducer Time");
-    validHeuristic.add("Reducer Memory");
+    validHeuristic.add(HeuristicName.MAPPER_TIME.getHeuristicNameValue());
+    validHeuristic.add(HeuristicName.MAPPER_SPEED.getHeuristicNameValue());
+    validHeuristic.add(HeuristicName.MAPPER_MEMORY.getHeuristicNameValue());
+    validHeuristic.add(HeuristicName.MAPPER_SPILL.getHeuristicNameValue());
+    validHeuristic.add(HeuristicName.REDUCER_TIME.getHeuristicNameValue());
+    validHeuristic.add(HeuristicName.REDUCER_MEMORY.getHeuristicNameValue());
   }
 
   MRApplicationData(AppResult result, Map<String, String> appliedParameter) {
@@ -57,14 +120,20 @@ public class MRApplicationData {
     return this.applicationID;
   }
 
+  /**
+   * Check if the heuristics is failed for this application.
+   * If more than one heuristics are failed ,then fix heuirstics .
+   * Otherwise go for the memory optimization
+   *
+   */
   private void processForSuggestedParameter() {
     Map<String, AppHeuristicResult> memoryHeuristics = new HashMap<String, AppHeuristicResult>();
     if (_result.yarnAppHeuristicResults != null) {
       for (AppHeuristicResult yarnAppHeuristicResult : _result.yarnAppHeuristicResults) {
-        if (yarnAppHeuristicResult.heuristicName.equals("Mapper Memory")) {
+        if (yarnAppHeuristicResult.heuristicName.equals(HeuristicName.MAPPER_MEMORY.getHeuristicNameValue())) {
           memoryHeuristics.put("Mapper", yarnAppHeuristicResult);
         }
-        if (yarnAppHeuristicResult.heuristicName.equals("Reducer Memory")) {
+        if (yarnAppHeuristicResult.heuristicName.equals(HeuristicName.REDUCER_MEMORY.getHeuristicNameValue())) {
           memoryHeuristics.put("Reducer", yarnAppHeuristicResult);
         }
         if (isValidHeuristic(yarnAppHeuristicResult)) {
@@ -86,6 +155,11 @@ public class MRApplicationData {
     return this.suggestedParameter;
   }
 
+  /**
+   * Only if the Heuristics severity is greater than 2 , then try to tune it.
+   * @param yarnAppHeuristicResult
+   * @return
+   */
   private boolean isValidHeuristic(AppHeuristicResult yarnAppHeuristicResult) {
     if (validHeuristic.contains(yarnAppHeuristicResult.heuristicName)
         && yarnAppHeuristicResult.severity.getValue() > 2) {
@@ -95,19 +169,24 @@ public class MRApplicationData {
   }
 
   private void processHeuristics(AppHeuristicResult yarnAppHeuristicResult) {
-    if (yarnAppHeuristicResult.heuristicName.equals("Mapper Memory")) {
+    if (yarnAppHeuristicResult.heuristicName.equals(HeuristicName.MAPPER_MEMORY.getHeuristicNameValue())) {
       processForMemory(yarnAppHeuristicResult, "Mapper");
-    } else if (yarnAppHeuristicResult.heuristicName.equals("Reducer Memory")) {
+    } else if (yarnAppHeuristicResult.heuristicName.equals(HeuristicName.REDUCER_MEMORY.getHeuristicNameValue())) {
       processForMemory(yarnAppHeuristicResult, "Reducer");
-    } else if (yarnAppHeuristicResult.heuristicName.equals("Mapper Time")) {
+    } else if (yarnAppHeuristicResult.heuristicName.equals(HeuristicName.MAPPER_TIME.getHeuristicNameValue())) {
       processForNumberOfTask(yarnAppHeuristicResult, "Mapper");
-    } else if (yarnAppHeuristicResult.heuristicName.equals("Reducer Time")) {
+    } else if (yarnAppHeuristicResult.heuristicName.equals(HeuristicName.REDUCER_TIME.getHeuristicNameValue())) {
       processForNumberOfTask(yarnAppHeuristicResult, "Reducer");
-    } else if (yarnAppHeuristicResult.heuristicName.equals("Mapper Spill")) {
+    } else if (yarnAppHeuristicResult.heuristicName.equals(HeuristicName.MAPPER_SPILL.getHeuristicNameValue())) {
       processForMemoryBuffer(yarnAppHeuristicResult);
     }
   }
 
+  /**
+   * Process for Mapper Memory and Heap and reducer memory and heap.
+   * @param yarnAppHeuristicResult
+   * @param functionType
+   */
   private void processForMemory(AppHeuristicResult yarnAppHeuristicResult, String functionType) {
     Double usedPhysicalMemoryMB = 0.0, usedVirtualMemoryMB = 0.0, usedHeapMemoryMB = 0.0;
     for (AppHeuristicResultDetails appHeuristicResultDetails : yarnAppHeuristicResult.yarnAppHeuristicResultDetails) {
@@ -125,9 +204,10 @@ public class MRApplicationData {
             functionType + " Max Total Committed Heap Usage Memory (MB)"}, usedVirtualMemoryMB, usedPhysicalMemoryMB,
         usedHeapMemoryMB);
 
-    logDebuggingStatement(
-        " Used Physical Memory " + yarnAppHeuristicResult.yarnAppResult.id + "_" + functionType + " " + usedPhysicalMemoryMB,
-        " Used Virtual Memory " + yarnAppHeuristicResult.yarnAppResult.id + "_" + functionType + " " + usedVirtualMemoryMB,
+    logDebuggingStatement(" Used Physical Memory " + yarnAppHeuristicResult.yarnAppResult.id + "_" + functionType + " "
+            + usedPhysicalMemoryMB,
+        " Used Virtual Memory " + yarnAppHeuristicResult.yarnAppResult.id + "_" + functionType + " "
+            + usedVirtualMemoryMB,
         " Used heap Memory " + yarnAppHeuristicResult.yarnAppResult.id + "_" + functionType + " " + usedHeapMemoryMB);
 
     Double memoryMB = max(usedPhysicalMemoryMB, usedVirtualMemoryMB / (2.1));
@@ -136,7 +216,8 @@ public class MRApplicationData {
     addParameterToSuggestedParameter(heapSizeMax, containerSize, yarnAppHeuristicResult.yarnAppResult.id, functionType);
   }
 
-  private void addParameterToSuggestedParameter(Double heapSizeMax, Double containerSize, String id, String functionType) {
+  private void addParameterToSuggestedParameter(Double heapSizeMax, Double containerSize, String id,
+      String functionType) {
     if (functionType.equals("Mapper")) {
       addMapperMemoryAndHeapToSuggestedParameter(heapSizeMax, containerSize, id);
     } else {
@@ -146,20 +227,22 @@ public class MRApplicationData {
 
   private void addMapperMemoryAndHeapToSuggestedParameter(Double heapSizeMax, Double containerSize,
       String heuristicsResultID) {
-    suggestedParameter.put("mapreduce.map.memory.mb", containerSize);
-    suggestedParameter.put("mapreduce.map.java.opts", heapSizeMax);
-    logDebuggingStatement(
-        " Memory Assigned " + heuristicsResultID + "_Mapper " + suggestedParameter.get("mapreduce.map.memory.mb"),
-        " Heap Assigned " + heuristicsResultID + "_Mapper " + suggestedParameter.get("mapreduce.map.java.opts"));
+    suggestedParameter.put(MRApplicationParameter.MAPPER_MEMORY.getPropertyName(), containerSize);
+    suggestedParameter.put(MRApplicationParameter.MAPPER_HEAP.getPropertyName(), heapSizeMax);
+    logDebuggingStatement(" Memory Assigned " + heuristicsResultID + "_Mapper " + suggestedParameter.get(
+        MRApplicationParameter.MAPPER_MEMORY.getPropertyName()),
+        " Heap Assigned " + heuristicsResultID + "_Mapper " + suggestedParameter.get(
+            MRApplicationParameter.MAPPER_HEAP.getPropertyName()));
   }
 
   private void addReducerMemoryAndHeapToSuggestedParameter(Double heapSizeMax, Double containerSize,
       String heuristicsResultID) {
-    suggestedParameter.put("mapreduce.reduce.memory.mb", containerSize);
-    suggestedParameter.put("mapreduce.reduce.java.opts", heapSizeMax);
-    logDebuggingStatement(
-        " Memory Assigned " + heuristicsResultID + "_Reducer " + suggestedParameter.get("mapreduce.map.memory.mb"),
-        " Heap Assigned " + heuristicsResultID + "_Reducer " + suggestedParameter.get("mapreduce.map.java.opts"));
+    suggestedParameter.put(MRApplicationParameter.REDUCER_MEMORY.getPropertyName(), containerSize);
+    suggestedParameter.put(MRApplicationParameter.REDUCER_HEAP.getPropertyName(), heapSizeMax);
+    logDebuggingStatement(" Memory Assigned " + heuristicsResultID + "_Reducer " + suggestedParameter.get(
+        MRApplicationParameter.REDUCER_MEMORY.getPropertyName()),
+        " Heap Assigned " + heuristicsResultID + "_Reducer " + suggestedParameter.get(
+            MRApplicationParameter.REDUCER_HEAP.getPropertyName()));
   }
 
   private void processForNumberOfTask(AppHeuristicResult yarnAppHeuristicResult, String functionType) {
@@ -168,14 +251,14 @@ public class MRApplicationData {
     if (functionType.equals("Mapper")) {
       splitSize = getNewSplitSize(yarnAppHeuristicResult);
       if (splitSize > 0) {
-        suggestedParameter.put("mapreduce.input.fileinputformat.split.maxsize", splitSize * 1.0);
-        suggestedParameter.put("pig.maxCombinedSplitSize", splitSize * 1.0);
+        suggestedParameter.put(MRApplicationParameter.MAP_SPLIT_SIZE.getPropertyName(), splitSize * 1.0);
+        suggestedParameter.put(MRApplicationParameter.PIG_SPLIT_SIZE.getPropertyName(), splitSize * 1.0);
       }
     }
     if (functionType.equals("Reducer")) {
       numberOfReduceTask = getNumberOfReducer(yarnAppHeuristicResult);
       if (numberOfReduceTask > 0) {
-        suggestedParameter.put("mapreduce.job.reduces", numberOfReduceTask * 1.0);
+        suggestedParameter.put(MRApplicationParameter.REDUCER_NUMBER.getPropertyName(), numberOfReduceTask * 1.0);
       }
     }
   }
@@ -234,7 +317,7 @@ public class MRApplicationData {
     } else if (averageTaskTimeInMinute >= 120) {
       newNumberOfReducer = numberoOfTasks * 2;
     } else if (averageTaskTimeInMinute >= 60) {
-      newNumberOfReducer = (int) (newNumberOfReducer * 1.2);
+      newNumberOfReducer = (int) (numberoOfTasks * 1.2);
     }
     logDebuggingStatement(" Reducer Average task time " + averageTaskTimeInMinute,
         " Reducer Number of tasks " + numberoOfTasks * 1.0, " New number of reducer " + newNumberOfReducer);
@@ -286,8 +369,8 @@ public class MRApplicationData {
           newBufferSize = (int) (previousBufferSize * 1.2);
         }
       }
-      suggestedParameter.put("mapreduce.task.io.sort.mb", newBufferSize * 1.0);
-      suggestedParameter.put("mapreduce.map.sort.spill.percent", newSpillPercentage * 1.0);
+      suggestedParameter.put(MRApplicationParameter.MAP_BUFFER_SIZE.getPropertyName(), newBufferSize * 1.0);
+      suggestedParameter.put(MRApplicationParameter.MAP_SPILL_PERCENTAGE.getPropertyName(), newSpillPercentage * 1.0);
       logDebuggingStatement(" Previous Buffer " + previousBufferSize, " Previous Split " + previousSortSpill,
           "Ratio of disk spills to output records " + ratioOfDiskSpillsToOutputRecords,
           "New Buffer Size " + newBufferSize * 1.0, " New Buffer Percentage " + newSpillPercentage);
@@ -297,19 +380,23 @@ public class MRApplicationData {
   }
 
   private void modifyMapperMemory() {
-    Double mapperMemory = suggestedParameter.get("mapreduce.map.memory.mb") == null ? Double.parseDouble(
-        appliedParameter.get("Mapper Memory")) : suggestedParameter.get("mapreduce.map.memory.mb");
-    Double sortBuffer = suggestedParameter.get("mapreduce.task.io.sort.mb");
+    Double mapperMemory =
+        suggestedParameter.get(MRApplicationParameter.MAPPER_MEMORY.getPropertyName()) == null ? Double.parseDouble(
+            appliedParameter.get("Mapper Memory"))
+            : suggestedParameter.get(MRApplicationParameter.MAPPER_MEMORY.getPropertyName());
+    Double sortBuffer = suggestedParameter.get(MRApplicationParameter.MAP_BUFFER_SIZE.getPropertyName());
     Double minimumMemoryBasedonSortBuffer = max(sortBuffer + 769, sortBuffer * (10 / 6));
     if (minimumMemoryBasedonSortBuffer > mapperMemory) {
       mapperMemory = minimumMemoryBasedonSortBuffer;
-      suggestedParameter.put("mapreduce.map.memory.mb", TuningHelper.getContainerSize(mapperMemory));
-      Double heapMemory = suggestedParameter.get("mapreduce.map.java.opts");
+      suggestedParameter.put(MRApplicationParameter.MAPPER_MEMORY.getPropertyName(),
+          TuningHelper.getContainerSize(mapperMemory));
+      Double heapMemory = suggestedParameter.get(MRApplicationParameter.MAPPER_HEAP.getPropertyName());
       if (heapMemory != null) {
         heapMemory = TuningHelper.getHeapSize(min(0.75 * mapperMemory, heapMemory));
-        suggestedParameter.put("mapreduce.map.java.opts", heapMemory);
+        suggestedParameter.put(MRApplicationParameter.MAPPER_HEAP.getPropertyName(), heapMemory);
       } else {
-        suggestedParameter.put("mapreduce.map.java.opts", TuningHelper.getHeapSize(0.75 * mapperMemory));
+        suggestedParameter.put(MRApplicationParameter.MAPPER_HEAP.getPropertyName(),
+            TuningHelper.getHeapSize(0.75 * mapperMemory));
       }
       logDebuggingStatement("Mapper Memory After Buffer Modify " + TuningHelper.getContainerSize(mapperMemory) * 1.0,
           " Mapper heap After Buffer Modify " + heapMemory);
@@ -323,7 +410,7 @@ public class MRApplicationData {
   }
 
   private void logDebuggingStatement(String... statements) {
-    if (true) {
+    if (debugEnabled) {
       for (String log : statements) {
         logger.info(log);
       }
