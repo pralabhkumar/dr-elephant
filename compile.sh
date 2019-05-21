@@ -145,7 +145,6 @@ start_script=${project_root}/scripts/start.sh
 stop_script=${project_root}/scripts/stop.sh
 app_conf=${project_root}/app-conf
 pso_dir=${project_root}/scripts/pso
-mysql_dir=${project_root}/scripts/mysql
 whitelisting_script=${project_root}/scripts/azkaban_job_whitelisting_blacklisting.py
 tuning_performance_report_script=${project_root}/scripts/tuning_performance_reports.py
 # Echo the value of pwd in the script so that it is clear what is being removed.
@@ -176,7 +175,6 @@ cp -r $app_conf ${DIST_NAME}
 mkdir -p ${DIST_NAME}/scripts/
 
 cp -r $pso_dir ${DIST_NAME}/scripts/
-cp -r $mysql_dir ${DIST_NAME}/scripts/
 cp $whitelisting_script ${DIST_NAME}/scripts/
 cp $tuning_performance_report_script ${DIST_NAME}/scripts/
 
