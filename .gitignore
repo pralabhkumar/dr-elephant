@@ -17,6 +17,7 @@
 # general
 *~
 *.log
+*.swp
 dr_elephant.log.*
 tmp
 dump
