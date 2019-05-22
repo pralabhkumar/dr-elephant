@@ -85,7 +85,9 @@ public class FitnessManagerHBT extends AbstractFitnessManager {
     Double totalResourceUsed = 0D;
     Double totalInputBytesInBytes = 0D;
     Double score = 0D;
+    logger.info(" Job Execution ID is " + jobExecution.jobExecId);
     for (AppResult appResult : results) {
+      logger.info(" Apps are " + appResult.id);
       totalResourceUsed += appResult.resourceUsed;
       totalInputBytesInBytes += appResult.getTotalInputBytes();
       score += appResult.score;
@@ -115,7 +117,7 @@ public class FitnessManagerHBT extends AbstractFitnessManager {
           " Calculating Fitness for " + jobSuggestedParamSet.id + " " + jobSuggestedParamSet.fitnessJobExecution.id
               + " " + jobExecution.id);
     } catch (Exception e) {
-      logger.error("Exception while calculating fitness for " + jobSuggestedParamSet.id + " " + jobExecution.id,e);
+      logger.error("Exception while calculating fitness for " + jobSuggestedParamSet.id + " " + jobExecution.id, e);
     }
   }
 
@@ -130,8 +132,6 @@ public class FitnessManagerHBT extends AbstractFitnessManager {
     }
     logger.info("Updated job execution " + jobSuggestedParamSet.fitnessJobExecution.id + " " + jobExecution.id);
   }
-
-
 
   private void handleRetryScenarios(JobSuggestedParamSet jobSuggestedParamSet, JobExecution jobExecution) {
     if (jobExecution.executionState.equals(JobExecution.ExecutionState.SUCCEEDED)) {
@@ -153,7 +153,7 @@ public class FitnessManagerHBT extends AbstractFitnessManager {
     } else {
       resetParamSetToCreated(jobSuggestedParamSet, jobExecution);
       TuningHelper.updateJobExecution(jobExecution);
-      TuningHelper.updateJobSuggestedParamSet(jobSuggestedParamSet,jobExecution);
+      TuningHelper.updateJobSuggestedParamSet(jobSuggestedParamSet, jobExecution);
     }
   }
 
@@ -161,10 +161,10 @@ public class FitnessManagerHBT extends AbstractFitnessManager {
       JobExecution jobExecution) {
     FailureHandlerContext failureHandlerContext = new FailureHandlerContext();
     if (jobExecution.autoTuningFault) {
-      logger.info(" Job execution was failed because of autotuning but retry worked"+jobExecution.id);
+      logger.info(" Job execution was failed because of autotuning but retry worked" + jobExecution.id);
       failureHandlerContext.setFailureHandler(new AutoTuningFailureHandler());
     } else {
-      logger.info(" Job execution was failed because of other reasons but retry worked"+jobExecution.id);
+      logger.info(" Job execution was failed because of other reasons but retry worked" + jobExecution.id);
       failureHandlerContext.setFailureHandler(new NonAutoTuningFailureHandler());
     }
     failureHandlerContext.execute(jobExecution, jobSuggestedParamSet, this);
@@ -172,12 +172,12 @@ public class FitnessManagerHBT extends AbstractFitnessManager {
 
   protected void updateJobSuggestedParamSetSucceededExecution(JobExecution jobExecution,
       JobSuggestedParamSet jobSuggestedParamSet, TuningJobDefinition tuningJobDefinition) {
-      logger.info("Updating Job Suggested param set " + jobSuggestedParamSet.id);
-      jobSuggestedParamSet.fitness = jobExecution.score;
-      jobSuggestedParamSet.paramSetState = JobSuggestedParamSet.ParamSetStatus.FITNESS_COMPUTED;
-      jobSuggestedParamSet.fitnessJobExecution = jobExecution;
-      jobSuggestedParamSet = updateBestJobSuggestedParamSet(jobSuggestedParamSet);
-      TuningHelper.updateJobSuggestedParamSet(jobSuggestedParamSet,jobExecution);
+    logger.info("Updating Job Suggested param set " + jobSuggestedParamSet.id);
+    jobSuggestedParamSet.fitness = jobExecution.score;
+    jobSuggestedParamSet.paramSetState = JobSuggestedParamSet.ParamSetStatus.FITNESS_COMPUTED;
+    jobSuggestedParamSet.fitnessJobExecution = jobExecution;
+    jobSuggestedParamSet = updateBestJobSuggestedParamSet(jobSuggestedParamSet);
+    TuningHelper.updateJobSuggestedParamSet(jobSuggestedParamSet, jobExecution);
   }
 
   @Override
