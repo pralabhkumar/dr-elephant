@@ -28,8 +28,8 @@ final class MRConstant {
   static final String SORT_BUFFER = "Sort Buffer";
   static final String SORT_SPILL = "Sort Spill";
 
-  static final Double VIRTUALMEMORY_TO_PHYSICALMEMORY_RATIO = 2.1;
-  static final Double HEAPSIZE_TO_MAPPERMEMORY_SAFE_RATIO = 0.75;
+  static final double VIRTUALMEMORY_TO_PHYSICALMEMORY_RATIO = 2.1;
+  static final double HEAPSIZE_TO_MAPPERMEMORY_SAFE_RATIO = 0.75;
   static final double AVG_TASK_TIME_LOW_THRESHOLDS_FIRST = 1.0;
   static final double AVG_TASK_TIME_LOW_THRESHOLDS_SECOND = 2.0;
   static final double AVG_TASK_TIME_HIGH_THRESHOLDS_FIRST = 120;
@@ -38,5 +38,18 @@ final class MRConstant {
   static final double SPLIT_SIZE_INCREASE_SECOND = 1.2;
   static final double SPLIT_SIZE_DECREASE = 0.8;
 
+  static final double RATIO_OF_DISK_SPILL_TO_OUTPUT_RECORDS_THRESHOLD_FIRST = 3.0;
+  static final double RATIO_OF_DISK_SPILL_TO_OUTPUT_RECORDS_THRESHOLD_SECOND= 2.5;
+  static final double SORT_SPILL_THRESHOLD_FIRST = 0.85;
+  static final float SORT_SPILL_INCREASE=0.05f;
+  static final double BUFFER_SIZE_INCREASE = 1.1;
+  static final double BUFFER_SIZE_INCREASE_FIRST = 1.2;
+  static final double BUFFER_SIZE_INCREASE_SECOND = 1.3;
+  static final double SORT_BUFFER_CUSHION = 769;
+  static final double MINIMUM_MEMORY_SORT_BUFFER_RATIO = (10 / 6);
+  static final double HEAP_TO_MEMORY_SIZE_RATION = 0.75;
+
+
   enum Function_Name {Mapper, Reducer}
+  enum TimeUnit{hr,min,sec}
 }

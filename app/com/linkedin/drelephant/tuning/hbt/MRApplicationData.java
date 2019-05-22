@@ -269,14 +269,14 @@ public class MRApplicationData {
     }
     addCounterData(new String[]{Reducer + " " + AVERAGE_TASK_RUNTIME, Reducer + " " + NUMBER_OF_TASK},
         averageTaskTimeInMinute, numberoOfTasks * 1.0);
-    if (averageTaskTimeInMinute <= 1.0) {
-      newNumberOfReducer = numberoOfTasks / 2;
-    } else if (averageTaskTimeInMinute <= 2.0) {
-      newNumberOfReducer = (int) (numberoOfTasks * 0.8);
-    } else if (averageTaskTimeInMinute >= 120) {
-      newNumberOfReducer = numberoOfTasks * 2;
-    } else if (averageTaskTimeInMinute >= 60) {
-      newNumberOfReducer = (int) (numberoOfTasks * 1.2);
+    if (averageTaskTimeInMinute <= AVG_TASK_TIME_LOW_THRESHOLDS_FIRST) {
+      newNumberOfReducer = numberoOfTasks / SPLIT_SIZE_INCREASE_FIRST;
+    } else if (averageTaskTimeInMinute <= AVG_TASK_TIME_LOW_THRESHOLDS_SECOND) {
+      newNumberOfReducer = (int) (numberoOfTasks * SPLIT_SIZE_DECREASE);
+    } else if (averageTaskTimeInMinute >= AVG_TASK_TIME_HIGH_THRESHOLDS_FIRST) {
+      newNumberOfReducer = numberoOfTasks * SPLIT_SIZE_INCREASE_FIRST;
+    } else if (averageTaskTimeInMinute >= AVG_TASK_TIME_HIGH_THRESHOLDS_SECOND) {
+      newNumberOfReducer = (int) (numberoOfTasks * SPLIT_SIZE_INCREASE_SECOND);
     }
     logDebuggingStatement(" Reducer Average task time " + averageTaskTimeInMinute,
         " Reducer Number of tasks " + numberoOfTasks * 1.0, " New number of reducer " + newNumberOfReducer);
@@ -288,14 +288,14 @@ public class MRApplicationData {
     value = value.replaceAll(" ", "");
     String timeSplit[] = value.split("hr|min|sec");
     double timeInMinutes = 0.0;
-    if (timeSplit.length == 3) {
+    if (timeSplit.length == TimeUnit.sec.ordinal() + 1) {
       timeInMinutes = timeInMinutes + Integer.parseInt(timeSplit[0]) * 60;
       timeInMinutes = timeInMinutes + Integer.parseInt(timeSplit[1]);
       timeInMinutes = timeInMinutes + Integer.parseInt(timeSplit[2]) * 1.0 / 60 * 1.0;
-    } else if (timeSplit.length == 2) {
+    } else if (timeSplit.length == TimeUnit.min.ordinal() + 1) {
       timeInMinutes = timeInMinutes + Integer.parseInt(timeSplit[0]);
       timeInMinutes = timeInMinutes + Integer.parseInt(timeSplit[1]) * 1.0 / 60 * 1.0;
-    } else if (timeSplit.length == 1) {
+    } else if (timeSplit.length == TimeUnit.hr.ordinal() + 1) {
       timeInMinutes = timeInMinutes + Integer.parseInt(timeSplit[0]) * 1.0 / 60 * 1.0;
     }
     return timeInMinutes;
@@ -313,19 +313,19 @@ public class MRApplicationData {
       float previousSortSpill = Float.parseFloat(appliedParameter.get(SORT_SPILL));
       addCounterData(new String[]{RATIO_OF_SPILLED_RECORDS_TO_OUTPUT_RECORDS, SORT_BUFFER, SORT_SPILL},
           ratioOfDiskSpillsToOutputRecords * 1.0, previousBufferSize * 1.0, previousSortSpill * 1.0);
-      if (ratioOfDiskSpillsToOutputRecords >= 3.0) {
-        if (previousSortSpill <= 0.85) {
-          newSpillPercentage = previousSortSpill + 0.05f;
-          newBufferSize = (int) (previousBufferSize * 1.2);
+      if (ratioOfDiskSpillsToOutputRecords >= RATIO_OF_DISK_SPILL_TO_OUTPUT_RECORDS_THRESHOLD_FIRST) {
+        if (previousSortSpill <= SORT_SPILL_THRESHOLD_FIRST) {
+          newSpillPercentage = previousSortSpill + SORT_SPILL_INCREASE;
+          newBufferSize = (int) (previousBufferSize * BUFFER_SIZE_INCREASE_FIRST);
         } else {
-          newBufferSize = (int) (previousBufferSize * 1.3);
+          newBufferSize = (int) (previousBufferSize * BUFFER_SIZE_INCREASE_SECOND);
         }
-      } else if (ratioOfDiskSpillsToOutputRecords >= 2.5) {
-        if (previousSortSpill <= 0.85) {
-          newSpillPercentage = previousSortSpill + 0.05f;
-          newBufferSize = (int) (previousBufferSize * 1.1);
+      } else if (ratioOfDiskSpillsToOutputRecords >= RATIO_OF_DISK_SPILL_TO_OUTPUT_RECORDS_THRESHOLD_SECOND) {
+        if (previousSortSpill <= SORT_SPILL_THRESHOLD_FIRST) {
+          newSpillPercentage = previousSortSpill + SORT_SPILL_INCREASE;
+          newBufferSize = (int) (previousBufferSize * BUFFER_SIZE_INCREASE);
         } else {
-          newBufferSize = (int) (previousBufferSize * 1.2);
+          newBufferSize = (int) (previousBufferSize * BUFFER_SIZE_INCREASE_FIRST);
         }
       }
       suggestedParameter.put(BUFFER_SIZE, newBufferSize * 1.0);
@@ -342,16 +342,17 @@ public class MRApplicationData {
     Double mapperMemory = suggestedParameter.get(MAPPER_MEMORY) == null ? Double.parseDouble(
         appliedParameter.get(MAPPER_MEMORY_HEURISTIC)) : suggestedParameter.get(MAPPER_MEMORY);
     Double sortBuffer = suggestedParameter.get(BUFFER_SIZE);
-    Double minimumMemoryBasedonSortBuffer = max(sortBuffer + 769, sortBuffer * (10 / 6));
+    Double minimumMemoryBasedonSortBuffer =
+        max(sortBuffer + SORT_BUFFER_CUSHION, sortBuffer * MINIMUM_MEMORY_SORT_BUFFER_RATIO);
     if (minimumMemoryBasedonSortBuffer > mapperMemory) {
       mapperMemory = minimumMemoryBasedonSortBuffer;
       suggestedParameter.put(MAPPER_MEMORY, TuningHelper.getContainerSize(mapperMemory));
       Double heapMemory = suggestedParameter.get(MAPPER_HEAP);
       if (heapMemory != null) {
-        heapMemory = TuningHelper.getHeapSize(min(0.75 * mapperMemory, heapMemory));
+        heapMemory = TuningHelper.getHeapSize(min(HEAP_TO_MEMORY_SIZE_RATION * mapperMemory, heapMemory));
         suggestedParameter.put(MAPPER_HEAP, heapMemory);
       } else {
-        suggestedParameter.put(MAPPER_HEAP, TuningHelper.getHeapSize(0.75 * mapperMemory));
+        suggestedParameter.put(MAPPER_HEAP, TuningHelper.getHeapSize(HEAP_TO_MEMORY_SIZE_RATION * mapperMemory));
       }
       logDebuggingStatement("Mapper Memory After Buffer Modify " + TuningHelper.getContainerSize(mapperMemory) * 1.0,
           " Mapper heap After Buffer Modify " + heapMemory);
