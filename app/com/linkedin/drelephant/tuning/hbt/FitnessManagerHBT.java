@@ -117,7 +117,7 @@ public class FitnessManagerHBT extends AbstractFitnessManager {
       logger.info(
           " Calculated Fitness for " + jobExecution.id + " for parameter " + jobSuggestedParamSet.id);
     } catch (Exception e) {
-      logger.error("Exception while calculating fitness for " + jobSuggestedParamSet.id + " " + jobExecution.id,e);
+      logger.error("Exception while calculating fitness for " + jobSuggestedParamSet.id + " " + jobExecution.id, e);
     }
   }
 
