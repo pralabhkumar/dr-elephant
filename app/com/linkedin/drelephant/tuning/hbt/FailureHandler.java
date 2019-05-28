@@ -27,4 +27,3 @@ import models.JobSuggestedParamSet;
 public interface FailureHandler {
    void calculateFitness(JobExecution jobExecution, JobSuggestedParamSet jobSuggestedParamSet, AbstractFitnessManager fitnessManager);
 }
-
