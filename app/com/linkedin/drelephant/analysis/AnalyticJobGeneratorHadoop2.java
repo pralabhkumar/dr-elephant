@@ -153,7 +153,7 @@ public class AnalyticJobGeneratorHadoop2 implements AnalyticJobGenerator {
     // Fetch all succeeded apps
     URL succeededAppsURL =
         new URL(new URL("http://" + _resourceManagerAddress), String.format(
-            "/ws/v1/cluster/apps?finalStatus=SUCCEEDED&finishedTimeBegin=%s&finishedTimeEnd=%s&" + rmApplicationFilter,
+            "/ws/v1/cluster/apps?user=metrics&finalStatus=SUCCEEDED&finishedTimeBegin=%s&finishedTimeEnd=%s&" + rmApplicationFilter,
             String.valueOf(_lastTime + 1), String.valueOf(_currentTime)));
     logger.info("The succeeded apps URL is " + succeededAppsURL);
     List<AnalyticJob> succeededApps = readApps(succeededAppsURL, true);
@@ -164,7 +164,7 @@ public class AnalyticJobGeneratorHadoop2 implements AnalyticJobGenerator {
     // finalStatus: Status of the Application as reported by the Application Master
     URL failedAppsURL =
         new URL(new URL("http://" + _resourceManagerAddress), String.format(
-            "/ws/v1/cluster/apps?finalStatus=FAILED&state=FINISHED&finishedTimeBegin=%s&finishedTimeEnd=%s&"
+            "/ws/v1/cluster/apps?user=metrics&finalStatus=FAILED&state=FINISHED&finishedTimeBegin=%s&finishedTimeEnd=%s&"
                 + rmApplicationFilter, String.valueOf(_lastTime + 1), String.valueOf(_currentTime)));
     List<AnalyticJob> failedApps = readApps(failedAppsURL, false);
     logger.info("The failed apps URL is " + failedAppsURL);
@@ -258,8 +258,10 @@ public class AnalyticJobGeneratorHadoop2 implements AnalyticJobGenerator {
         String amContainerLogsURL = app.get("amContainerLogs").getValueAsText();
         String amHostHttpAddress = app.get("amHostHttpAddress").getValueAsText();
         String jobState = app.get("state").getValueAsText();
-        String projectName = app.get("applicationTags").getTextValue();
-
+        if (!app.get("applicationTags").getValueAsText().contains("projectname:pig_hbttest"))
+        {
+          continue;
+        }
         if (debugEnabled) {
           logger.debug(" AM Container logs URL " + amContainerLogsURL);
           logger.debug(" AM Host HTTP Address " + amHostHttpAddress);
@@ -269,10 +271,9 @@ public class AnalyticJobGeneratorHadoop2 implements AnalyticJobGenerator {
         ApplicationType type =
             ElephantContext.instance().getApplicationTypeForName(app.get("applicationType").getValueAsText());
 
-        // This change is done for the purpose of testing and will be removed , once PR is going to merge to TuneIn branch.
-        if (type != null && (projectName.contains("test_autotuning") || projectName.toUpperCase().contains("HBP_PIG_V1"))) {
+        // If the application type is supported
+        if (type != null) {
           AnalyticJob analyticJob = new AnalyticJob();
-          logger.info(" Analysis job " + analyticJob.getTrackingUrl());
           analyticJob.setAppId(appId)
               .setAppType(type)
               .setUser(user)

@@ -46,8 +46,6 @@ function require_programs() {
   fi
 }
 
-set -vex
-
 require_programs zip unzip
 
 # Default configurations
@@ -111,6 +109,7 @@ if hash npm 2>/dev/null; then
   echo "############################################################################"
   echo "npm installation found, we'll compile with the new user interface"
   echo "############################################################################"
+  set -x
   sleep 3
   ember_assets=${project_root}/public/assets
   ember_resources_dir=${ember_assets}/ember
@@ -143,18 +142,19 @@ start_script=${project_root}/scripts/start.sh
 stop_script=${project_root}/scripts/stop.sh
 app_conf=${project_root}/app-conf
 pso_dir=${project_root}/scripts/pso
+mysql_dir=${project_root}/scripts/mysql
 whitelisting_script=${project_root}/scripts/azkaban_job_whitelisting_blacklisting.py
 tuning_performance_report_script=${project_root}/scripts/tuning_performance_reports.py
 # Echo the value of pwd in the script so that it is clear what is being removed.
 rm -rf ${project_root}/dist
 mkdir dist
 
-play_command $OPTS clean test dist
+play_command $OPTS clean compile dist
 
 cd target/universal
 
-ZIP_NAME=`ls *.zip`
-unzip -o ${ZIP_NAME}
+ZIP_NAME=`/bin/ls *.zip`
+unzip ${ZIP_NAME}
 rm ${ZIP_NAME}
 DIST_NAME=${ZIP_NAME%.zip}
 
@@ -169,9 +169,10 @@ cp $stop_script ${DIST_NAME}/bin/
 
 cp -r $app_conf ${DIST_NAME}
 
-mkdir -p ${DIST_NAME}/scripts/
+mkdir ${DIST_NAME}/scripts/
 
 cp -r $pso_dir ${DIST_NAME}/scripts/
+cp -r $mysql_dir ${DIST_NAME}/scripts/
 cp $whitelisting_script ${DIST_NAME}/scripts/
 cp $tuning_performance_report_script ${DIST_NAME}/scripts/
 

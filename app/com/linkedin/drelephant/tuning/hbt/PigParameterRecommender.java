@@ -1,6 +1,7 @@
 package com.linkedin.drelephant.tuning.hbt;
 
 import com.linkedin.drelephant.analysis.Severity;
+import com.linkedin.drelephant.math.Statistics;
 import com.linkedin.drelephant.tuning.TuningHelper;
 import com.linkedin.drelephant.util.MemoryFormatUtils;
 import java.util.ArrayList;
@@ -12,25 +13,25 @@ import java.util.Map;
 import models.AppHeuristicResult;
 import models.AppHeuristicResultDetails;
 import models.AppResult;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static com.linkedin.drelephant.mapreduce.heuristics.CommonConstantsHeuristic.*;
 import static com.linkedin.drelephant.mapreduce.heuristics.CommonConstantsHeuristic.ParameterKeys.*;
-import static com.linkedin.drelephant.mapreduce.heuristics.CommonConstantsHeuristic.UtilizedParameterKeys.MAX_PHYSICAL_MEMORY;
-import static com.linkedin.drelephant.mapreduce.heuristics.CommonConstantsHeuristic.UtilizedParameterKeys.MAX_VIRTUAL_MEMORY;
 import static com.linkedin.drelephant.mapreduce.heuristics.CommonConstantsHeuristic.UtilizedParameterKeys.*;
 import static java.lang.Math.*;
 
 
 public class PigParameterRecommender {
   private final List<AppResult> appResultList;
-  private final Logger logger = Logger.getLogger(getClass());
   private static HashSet<String> heuristicsToTune;
   private Map<String, Double> jobSuggestedParameters = new HashMap();
   private Map<String, String> latestAppliedParams = new HashMap();
+  private Map<String, Double> lastSuggestedParams = new HashMap();
 
   private final double YARN_VMEM_TO_PMEM_RATIO = 2.1;
 
+  private final Logger logger = LoggerFactory.getLogger(getClass());
 
   public PigParameterRecommender(List<AppResult> appResultList) {
     this.appResultList = appResultList;
@@ -63,22 +64,13 @@ public class PigParameterRecommender {
 
   public Map<String, Double> suggestParameters() {
     loadLatestAppliedParameters();
+    suggestMemoryParam(MRJobTaskType.MAP);
+    suggestMemoryParam(MRJobTaskType.REDUCE);
     List<String> failedHeuristicNameList = getFailedHeuristics();
     for (String failedHeuristicName : failedHeuristicNameList) {
-      if (failedHeuristicName.equals(MAPPER_MEMORY)){
-        suggestMemoryParam(MRJobTaskType.MAP);
-      } else if (failedHeuristicName.equals(REDUCER_MEMORY)){
-        suggestMemoryParam(MRJobTaskType.REDUCE);
-      } else if (failedHeuristicName.equals(MAPPER_SPILL)){
-        suggestParametersForMemorySpill();
-      } else if (failedHeuristicName.equals(MAPPER_TIME) || failedHeuristicName.equals(MAPPER_SPEED)){
+      if (failedHeuristicName.equals(MAPPER_TIME) || failedHeuristicName.equals(MAPPER_SPEED)) {
         suggestSplitSize();
       }
-    }
-    if (failedHeuristicNameList.size() == 0) {
-      logger.info("No failed Heuristic");
-      suggestMemoryParam(MRJobTaskType.MAP);
-      suggestMemoryParam(MRJobTaskType.REDUCE);
     }
     logger.info("PIG_HBT suggested parameters");
     for (String key : jobSuggestedParameters.keySet()) {
@@ -86,7 +78,6 @@ public class PigParameterRecommender {
     }
     return jobSuggestedParameters;
   }
-
   private void suggestMemoryParam(MRJobTaskType taskType) {
     List<AppHeuristicResult> appHeuristicResultList = new ArrayList();
     String memoryHeuristicName;
@@ -165,7 +156,7 @@ public class PigParameterRecommender {
         if (appHeuristicResult.heuristicName.equals(MAPPER_TIME)) {
           for (AppHeuristicResultDetails appHeuristicResultDetail : appHeuristicResult.yarnAppHeuristicResultDetails) {
             if (appHeuristicResultDetail.name.equals(AVG_INPUT_SIZE_IN_BYTES)) {
-              logger.info("Average input size in bytes " + appHeuristicResultDetail.value);
+              logger.info("Average input size in bytes {}", appHeuristicResultDetail.value);
               maxAvgInputSizeInBytes = Math.max(maxAvgInputSizeInBytes, Long.parseLong(appHeuristicResultDetail.value));
             } else if (appHeuristicResultDetail.name.equals("Average task runtime")) {
               logger.info("Average runtime " + appHeuristicResultDetail.value);
@@ -177,12 +168,12 @@ public class PigParameterRecommender {
     }
     Double mapperMemory = Double.parseDouble(jobSuggestedParameters.containsKey(MAPPER_MEMORY_HADOOP_CONF.getValue()) ?
         jobSuggestedParameters.get(MAPPER_MEMORY_HADOOP_CONF.getValue()).toString() : latestAppliedParams.get(MAPPER_MEMORY));
-    logger.info("Mapper Memory " + mapperMemory);
+    logger.info("Mapper Memory {}", mapperMemory);
     long mapperMemoryInBytes = mapperMemory.longValue() * 1024 * 1024;
-    logger.info("maxIS maxRT " + maxAvgInputSizeInBytes + " " + maxAvgRuntimeInSeconds);
+    logger.info("maxIS maxRT {} {}", maxAvgInputSizeInBytes, maxAvgRuntimeInSeconds);
     long suggestedSplitSizeInBytes = (maxAvgInputSizeInBytes * 8 * 60 / maxAvgRuntimeInSeconds);
     suggestedSplitSizeInBytes = min(suggestedSplitSizeInBytes, (long) (mapperMemoryInBytes * 0.8));
-    logger.info("Split size suggested  mapper memory " + suggestedSplitSizeInBytes + " " + mapperMemoryInBytes);
+    logger.info("Split size suggested  mapper memory {} {}", suggestedSplitSizeInBytes, mapperMemoryInBytes);
     jobSuggestedParameters.put(PIG_SPLIT_SIZE_HADOOP_CONF.getValue(), suggestedSplitSizeInBytes * 1.0);
     jobSuggestedParameters.put(SPLIT_SIZE_HADOOP_CONF.getValue(), suggestedSplitSizeInBytes * 1.0);
   }
@@ -228,21 +219,22 @@ public class PigParameterRecommender {
     }
   }
 
-  private int getTimeInSeconds(String value) {
-    value = value.replaceAll(" ", "");
-    String[] timeSplit = value.split("hr|min|sec");
+  private int getTimeInSeconds(String durationString) {
+    logger.info("Statistic time in seconds {}", Statistics.getTimeInSeconds(durationString));
+    durationString = durationString.replaceAll(" ", "");
+    String[] durationSplit = durationString.split("hr|min|sec");
     int timeInSeconds = 0;
-    if (timeSplit.length == 3) {
-      timeInSeconds = timeInSeconds + Integer.parseInt(timeSplit[0]) * 60 * 60;
-      timeInSeconds = timeInSeconds + Integer.parseInt(timeSplit[1]) * 60;
-      timeInSeconds = timeInSeconds + Integer.parseInt(timeSplit[2]);
-    } else if (timeSplit.length == 2) {
-      timeInSeconds = timeInSeconds + Integer.parseInt(timeSplit[0]) * 60;
-      timeInSeconds = timeInSeconds + Integer.parseInt(timeSplit[1]);
-    } else if (timeSplit.length == 1) {
-      timeInSeconds = timeInSeconds + Integer.parseInt(timeSplit[0]);
+    if (durationSplit.length == 3) {
+      timeInSeconds = timeInSeconds + Integer.parseInt(durationSplit[0]) * 60 * 60;
+      timeInSeconds = timeInSeconds + Integer.parseInt(durationSplit[1]) * 60;
+      timeInSeconds = timeInSeconds + Integer.parseInt(durationSplit[2]);
+    } else if (durationSplit.length == 2) {
+      timeInSeconds = timeInSeconds + Integer.parseInt(durationSplit[0]) * 60;
+      timeInSeconds = timeInSeconds + Integer.parseInt(durationSplit[1]);
+    } else if (durationSplit.length == 1) {
+      timeInSeconds = timeInSeconds + Integer.parseInt(durationSplit[0]);
     }
-    logger.info("Time in seconds " + timeInSeconds);
+    logger.info("Time in seconds {}", timeInSeconds);
     return timeInSeconds;
   }
 
@@ -250,14 +242,27 @@ public class PigParameterRecommender {
     List<String> failedHeuristicNameList = new ArrayList();
     for (AppResult appResult : appResultList) {
       for (AppHeuristicResult appHeuristicResult :  appResult.yarnAppHeuristicResults) {
+        logger.info("Heuristics name : " + appHeuristicResult.heuristicName);
         if (heuristicsToTune.contains(appHeuristicResult.heuristicName) &&
             !failedHeuristicNameList.contains(appHeuristicResult.heuristicName) &&
-            appHeuristicResult.severity.getValue() > Severity.MODERATE.getValue()) {
+            appHeuristicResult.severity.getValue() >= Severity.MODERATE.getValue()) {
           logger.info("Failed heuristic " + appHeuristicResult.heuristicName);
           failedHeuristicNameList.add(appHeuristicResult.heuristicName);
         }
       }
     }
     return failedHeuristicNameList;
+  }
+
+  private void getPreviousAppliedParameter(AppHeuristicResult mrJobConfigurationHeuristic) {
+
+  }
+
+  private double getLastAppliedMapperMemory(AppHeuristicResult mrJobConfigurationHeuristic) {
+    for (AppHeuristicResultDetails heuristicResultDetails : mrJobConfigurationHeuristic.yarnAppHeuristicResultDetails) {
+      if (heuristicResultDetails.name.equals(MAPPER_MEMORY_HEURISTICS_CONF.getValue())) {
+        lastSuggestedParams.put(MAPPER_MEMORY_HADOOP_CONF.getValue(), Double.parseDouble(heuristicResultDetails.value));
+      } else if
+    }
   }
 }

@@ -29,7 +29,7 @@ import com.linkedin.drelephant.util.Utils;
 public class FitnessManagerHBT extends AbstractFitnessManager {
   private final Logger logger = Logger.getLogger(getClass());
   private boolean isDebugEnabled = logger.isDebugEnabled();
-  private final int MINIMUM_HBT_EXECUTION = 10;
+  private final int MINIMUM_HBT_EXECUTION = 50;
 
   public FitnessManagerHBT() {
     Configuration configuration = ElephantContext.instance().getAutoTuningConf();

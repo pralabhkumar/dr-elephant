@@ -314,4 +314,18 @@ public final class Statistics {
     String pre = "" + ("KMGTPE").charAt(exp-1) ;
     return String.format("%.1f %sB", bytes / Math.pow(unit, exp), pre);
   }
+
+  public static int getTimeInSeconds(String durationString) {
+    durationString = durationString.replaceAll(" ", "");
+    String[] durationSplit = durationString.split("hr|min|sec");
+    int length = durationSplit.length;
+    int durationInSeconds = 0;
+    if (length > 1) {
+      for (int index = 0; index < length-2; index++) {
+        durationInSeconds = (durationInSeconds * 60) + Integer.parseInt(durationSplit[index]) * 60;
+      }
+    }
+    durationInSeconds += Integer.parseInt(durationSplit[length - 1]);
+    return durationInSeconds;
+  }
 }
