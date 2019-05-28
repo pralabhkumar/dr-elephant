@@ -5,6 +5,7 @@ import com.avaje.ebean.ExpressionList;
 import com.linkedin.drelephant.mapreduce.heuristics.CommonConstantsHeuristic;
 import com.linkedin.drelephant.tuning.ExecutionEngine;
 import com.linkedin.drelephant.tuning.hbt.MRJob;
+import com.linkedin.drelephant.tuning.hbt.PigParameterRecommender;
 import com.linkedin.drelephant.util.MemoryFormatUtils;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -335,9 +336,11 @@ public class MRExecutionEngine implements ExecutionEngine {
   @Override
   public String parameterGenerationsHBT(List<AppResult> results, List<TuningParameter> tuningParameters) {
     MRJob mrJob = new MRJob(results);
+    PigParameterRecommender pigParameterRecommender = new PigParameterRecommender(results);
     mrJob.analyzeAllApplications();
     mrJob.processJobForParameter();
-    Map<String, Double> suggestedParameter = mrJob.getJobSuggestedParameter();
+    mrJob.getJobSuggestedParameter();
+    Map<String, Double> suggestedParameter = pigParameterRecommender.suggestParameters();
     StringBuffer idParameters = new StringBuffer();
     for (TuningParameter tuningParameter : tuningParameters) {
       Double paramValue = suggestedParameter.get(tuningParameter.paramName);

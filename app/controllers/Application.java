@@ -1035,8 +1035,8 @@ public class Application extends Controller {
     Map<String, String> outputParamFormatted = new HashMap<String, String>();
 
     //Temporarily removing input split parameters
-    outputParams.remove("pig.maxCombinedSplitSize");
-    outputParams.remove("mapreduce.input.fileinputformat.split.maxsize");
+//    outputParams.remove("pig.maxCombinedSplitSize");
+//    outputParams.remove("mapreduce.input.fileinputformat.split.maxsize");
 
     for (Map.Entry<String, Double> param : outputParams.entrySet()) {
       if (param.getKey().equals("mapreduce.map.sort.spill.percent")) {
@@ -2170,7 +2170,7 @@ public class Application extends Controller {
   }
 
   private static String reasonForDisablingTuning(TuningJobDefinition tuningJobDefinition) {
-    if (tuningJobDefinition.tuningEnabled) {
+    if (!tuningJobDefinition.tuningEnabled) {
       logger.debug("Tuning is disabled for this application");
       if (tuningJobDefinition.tuningDisabledReason != null) {
         return tuningJobDefinition.tuningDisabledReason;

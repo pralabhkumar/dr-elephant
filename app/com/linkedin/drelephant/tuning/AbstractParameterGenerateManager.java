@@ -94,14 +94,14 @@ public abstract class AbstractParameterGenerateManager implements Manager {
     logger.info("Checking which jobs need new parameter suggestion");
     List<TuningJobDefinition> jobsForParamSuggestion = new ArrayList<TuningJobDefinition>();
     List<JobSuggestedParamSet> pendingParamSetList = getPendingParamSets();
-    //logger.info(" Jobs pending " + pendingParamSetList.size());
+    logger.info(" Jobs pending " + pendingParamSetList.size());
     List<JobDefinition> pendingParamJobList = new ArrayList<JobDefinition>();
     for (JobSuggestedParamSet pendingParamSet : pendingParamSetList) {
       if (!pendingParamJobList.contains(pendingParamSet.jobDefinition)) {
         pendingParamJobList.add(pendingParamSet.jobDefinition);
       }
     }
-
+    logger.info("pending jsps jd " + pendingParamSetList.size() + " " + pendingParamJobList.size());
     List<TuningJobDefinition> tuningJobDefinitionList = getTuningJobDefinitions();
     //logger.info("Total Jobs " + tuningJobDefinitionList.size());
     if (tuningJobDefinitionList.size() == 0) {
@@ -148,6 +148,7 @@ public abstract class AbstractParameterGenerateManager implements Manager {
       logger.info("Executing Tuning Algorithm");
       boolean parameterGenerationDone = false, databaseUpdateDone = false, updateMetricsDone = false;
       List<JobTuningInfo> jobTuningInfo = detectJobsForParameterGeneration();
+      logger.info("Tuning_job_info_pending size " + jobTuningInfo.size());
       if (jobTuningInfo != null && jobTuningInfo.size() >= 1) {
         logger.info("Generating Parameters ");
         List<JobTuningInfo> updatedJobTuningInfoList = generateParameters(jobTuningInfo);

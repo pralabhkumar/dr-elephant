@@ -31,12 +31,12 @@ function play_command() {
 function require_programs() {
   echo "Checking for required programs..."
   missing_programs=""
-  
+
   for program in $@; do
     if ! command -v "$program" > /dev/null; then
       missing_programs=$(printf "%s\n\t- %s" "$missing_programs" "$program")
     fi
-  done 
+  done
 
   if [ ! -z "$missing_programs" ]; then
     echo "[ERROR] The following programs are required and are missing: $missing_programs"
@@ -149,7 +149,7 @@ tuning_performance_report_script=${project_root}/scripts/tuning_performance_repo
 rm -rf ${project_root}/dist
 mkdir dist
 
-play_command $OPTS clean test compile dist
+play_command $OPTS clean compile dist
 
 
 cd target/universal

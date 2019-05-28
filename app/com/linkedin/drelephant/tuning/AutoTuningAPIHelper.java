@@ -261,6 +261,7 @@ public class AutoTuningAPIHelper {
     tuningJobDefinition.tuningEnabled = true;
     tuningJobDefinition.allowedMaxExecutionTimePercent = tuningInput.getAllowedMaxExecutionTimePercent();
     tuningJobDefinition.allowedMaxResourceUsagePercent = tuningInput.getAllowedMaxResourceUsagePercent();
+    tuningJobDefinition.showRecommendationCount = 0;
     tuningJobDefinition.save();
     insertParamSet(job, tuningInput.getTuningAlgorithm(), defaultParams);
     logger.info("Added job: " + tuningInput.getJobDefId() + " for tuning");

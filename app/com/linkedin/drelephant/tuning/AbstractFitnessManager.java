@@ -285,7 +285,7 @@ public abstract class AbstractFitnessManager implements Manager {
 
       return tuningJobDefinitionNew != null && tuningJobDefinitionNew.tuningEnabled;
     } else {
-      return tuningJobDefinition != null && tuningJobDefinition.tuningEnabled;
+      return tuningJobDefinition.tuningEnabled;
     }
   }
 

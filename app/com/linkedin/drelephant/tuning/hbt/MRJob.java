@@ -88,6 +88,10 @@ public class MRJob {
   }
 
   public Map<String, Double> getJobSuggestedParameter() {
+    logger.info(" MRJob suggested params ");
+    for (String key : suggestedParameter.keySet()) {
+      logger.info(key + " " + suggestedParameter.get(key));
+    }
     return this.suggestedParameter;
   }
 }

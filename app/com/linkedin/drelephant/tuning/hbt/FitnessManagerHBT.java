@@ -29,7 +29,7 @@ import com.linkedin.drelephant.util.Utils;
 public class FitnessManagerHBT extends AbstractFitnessManager {
   private final Logger logger = Logger.getLogger(getClass());
   private boolean isDebugEnabled = logger.isDebugEnabled();
-  private final int MINIMUM_HBT_EXECUTION = 3;
+  private final int MINIMUM_HBT_EXECUTION = 50;
 
   public FitnessManagerHBT() {
     Configuration configuration = ElephantContext.instance().getAutoTuningConf();
@@ -37,6 +37,7 @@ public class FitnessManagerHBT extends AbstractFitnessManager {
     // Time duration to wait for computing the fitness of a param set once the corresponding execution is completed
     fitnessComputeWaitInterval =
         Utils.getNonNegativeLong(configuration, FITNESS_COMPUTE_WAIT_INTERVAL, 5 * AutoTuner.ONE_MIN);
+    logger.info("Fitness wait time " + fitnessComputeWaitInterval);
 
     // Time duration to wait for metrics (resource usage, execution time) of an execution to be computed before
     // discarding it for fitness computation
@@ -214,6 +215,7 @@ public class FitnessManagerHBT extends AbstractFitnessManager {
       logger.debug("tuningJobExecutionParamSets have some values");
       TuningJobExecutionParamSet tuningJobExecutionParamSet = tuningJobExecutionParamSets.get(0);
       JobExecution jobExecution = tuningJobExecutionParamSet.jobExecution;
+      logger.info("Job execution id is "  + jobExecution.id);
       List<AppResult> results = getAppResult(jobExecution);
       if (results != null) {
         logger.debug(" Results are not null ");

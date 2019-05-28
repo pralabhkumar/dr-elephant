@@ -17,12 +17,15 @@
 package com.linkedin.drelephant.math;
 
 import java.lang.reflect.Array;
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import org.apache.commons.io.FileUtils;
+
+import static org.apache.commons.io.FileUtils.*;
 
 
 /**
@@ -285,5 +288,30 @@ public final class Statistics {
       array[index] = array[i];
       array[i] = temp;
     }
+  }
+
+//  public static Long getTimeInMilliSeconds(String timespan) {
+//    timespan = timespan.replaceAll(" ", "");
+//    String timeSplit[] = timespan.split("hr|min|sec");
+//    Long timeInMinutes = 0L;
+//    if (timeSplit.length == 3) {
+//      timeInMinutes = timeInMinutes + Integer.parseInt(timeSplit[0]) * 60 * 60 * 1000;
+//      timeInMinutes = timeInMinutes + Integer.parseInt(timeSplit[1]);
+//      timeInMinutes = timeInMinutes + Integer.parseInt(timeSplit[2]) * 1.0 / 60 * 1.0;
+//    } else if (timeSplit.length == 2) {
+//      timeInMinutes = timeInMinutes + Integer.parseInt(timeSplit[0]);
+//      timeInMinutes = timeInMinutes + Integer.parseInt(timeSplit[1]) * 1.0 / 60 * 1.0;
+//    } else if (timeSplit.length == 1) {
+//      timeInMinutes = timeInMinutes + Integer.parseInt(timeSplit[0]) * 1.0 / 60 * 1.0;
+//    }
+//    return timeInMinutes;
+//  }
+
+  public static String humanReadableByteCount(long bytes, boolean si) {
+    int unit = si ? 1000 : 1024;
+    if (bytes < unit) return bytes + " B";
+    int exp = (int) (Math.log(bytes) / Math.log(unit));
+    String pre = "" + ("KMGTPE").charAt(exp-1) ;
+    return String.format("%.1f %sB", bytes / Math.pow(unit, exp), pre);
   }
 }
