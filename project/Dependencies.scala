@@ -99,10 +99,8 @@ object Dependencies {
       ExclusionRule(organization = "org.apache.httpcomponents")
       ),
     "javax.mail" % "mail" % "1.4",
-    "com.linkedin.tony" % "tony-core" % tonyVersion excludeAll(
-      ExclusionRule(organization = "com.fasterxml.jackson.core"),
-      ExclusionRule(organization = "org.apache.hadoop")
-    )
+    "com.linkedin.tony" % "tony-core" % tonyVersion intransitive(),
+    "net.lingala.zip4j" % "zip4j" % "1.3.2"
   ) :+ sparkExclusion
 
   var dependencies = Seq(javaJdbc, javaEbean, cache)
