@@ -46,8 +46,7 @@ function require_programs() {
   fi
 }
 
-set -v
-set -ex
+set -vex
 
 require_programs zip unzip
 
@@ -112,7 +111,6 @@ if hash npm 2>/dev/null; then
   echo "############################################################################"
   echo "npm installation found, we'll compile with the new user interface"
   echo "############################################################################"
-  set -x
   sleep 3
   ember_assets=${project_root}/public/assets
   ember_resources_dir=${ember_assets}/ember
