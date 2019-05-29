@@ -46,8 +46,6 @@ function require_programs() {
   fi
 }
 
-set -vex
-
 require_programs zip unzip
 
 # Default configurations
@@ -138,6 +136,8 @@ else
 fi
 
 trap "exit" SIGINT SIGTERM
+
+set -vex
 
 start_script=${project_root}/scripts/start.sh
 stop_script=${project_root}/scripts/stop.sh
