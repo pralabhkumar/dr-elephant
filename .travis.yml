@@ -9,7 +9,7 @@ install:
   - sudo pip install inspyred
   - sudo pip install argparse
 script:
-  - sbt test jacoco:cover
+  - ./compile.sh
 
 # only build PRs for the following branches (not all branch pushes)
 branches:
