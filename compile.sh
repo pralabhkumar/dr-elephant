@@ -149,8 +149,7 @@ tuning_performance_report_script=${project_root}/scripts/tuning_performance_repo
 rm -rf ${project_root}/dist
 mkdir dist
 
-play_command $OPTS clean compile dist
-
+play_command $OPTS clean test dist
 
 cd target/universal
 
