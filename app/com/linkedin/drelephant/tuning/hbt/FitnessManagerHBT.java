@@ -186,14 +186,18 @@ public class FitnessManagerHBT extends AbstractFitnessManager {
   protected void checkToDisableTuning(Set<JobDefinition> jobDefinitionSet) {
     Long currentTimeBefore = System.currentTimeMillis();
     for (JobDefinition jobDefinition : jobDefinitionSet) {
-      List<TuningJobExecutionParamSet> tuningJobExecutionParamSets =
-          TuningHelper.getTuningJobExecutionFromDefinition(jobDefinition);
-      int numberOfValidSuggestedParamExecution =
-          TuningHelper.getNumberOfValidSuggestedParamExecution(tuningJobExecutionParamSets);
-      if (disableTuningforUserSpecifiedIterations(jobDefinition, numberOfValidSuggestedParamExecution)
-          || disableTuningforHeuristicsPassed(jobDefinition, tuningJobExecutionParamSets,
-          numberOfValidSuggestedParamExecution)) {
-        logger.debug(" Tuning Disabled for Job " + jobDefinition.id);
+      try {
+        List<TuningJobExecutionParamSet> tuningJobExecutionParamSets =
+            TuningHelper.getTuningJobExecutionFromDefinition(jobDefinition);
+        int numberOfValidSuggestedParamExecution =
+            TuningHelper.getNumberOfValidSuggestedParamExecution(tuningJobExecutionParamSets);
+        if (disableTuningforUserSpecifiedIterations(jobDefinition, numberOfValidSuggestedParamExecution)
+            || disableTuningforHeuristicsPassed(jobDefinition, tuningJobExecutionParamSets,
+            numberOfValidSuggestedParamExecution)) {
+          logger.debug(" Tuning Disabled for Job " + jobDefinition.id);
+        }
+      } catch (Exception e) {
+        logger.error(" Error while disabling tuneIn for job " + jobDefinition.id, e);
       }
     }
     Long currentTimeAfter = System.currentTimeMillis();
