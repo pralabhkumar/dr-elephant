@@ -325,15 +325,19 @@ public abstract class AbstractFitnessManager implements Manager {
     }
     logger.info(
         "Disable Tuning if Required . Disabled based on number of iteration reached or other terminating conditions for algorithms");
-    if (tuningJobExecutionParamSet != null && tuningJobExecutionParamSet.size() >= 1) {
-      Set<JobDefinition> jobDefinitionSet = new HashSet<JobDefinition>();
-      for (TuningJobExecutionParamSet completedJobExecutionParamSet : tuningJobExecutionParamSet) {
-        JobDefinition jobDefinition = completedJobExecutionParamSet.jobSuggestedParamSet.jobDefinition;
-        if (isTuningEnabled(jobDefinition.id)) {
-          jobDefinitionSet.add(jobDefinition);
+    try {
+      if (tuningJobExecutionParamSet != null && tuningJobExecutionParamSet.size() >= 1) {
+        Set<JobDefinition> jobDefinitionSet = new HashSet<JobDefinition>();
+        for (TuningJobExecutionParamSet completedJobExecutionParamSet : tuningJobExecutionParamSet) {
+          JobDefinition jobDefinition = completedJobExecutionParamSet.jobSuggestedParamSet.jobDefinition;
+          if (isTuningEnabled(jobDefinition.id)) {
+            jobDefinitionSet.add(jobDefinition);
+          }
         }
+        checkToDisableTuning(jobDefinitionSet);
       }
-      checkToDisableTuning(jobDefinitionSet);
+    }catch (Exception e){
+      logger.error("Error while disabling tuning jobs ",e);
     }
     logger.info("Fitness Computed");
     return true;
