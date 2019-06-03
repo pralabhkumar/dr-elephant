@@ -302,6 +302,7 @@ public abstract class AbstractFitnessManager implements Manager {
       tuningJobDefinition.tuningDisabledReason = reason;
       tuningJobDefinition.save();
     }
+    logger.info("Disabling Tuning for Job Definition Id " + jobDefinition.id + " as " + reason);
   }
 
   public final boolean execute() {

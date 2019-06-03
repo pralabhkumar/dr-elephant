@@ -258,6 +258,7 @@ public class AnalyticJobGeneratorHadoop2 implements AnalyticJobGenerator {
         String amContainerLogsURL = app.get("amContainerLogs").getValueAsText();
         String amHostHttpAddress = app.get("amHostHttpAddress").getValueAsText();
         String jobState = app.get("state").getValueAsText();
+        logger.info("Application Tag " + app.get("applicationTags").getValueAsText());
         if (!app.get("applicationTags").getValueAsText().contains("projectname:pig_hbttest"))
         {
           continue;
