@@ -258,6 +258,8 @@ public class AnalyticJobGeneratorHadoop2 implements AnalyticJobGenerator {
         String amContainerLogsURL = app.get("amContainerLogs").getValueAsText();
         String amHostHttpAddress = app.get("amHostHttpAddress").getValueAsText();
         String jobState = app.get("state").getValueAsText();
+        String projectName = app.get("applicationTags").getTextValue();
+
         if (debugEnabled) {
           logger.debug(" AM Container logs URL " + amContainerLogsURL);
           logger.debug(" AM Host HTTP Address " + amHostHttpAddress);
@@ -268,8 +270,9 @@ public class AnalyticJobGeneratorHadoop2 implements AnalyticJobGenerator {
             ElephantContext.instance().getApplicationTypeForName(app.get("applicationType").getValueAsText());
 
         // If the application type is supported
-        if (type != null) {
+        if (type != null && (projectName.contains("test_autotuning") || projectName.toUpperCase().contains("HBP_PIG_V1"))) {
           AnalyticJob analyticJob = new AnalyticJob();
+          logger.info(" Analysis job " + analyticJob.getTrackingUrl());
           analyticJob.setAppId(appId)
               .setAppType(type)
               .setUser(user)
