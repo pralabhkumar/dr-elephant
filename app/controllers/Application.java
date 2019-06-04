@@ -1852,10 +1852,13 @@ public class Application extends Controller {
         .where()
         .eq(TuningJobDefinition.TABLE.job + '.' + JobDefinition.TABLE.id, jobDefinitionId)
         .findUnique();
+    if (tuningJobDefinition.showRecommendationCount == null) {
+      tuningJobDefinition.showRecommendationCount = 0;
+    }
     tuningJobDefinition.showRecommendationCount += 1;
     tuningJobDefinition.save();
     JsonObject parent = new JsonObject();
-    parent.addProperty("showRecommendationCount", tuningJobDefinition.showRecommendationCount);
+    parent.addProperty(SHOW_RECOMMENDATION_COUNT, tuningJobDefinition.showRecommendationCount);
     return ok(new Gson().toJson(parent));
   }
 
