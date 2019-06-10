@@ -178,20 +178,11 @@ public class PigParameterRecommender {
     }
     Double mapperMemory = Double.parseDouble(jobSuggestedParameters.containsKey(MAPPER_MEMORY_HADOOP_CONF.getValue()) ?
         jobSuggestedParameters.get(MAPPER_MEMORY_HADOOP_CONF.getValue()).toString() : latestAppliedParams.get(MAPPER_MEMORY));
-<<<<<<< HEAD
-    logger.info("Mapper Memory {}", mapperMemory);
-    long mapperMemoryInBytes = mapperMemory.longValue() * 1024 * 1024;
-    logger.info("maxIS maxRT {} {}", maxAvgInputSizeInBytes, maxAvgRuntimeInSeconds);
-    long suggestedSplitSizeInBytes = (maxAvgInputSizeInBytes * 8 * 60 / maxAvgRuntimeInSeconds);
-    suggestedSplitSizeInBytes = min(suggestedSplitSizeInBytes, (long) (mapperMemoryInBytes * 0.8));
-    logger.info("Split size suggested  mapper memory {} {}", suggestedSplitSizeInBytes, mapperMemoryInBytes);
-=======
     long mapperMemoryInBytes = mapperMemory.longValue() * 1024 * 1024;
     logger.info("maxIS maxRT " + maxAvgInputSizeInBytes + " " + maxAvgRuntimeInSeconds);
     long suggestedSplitSizeInBytes = (maxAvgInputSizeInBytes * 8 * 60 / maxAvgRuntimeInSeconds);
-    suggestedSplitSizeInBytes = max(suggestedSplitSizeInBytes, mapperMemoryInBytes);
+    suggestedSplitSizeInBytes = min(suggestedSplitSizeInBytes, (long) (mapperMemoryInBytes * 0.8));
     logger.info("Split size suggested  mapper memory " + suggestedSplitSizeInBytes + " " + mapperMemoryInBytes);
->>>>>>> HBT changes
     jobSuggestedParameters.put(PIG_SPLIT_SIZE_HADOOP_CONF.getValue(), suggestedSplitSizeInBytes * 1.0);
     jobSuggestedParameters.put(SPLIT_SIZE_HADOOP_CONF.getValue(), suggestedSplitSizeInBytes * 1.0);
   }
