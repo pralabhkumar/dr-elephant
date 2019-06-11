@@ -17,6 +17,9 @@
 
 package com.linkedin.drelephant.tuning.hbt;
 
+import com.linkedin.drelephant.ElephantContext;
+import com.linkedin.drelephant.exceptions.util.ExceptionUtils;
+import com.linkedin.drelephant.mapreduce.heuristics.MapperSpillHeuristic;
 import com.linkedin.drelephant.tuning.TuningHelper;
 import com.linkedin.drelephant.util.MemoryFormatUtils;
 import java.util.HashMap;
@@ -30,7 +33,10 @@ import org.apache.log4j.Logger;
 
 import static com.linkedin.drelephant.tuning.hbt.MRConstant.*;
 import static com.linkedin.drelephant.tuning.hbt.MRConstant.Function_Name.*;
+import static com.linkedin.drelephant.tuning.hbt.MRConstant.MRConfigurationBuilder.*;
 import static java.lang.Math.*;
+import static com.linkedin.drelephant.mapreduce.heuristics.CommonConstantsHeuristic.ParameterKeys.*;
+import static com.linkedin.drelephant.mapreduce.heuristics.CommonConstantsHeuristic.UtilizedParameterKeys.*;
 
 
 /**
@@ -57,6 +63,7 @@ public class MRApplicationData {
     validHeuristic.add(MAPPER_SPILL_HEURISTIC);
     validHeuristic.add(REDUCER_TIME_HEURISTIC);
     validHeuristic.add(REDUCER_MEMORY_HEURISTIC);
+    MRConstant.MRConfigurationBuilder.buildConfigurations(ElephantContext.instance().getAutoTuningConf());
   }
 
   MRApplicationData(AppResult result, Map<String, String> appliedParameter) {
@@ -151,19 +158,20 @@ public class MRApplicationData {
   private void processForMemory(AppHeuristicResult yarnAppHeuristicResult, String functionType) {
     Double usedPhysicalMemoryMB = 0.0, usedVirtualMemoryMB = 0.0, usedHeapMemoryMB = 0.0;
     for (AppHeuristicResultDetails appHeuristicResultDetails : yarnAppHeuristicResult.yarnAppHeuristicResultDetails) {
-      if (appHeuristicResultDetails.name.equals(MAX_VIRTUAL_MEMORY)) {
+      if (appHeuristicResultDetails.name.equals(MAX_VIRTUAL_MEMORY.getValue())) {
         usedVirtualMemoryMB = (double) MemoryFormatUtils.stringToBytes(appHeuristicResultDetails.value);
       }
-      if (appHeuristicResultDetails.name.equals(MAX_PHYSICAL_MEMORY)) {
+      if (appHeuristicResultDetails.name.equals(MAX_PHYSICAL_MEMORY.getValue())) {
         usedPhysicalMemoryMB = (double) MemoryFormatUtils.stringToBytes(appHeuristicResultDetails.value);
       }
-      if (appHeuristicResultDetails.name.equals(MAX_TOTAL_COMMITTED_HEAP_USAGE)) {
+      if (appHeuristicResultDetails.name.equals(MAX_TOTAL_COMMITTED_HEAP_USAGE_MEMORY.getValue())) {
         usedHeapMemoryMB = (double) MemoryFormatUtils.stringToBytes(appHeuristicResultDetails.value);
       }
     }
-    addCounterData(new String[]{functionType + " " + MAX_VIRTUAL_MEMORY, functionType + " " + MAX_PHYSICAL_MEMORY,
-            functionType + " " + MAX_TOTAL_COMMITTED_HEAP_USAGE}, usedVirtualMemoryMB, usedPhysicalMemoryMB,
-        usedHeapMemoryMB);
+    addCounterData(new String[]{functionType + " " + MAX_VIRTUAL_MEMORY.getValue(),
+            functionType + " " + MAX_PHYSICAL_MEMORY.getValue(),
+            functionType + " " + MAX_TOTAL_COMMITTED_HEAP_USAGE_MEMORY.getValue()}, usedVirtualMemoryMB,
+        usedPhysicalMemoryMB, usedHeapMemoryMB);
 
     logDebuggingStatement(" Used Physical Memory " + yarnAppHeuristicResult.yarnAppResult.id + "_" + functionType + " "
             + usedPhysicalMemoryMB,
@@ -171,9 +179,10 @@ public class MRApplicationData {
             + usedVirtualMemoryMB,
         " Used heap Memory " + yarnAppHeuristicResult.yarnAppResult.id + "_" + functionType + " " + usedHeapMemoryMB);
 
-    Double memoryMB = max(usedPhysicalMemoryMB, usedVirtualMemoryMB / (VIRTUALMEMORY_TO_PHYSICALMEMORY_RATIO));
+    Double memoryMB =
+        max(usedPhysicalMemoryMB, usedVirtualMemoryMB / (VIRTUALMEMORY_TO_PHYSICALMEMORY_RATIO.getValue()));
     Double heapSizeMax =
-        TuningHelper.getHeapSize(min(HEAPSIZE_TO_MAPPERMEMORY_SAFE_RATIO * memoryMB, usedHeapMemoryMB));
+        TuningHelper.getHeapSize(min(HEAPSIZE_TO_MAPPERMEMORY_SAFE_RATIO.getValue() * memoryMB, usedHeapMemoryMB));
     Double containerSize = TuningHelper.getContainerSize(memoryMB);
     addParameterToSuggestedParameter(heapSizeMax, containerSize, yarnAppHeuristicResult.yarnAppResult.id, functionType);
   }
@@ -189,36 +198,46 @@ public class MRApplicationData {
 
   private void addMapperMemoryAndHeapToSuggestedParameter(Double heapSizeMax, Double containerSize,
       String heuristicsResultID) {
-    suggestedParameter.put(MAPPER_MEMORY, containerSize);
-    suggestedParameter.put(MAPPER_HEAP, heapSizeMax);
-    logDebuggingStatement(" Memory Assigned " + heuristicsResultID + "_Mapper " + suggestedParameter.get(MAPPER_MEMORY),
-        " Heap Assigned " + heuristicsResultID + "_Mapper " + suggestedParameter.get(MAPPER_HEAP));
+    suggestedParameter.put(MAPPER_MEMORY_HADOOP_CONF.getValue(), containerSize);
+    suggestedParameter.put(MAPPER_HEAP_HADOOP_CONF.getValue(), heapSizeMax);
+    logDebuggingStatement(" Memory Assigned " + heuristicsResultID + "_Mapper " + suggestedParameter.get(
+        MAPPER_MEMORY_HADOOP_CONF.getValue()),
+        " Heap Assigned " + heuristicsResultID + "_Mapper " + suggestedParameter.get(
+            MAPPER_HEAP_HADOOP_CONF.getValue()));
   }
 
   private void addReducerMemoryAndHeapToSuggestedParameter(Double heapSizeMax, Double containerSize,
       String heuristicsResultID) {
-    suggestedParameter.put(REDUCER_MEMORY, containerSize);
-    suggestedParameter.put(REDUCER_HEAP, heapSizeMax);
-    logDebuggingStatement(
-        " Memory Assigned " + heuristicsResultID + "_Reducer " + suggestedParameter.get(REDUCER_MEMORY),
-        " Heap Assigned " + heuristicsResultID + "_Reducer " + suggestedParameter.get(REDUCER_HEAP));
+    suggestedParameter.put(REDUCER_MEMORY_HADOOP_CONF.getValue(), containerSize);
+    suggestedParameter.put(REDUCER_HEAP_HADOOP_CONF.getValue(), heapSizeMax);
+    logDebuggingStatement(" Memory Assigned " + heuristicsResultID + "_Reducer " + suggestedParameter.get(
+        REDUCER_MEMORY_HADOOP_CONF.getValue()),
+        " Heap Assigned " + heuristicsResultID + "_Reducer " + suggestedParameter.get(
+            REDUCER_HEAP_HADOOP_CONF.getValue()));
   }
 
   private void processForNumberOfTask(AppHeuristicResult yarnAppHeuristicResult, String functionType) {
-    long splitSize = 0l;
-    long numberOfReduceTask = 0l;
     if (functionType.equals(Mapper.name())) {
-      splitSize = getNewSplitSize(yarnAppHeuristicResult);
-      if (splitSize > 0) {
-        suggestedParameter.put(MAP_SPLIT_SIZE, splitSize * 1.0);
-        suggestedParameter.put(PIG_SPLIT_SIZE, splitSize * 1.0);
-      }
+      processForNumberOfTaskMapper(yarnAppHeuristicResult);
+    } else if (functionType.equals(Reducer.name())) {
+      processForNumberOfTaskReducer(yarnAppHeuristicResult);
     }
-    if (functionType.equals(Reducer.name())) {
-      numberOfReduceTask = getNumberOfReducer(yarnAppHeuristicResult);
-      if (numberOfReduceTask > 0) {
-        suggestedParameter.put(NUMBER_OF_REDUCER, numberOfReduceTask * 1.0);
-      }
+  }
+
+  private void processForNumberOfTaskMapper(AppHeuristicResult yarnAppHeuristicResult) {
+    long splitSize;
+    splitSize = getNewSplitSize(yarnAppHeuristicResult);
+    if (splitSize > 0) {
+      suggestedParameter.put(SPLIT_SIZE_HADOOP_CONF.getValue(), splitSize * 1.0);
+      suggestedParameter.put(PIG_SPLIT_SIZE_HADOOP_CONF.getValue(), splitSize * 1.0);
+    }
+  }
+
+  private void processForNumberOfTaskReducer(AppHeuristicResult yarnAppHeuristicResult) {
+    long numberOfReduceTask;
+    numberOfReduceTask = getNumberOfReducer(yarnAppHeuristicResult);
+    if (numberOfReduceTask > 0) {
+      suggestedParameter.put(NUMBER_OF_REDUCER_CONF.getValue(), numberOfReduceTask * 1.0);
     }
   }
 
@@ -230,23 +249,24 @@ public class MRApplicationData {
     long newSplitSize = 0l;
     for (AppHeuristicResultDetails appHeuristicResultDetails : yarnAppHeuristicResult.yarnAppHeuristicResultDetails) {
       logger.info("Names " + appHeuristicResultDetails.name);
-      if (appHeuristicResultDetails.name.equals(AVERAGE_TASK_INPUT_SIZE)) {
+      if (appHeuristicResultDetails.name.equals(AVERAGE_TASK_INPUT_SIZE.getValue())) {
         averageTaskInputSize = (double) MemoryFormatUtils.stringToBytes(appHeuristicResultDetails.value);
       }
-      if (appHeuristicResultDetails.name.equals(AVERAGE_TASK_RUNTIME)) {
+      if (appHeuristicResultDetails.name.equals(AVERAGE_TASK_RUNTIME.getValue())) {
         averageTaskTimeInMinute = getTimeInMinute(appHeuristicResultDetails.value);
       }
     }
-    addCounterData(new String[]{Mapper + " " + AVERAGE_TASK_INPUT_SIZE, Mapper + " " + AVERAGE_TASK_RUNTIME},
+    addCounterData(
+        new String[]{Mapper + " " + AVERAGE_TASK_INPUT_SIZE.getValue(), Mapper + " " + AVERAGE_TASK_RUNTIME.getValue()},
         averageTaskInputSize, averageTaskTimeInMinute);
-    if (averageTaskTimeInMinute <= AVG_TASK_TIME_LOW_THRESHOLDS_FIRST) {
-      newSplitSize = (long) averageTaskInputSize * SPLIT_SIZE_INCREASE_FIRST;
-    } else if (averageTaskTimeInMinute <= AVG_TASK_TIME_LOW_THRESHOLDS_SECOND) {
-      newSplitSize = (long) (averageTaskInputSize * SPLIT_SIZE_INCREASE_SECOND);
-    } else if (averageTaskTimeInMinute >= AVG_TASK_TIME_HIGH_THRESHOLDS_FIRST) {
-      newSplitSize = (long) (averageTaskInputSize / SPLIT_SIZE_INCREASE_FIRST);
-    } else if (averageTaskTimeInMinute >= AVG_TASK_TIME_HIGH_THRESHOLDS_SECOND) {
-      newSplitSize = (long) (averageTaskInputSize * SPLIT_SIZE_DECREASE);
+    if (averageTaskTimeInMinute <= AVG_TASK_TIME_LOW_THRESHOLDS_FIRST.getValue()) {
+      newSplitSize = (long) averageTaskInputSize * SPLIT_SIZE_INCREASE_FIRST.getValue();
+    } else if (averageTaskTimeInMinute <= AVG_TASK_TIME_LOW_THRESHOLDS_SECOND.getValue()) {
+      newSplitSize = (long) (averageTaskInputSize * SPLIT_SIZE_INCREASE_SECOND.getValue());
+    } else if (averageTaskTimeInMinute >= AVG_TASK_TIME_HIGH_THRESHOLDS_FIRST.getValue()) {
+      newSplitSize = (long) (averageTaskInputSize / SPLIT_SIZE_INCREASE_FIRST.getValue());
+    } else if (averageTaskTimeInMinute >= AVG_TASK_TIME_HIGH_THRESHOLDS_SECOND.getValue()) {
+      newSplitSize = (long) (averageTaskInputSize * SPLIT_SIZE_DECREASE.getValue());
     }
     logDebuggingStatement(" Average task input size " + averageTaskInputSize,
         " Average task runtime " + averageTaskTimeInMinute, " New Split Size " + newSplitSize);
@@ -260,23 +280,24 @@ public class MRApplicationData {
     int newNumberOfReducer = 0;
     for (AppHeuristicResultDetails appHeuristicResultDetails : yarnAppHeuristicResult.yarnAppHeuristicResultDetails) {
       logger.info("Names " + appHeuristicResultDetails.name);
-      if (appHeuristicResultDetails.name.equals(AVERAGE_TASK_RUNTIME)) {
+      if (appHeuristicResultDetails.name.equals(AVERAGE_TASK_RUNTIME.getValue())) {
         averageTaskTimeInMinute = getTimeInMinute(appHeuristicResultDetails.value);
       }
-      if (appHeuristicResultDetails.name.equals(NUMBER_OF_TASK)) {
+      if (appHeuristicResultDetails.name.equals(NUMBER_OF_TASK.getValue())) {
         numberoOfTasks = Integer.parseInt(appHeuristicResultDetails.value);
       }
     }
-    addCounterData(new String[]{Reducer + " " + AVERAGE_TASK_RUNTIME, Reducer + " " + NUMBER_OF_TASK},
+    addCounterData(
+        new String[]{Reducer + " " + AVERAGE_TASK_RUNTIME.getValue(), Reducer + " " + NUMBER_OF_TASK.getValue()},
         averageTaskTimeInMinute, numberoOfTasks * 1.0);
-    if (averageTaskTimeInMinute <= AVG_TASK_TIME_LOW_THRESHOLDS_FIRST) {
-      newNumberOfReducer = numberoOfTasks / SPLIT_SIZE_INCREASE_FIRST;
-    } else if (averageTaskTimeInMinute <= AVG_TASK_TIME_LOW_THRESHOLDS_SECOND) {
-      newNumberOfReducer = (int) (numberoOfTasks * SPLIT_SIZE_DECREASE);
-    } else if (averageTaskTimeInMinute >= AVG_TASK_TIME_HIGH_THRESHOLDS_FIRST) {
-      newNumberOfReducer = numberoOfTasks * SPLIT_SIZE_INCREASE_FIRST;
-    } else if (averageTaskTimeInMinute >= AVG_TASK_TIME_HIGH_THRESHOLDS_SECOND) {
-      newNumberOfReducer = (int) (numberoOfTasks * SPLIT_SIZE_INCREASE_SECOND);
+    if (averageTaskTimeInMinute <= AVG_TASK_TIME_LOW_THRESHOLDS_FIRST.getValue()) {
+      newNumberOfReducer = numberoOfTasks / SPLIT_SIZE_INCREASE_FIRST.getValue();
+    } else if (averageTaskTimeInMinute <= AVG_TASK_TIME_LOW_THRESHOLDS_SECOND.getValue()) {
+      newNumberOfReducer = (int) (numberoOfTasks * SPLIT_SIZE_DECREASE.getValue());
+    } else if (averageTaskTimeInMinute >= AVG_TASK_TIME_HIGH_THRESHOLDS_FIRST.getValue()) {
+      newNumberOfReducer = numberoOfTasks * SPLIT_SIZE_INCREASE_FIRST.getValue();
+    } else if (averageTaskTimeInMinute >= AVG_TASK_TIME_HIGH_THRESHOLDS_SECOND.getValue()) {
+      newNumberOfReducer = (int) (numberoOfTasks * SPLIT_SIZE_INCREASE_SECOND.getValue());
     }
     logDebuggingStatement(" Reducer Average task time " + averageTaskTimeInMinute,
         " Reducer Number of tasks " + numberoOfTasks * 1.0, " New number of reducer " + newNumberOfReducer);
@@ -305,54 +326,58 @@ public class MRApplicationData {
     float ratioOfDiskSpillsToOutputRecords = 0.0f;
     int newBufferSize = 0;
     float newSpillPercentage = 0.0f;
-    for (AppHeuristicResultDetails appHeuristicResultDetails : yarnAppHeuristicResult.yarnAppHeuristicResultDetails) {
-      if (appHeuristicResultDetails.name.equals(RATIO_OF_SPILLED_RECORDS_TO_OUTPUT_RECORDS)) {
-        ratioOfDiskSpillsToOutputRecords = Float.parseFloat(appHeuristicResultDetails.value);
-      }
-      int previousBufferSize = Integer.parseInt(appliedParameter.get(SORT_BUFFER));
-      float previousSortSpill = Float.parseFloat(appliedParameter.get(SORT_SPILL));
-      addCounterData(new String[]{RATIO_OF_SPILLED_RECORDS_TO_OUTPUT_RECORDS, SORT_BUFFER, SORT_SPILL},
-          ratioOfDiskSpillsToOutputRecords * 1.0, previousBufferSize * 1.0, previousSortSpill * 1.0);
-      if (ratioOfDiskSpillsToOutputRecords >= RATIO_OF_DISK_SPILL_TO_OUTPUT_RECORDS_THRESHOLD_FIRST) {
-        if (previousSortSpill <= SORT_SPILL_THRESHOLD_FIRST) {
-          newSpillPercentage = previousSortSpill + SORT_SPILL_INCREASE;
-          newBufferSize = (int) (previousBufferSize * BUFFER_SIZE_INCREASE_FIRST);
-        } else {
-          newBufferSize = (int) (previousBufferSize * BUFFER_SIZE_INCREASE_SECOND);
-        }
-      } else if (ratioOfDiskSpillsToOutputRecords >= RATIO_OF_DISK_SPILL_TO_OUTPUT_RECORDS_THRESHOLD_SECOND) {
-        if (previousSortSpill <= SORT_SPILL_THRESHOLD_FIRST) {
-          newSpillPercentage = previousSortSpill + SORT_SPILL_INCREASE;
-          newBufferSize = (int) (previousBufferSize * BUFFER_SIZE_INCREASE);
-        } else {
-          newBufferSize = (int) (previousBufferSize * BUFFER_SIZE_INCREASE_FIRST);
-        }
-      }
-      suggestedParameter.put(BUFFER_SIZE, newBufferSize * 1.0);
-      suggestedParameter.put(SPILL_PERCENTAGE, newSpillPercentage * 1.0);
-      logDebuggingStatement(" Previous Buffer " + previousBufferSize, " Previous Split " + previousSortSpill,
-          "Ratio of disk spills to output records " + ratioOfDiskSpillsToOutputRecords,
-          "New Buffer Size " + newBufferSize * 1.0, " New Buffer Percentage " + newSpillPercentage);
 
-      modifyMapperMemory();
+    Map<String, String> heuristicsResults = yarnAppHeuristicResult.yarnAppResult.getHeuristicsResultDetailsMap();
+    String ratioOfSpillRecordsToOutputRecordsValue = heuristicsResults.get(
+        MapperSpillHeuristic.class.getCanonicalName() + "_" + RATIO_OF_SPILLED_RECORDS_TO_OUTPUT_RECORDS.getValue());
+    if (ratioOfSpillRecordsToOutputRecordsValue != null) {
+      ratioOfDiskSpillsToOutputRecords = Float.parseFloat(ratioOfSpillRecordsToOutputRecordsValue);
     }
+    int previousBufferSize = Integer.parseInt(appliedParameter.get(SORT_BUFFER.getValue()));
+    float previousSortSpill = Float.parseFloat(appliedParameter.get(SORT_SPILL.getValue()));
+    addCounterData(new String[]{RATIO_OF_SPILLED_RECORDS_TO_OUTPUT_RECORDS.getValue(), SORT_BUFFER.getValue(),
+            SORT_SPILL.getValue()}, ratioOfDiskSpillsToOutputRecords * 1.0, previousBufferSize * 1.0,
+        previousSortSpill * 1.0);
+    if (ratioOfDiskSpillsToOutputRecords >= RATIO_OF_DISK_SPILL_TO_OUTPUT_RECORDS_THRESHOLD_FIRST.getValue()) {
+      if (previousSortSpill <= SORT_SPILL_THRESHOLD_FIRST.getValue()) {
+        newSpillPercentage = previousSortSpill + SORT_SPILL_INCREASE.getValue();
+        newBufferSize = (int) (previousBufferSize * BUFFER_SIZE_INCREASE_FIRST.getValue());
+      } else {
+        newBufferSize = (int) (previousBufferSize * BUFFER_SIZE_INCREASE_SECOND.getValue());
+      }
+    } else if (ratioOfDiskSpillsToOutputRecords >= RATIO_OF_DISK_SPILL_TO_OUTPUT_RECORDS_THRESHOLD_SECOND.getValue()) {
+      if (previousSortSpill <= SORT_SPILL_THRESHOLD_FIRST.getValue()) {
+        newSpillPercentage = previousSortSpill + SORT_SPILL_INCREASE.getValue();
+        newBufferSize = (int) (previousBufferSize * BUFFER_SIZE_INCREASE.getValue());
+      } else {
+        newBufferSize = (int) (previousBufferSize * BUFFER_SIZE_INCREASE_FIRST.getValue());
+      }
+    }
+    suggestedParameter.put(SORT_BUFFER_HADOOP_CONF.getValue(), newBufferSize * 1.0);
+    suggestedParameter.put(SORT_SPILL_HADOOP_CONF.getValue(), newSpillPercentage * 1.0);
+    logDebuggingStatement(" Previous Buffer " + previousBufferSize, " Previous Split " + previousSortSpill,
+        "Ratio of disk spills to output records " + ratioOfDiskSpillsToOutputRecords,
+        "New Buffer Size " + newBufferSize * 1.0, " New Buffer Percentage " + newSpillPercentage);
+    modifyMapperMemory();
   }
 
   private void modifyMapperMemory() {
-    Double mapperMemory = suggestedParameter.get(MAPPER_MEMORY) == null ? Double.parseDouble(
-        appliedParameter.get(MAPPER_MEMORY_HEURISTIC)) : suggestedParameter.get(MAPPER_MEMORY);
-    Double sortBuffer = suggestedParameter.get(BUFFER_SIZE);
+    Double mapperMemory = suggestedParameter.get(MAPPER_MEMORY_HADOOP_CONF.getValue()) == null ? Double.parseDouble(
+        appliedParameter.get(MAPPER_MEMORY_HEURISTIC)) : suggestedParameter.get(MAPPER_MEMORY_HADOOP_CONF.getValue());
+    Double sortBuffer = suggestedParameter.get(SORT_BUFFER_HADOOP_CONF.getValue());
     Double minimumMemoryBasedonSortBuffer =
-        max(sortBuffer + SORT_BUFFER_CUSHION, sortBuffer * MINIMUM_MEMORY_SORT_BUFFER_RATIO);
+        max(sortBuffer + SORT_BUFFER_CUSHION.getValue(), sortBuffer * MINIMUM_MEMORY_SORT_BUFFER_RATIO.getValue());
     if (minimumMemoryBasedonSortBuffer > mapperMemory) {
       mapperMemory = minimumMemoryBasedonSortBuffer;
-      suggestedParameter.put(MAPPER_MEMORY, TuningHelper.getContainerSize(mapperMemory));
-      Double heapMemory = suggestedParameter.get(MAPPER_HEAP);
+      suggestedParameter.put(MAPPER_MEMORY_HADOOP_CONF.getValue(), TuningHelper.getContainerSize(mapperMemory));
+      Double heapMemory = suggestedParameter.get(MAPPER_HEAP_HADOOP_CONF.getValue());
       if (heapMemory != null) {
-        heapMemory = TuningHelper.getHeapSize(min(HEAP_TO_MEMORY_SIZE_RATION * mapperMemory, heapMemory));
-        suggestedParameter.put(MAPPER_HEAP, heapMemory);
+        heapMemory =
+            TuningHelper.getHeapSize(min(HEAPSIZE_TO_MAPPERMEMORY_SAFE_RATIO.getValue() * mapperMemory, heapMemory));
+        suggestedParameter.put(MAPPER_HEAP_HADOOP_CONF.getValue(), heapMemory);
       } else {
-        suggestedParameter.put(MAPPER_HEAP, TuningHelper.getHeapSize(HEAP_TO_MEMORY_SIZE_RATION * mapperMemory));
+        suggestedParameter.put(MAPPER_HEAP_HADOOP_CONF.getValue(),
+            TuningHelper.getHeapSize(HEAPSIZE_TO_MAPPERMEMORY_SAFE_RATIO.getValue() * mapperMemory));
       }
       logDebuggingStatement("Mapper Memory After Buffer Modify " + TuningHelper.getContainerSize(mapperMemory) * 1.0,
           " Mapper heap After Buffer Modify " + heapMemory);
@@ -368,7 +393,7 @@ public class MRApplicationData {
   private void logDebuggingStatement(String... statements) {
     if (debugEnabled) {
       for (String log : statements) {
-        logger.info(log);
+        logger.debug(log);
       }
     }
   }

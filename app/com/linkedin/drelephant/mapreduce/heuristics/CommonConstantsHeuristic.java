@@ -14,7 +14,13 @@ public class CommonConstantsHeuristic {
     MIN_VIRTUAL_MEMORY("Min Virtual Memory (MB)"),
     AVG_TOTAL_COMMITTED_HEAP_USAGE_MEMORY("Avg Total Committed Heap Usage Memory (MB)"),
     MAX_TOTAL_COMMITTED_HEAP_USAGE_MEMORY("Max Total Committed Heap Usage Memory (MB)"),
-    MIN_TOTAL_COMMITTED_HEAP_USAGE_MEMORY("Min Total Committed Heap Usage Memory (MB)");
+    MIN_TOTAL_COMMITTED_HEAP_USAGE_MEMORY("Min Total Committed Heap Usage Memory (MB)"),
+    AVERAGE_TASK_INPUT_SIZE("Average task input size"),
+    AVERAGE_TASK_RUNTIME("Average task runtime"),
+    NUMBER_OF_TASK("Number of tasks"),
+    RATIO_OF_SPILLED_RECORDS_TO_OUTPUT_RECORDS("Ratio of spilled records to output records"),
+    SORT_BUFFER("Sort Buffer"),
+    SORT_SPILL("Sort Spill");
     private String value;
 
     UtilizedParameterKeys(String value) {
@@ -37,6 +43,7 @@ public class CommonConstantsHeuristic {
     SPLIT_SIZE_HADOOP_CONF("mapreduce.input.fileinputformat.split.maxsize"),
     CHILD_HEAP_SIZE_HADOOP_CONF("mapred.child.java.opts"),
     PIG_SPLIT_SIZE_HADOOP_CONF("pig.maxCombinedSplitSize"),
+    NUMBER_OF_REDUCER_CONF("mapreduce.job.reduces"),
     MAPPER_MEMORY_HEURISTICS_CONF("Mapper Memory"),
     MAPPER_HEAP_HEURISTICS_CONF("Mapper Heap"),
     REDUCER_MEMORY_HEURISTICS_CONF("Reducer Memory"),
@@ -47,6 +54,7 @@ public class CommonConstantsHeuristic {
     SPLIT_SIZE_HEURISTICS_CONF("Split Size"),
     PIG_MAX_SPLIT_SIZE_HEURISTICS_CONF("Pig Max Split Size");
     private String value;
+
     ParameterKeys(String value) {
       this.value = value;
     }
