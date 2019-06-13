@@ -203,23 +203,17 @@ public class AppResult extends Model {
    * @return total input size
    */
   public Long getTotalInputBytes() {
-    String heursiticValue = null;
-    if (jobType.toLowerCase().equals(JobType.PIG.name().toLowerCase())
-        || jobType.toLowerCase().equals(JobType.HIVE.name().toLowerCase())) {
-      heursiticValue =
-          getHeuristicValue(MapperSpeedHeuristic.class.getCanonicalName(),
-              CommonConstantsHeuristic.TOTAL_INPUT_SIZE_IN_MB);
-    } else if (jobType.toLowerCase().equals(JobType.SPARK.name().toLowerCase())) {
-      heursiticValue =
-          getHeuristicValue(SparkApplicationMetricsHeuristic.class.getCanonicalName(),
-              SparkApplicationMetricsHeuristic.TOTAL_INPUT_SIZE_IN_MB());
+    String heursiticValue = getHeuristicValue(MapperSpeedHeuristic.class.getCanonicalName(),
+        CommonConstantsHeuristic.TOTAL_INPUT_SIZE_IN_MB);
+    if(heursiticValue==null){
+      heursiticValue = getHeuristicValue(SparkApplicationMetricsHeuristic.class.getCanonicalName(),SparkApplicationMetricsHeuristic.TOTAL_INPUT_SIZE_IN_MB());
     }
-    Long totalInputBytes = 0L;
+    long totalInputBytes = 0L;
     if (heursiticValue != null) {
       try {
         totalInputBytes = Math.round(Double.parseDouble(heursiticValue) * FileUtils.ONE_MB);
       } catch (NumberFormatException e) {
-        logger.debug("Found wrong input bytes for application ID " + id);
+        logger.error("Found wrong input bytes for application ID " + id,e);
       }
     }
     return totalInputBytes;
