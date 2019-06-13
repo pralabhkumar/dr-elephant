@@ -72,6 +72,11 @@ public class MRJob {
     }
   }
 
+  /**
+   * Recommending parameter at the job level ,
+   * by taking max of each suggested parameter across all
+   * jobs
+   */
   public void processJobForParameter() {
     for (MRApplicationData mrApplicationData : applications) {
       Map<String, Double> applicationSuggestedParameter = mrApplicationData.getSuggestedParameter();

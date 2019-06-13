@@ -163,7 +163,7 @@ insert into yarn_app_heuristic_result(id,yarn_app_result_id,heuristic_class,heur
 (45948388,'Sort Buffer','100','NULL'),
 (45948388,'Sort Factor','10','NULL'),
 (45948388,'Sort Spill','0.80','NULL'),
-(45948388,'Split Size','9223372036854775807','NULL'),
+(45948388,'Split Size','536870912','NULL'),
 (45948389,'Mapper Heap','-XX:ReservedCodeCacheSize=100M
 -XX:MaxMetaspaceSize=256m
 -XX:CompressedClassSpaceSize=256m
@@ -183,7 +183,7 @@ insert into yarn_app_heuristic_result(id,yarn_app_result_id,heuristic_class,heur
 (45948389,'Sort Buffer','100','NULL'),
 (45948389,'Sort Factor','10','NULL'),
 (45948389,'Sort Spill','0.80','NULL'),
-(45948389,'Split Size ','9223372036854775807','NULL');
+(45948389,'Split Size ','536870912','NULL');
 
 INSERT INTO `yarn_app_heuristic_result` VALUES
 (50635672,'application_1540411174627_3924329','com.linkedin.drelephant.mapreduce.heuristics.MapperSkewHeuristic','Mapper Skew',0,0),

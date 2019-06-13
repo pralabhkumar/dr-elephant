@@ -2,6 +2,8 @@ package com.linkedin.drelephant.tuning;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import models.JobDefinition;
 import models.JobExecution;
 import models.JobSuggestedParamSet;
@@ -16,8 +18,11 @@ import org.apache.log4j.Logger;
 public class TuningHelper {
   private static final Logger logger = Logger.getLogger(TuningHelper.class);
   private static boolean debugEnabled = logger.isDebugEnabled();
-  private static final int ONE_GB= 1024;
+  private static final int ONE_GB = 1024;
   private static final int MINIMUM_HEAP_SIZE_MB = 600;
+  private static final String PATTERN_FOR_MEMORY = "(^|\\s)-Xmx[0-9]+[GgMm]($|\\s)";
+  private static final int DEFAULT_MAX_HEAP_SIZE = 1536;
+
   public static List<TuningParameter> getTuningParameterList(TuningJobDefinition tuningJobDefinition) {
     List<TuningParameter> tuningParameterList = TuningParameter.find.where()
         .eq(TuningParameter.TABLE.tuningAlgorithm + "." + TuningAlgorithm.TABLE.id,
@@ -71,7 +76,8 @@ public class TuningHelper {
     return tuningJobExecutionParamSets;
   }
 
-  public static int getNumberOfValidSuggestedParamExecution(List<TuningJobExecutionParamSet> tuningJobExecutionParamSets) {
+  public static int getNumberOfValidSuggestedParamExecution(
+      List<TuningJobExecutionParamSet> tuningJobExecutionParamSets) {
     int autoAppliedExecution = 0;
     for (TuningJobExecutionParamSet tuningJobExecutionParam : tuningJobExecutionParamSets) {
       if (tuningJobExecutionParam.jobSuggestedParamSet.isParamSetSuggested
@@ -108,7 +114,6 @@ public class TuningHelper {
     return newParamBestParam;
   }
 
-
   public static void updateJobSuggestedParamSet(JobSuggestedParamSet jobSuggestedParamSet, JobExecution jobExecution) {
     try {
       jobSuggestedParamSet.update();
@@ -129,11 +134,35 @@ public class TuningHelper {
   public static Double getContainerSize(Double memory) {
     return Math.ceil(memory / ONE_GB) * ONE_GB;
   }
-  public static Double getHeapSize(Double heapSize){
-    if(heapSize<MINIMUM_HEAP_SIZE_MB){
-      heapSize=MINIMUM_HEAP_SIZE_MB*1.0;
+
+  public static Double getHeapSize(Double heapSize) {
+    if (heapSize < MINIMUM_HEAP_SIZE_MB) {
+      heapSize = MINIMUM_HEAP_SIZE_MB * 1.0;
     }
     return heapSize;
+  }
 
+  public static Double parseMaxHeapSizeInMB(String data) {
+    try {
+      logger.debug(" Heap data " + data);
+      Pattern pattern = Pattern.compile(PATTERN_FOR_MEMORY);
+      Matcher m = pattern.matcher(data);
+      String maxHeapSize;
+      if (m.find()) {
+        maxHeapSize = m.group().trim();
+        if (maxHeapSize.toLowerCase().endsWith("g")) {
+          maxHeapSize = maxHeapSize.substring(4, maxHeapSize.length() - 1);
+          return Double.parseDouble(maxHeapSize) * 1024.0;
+        } else {
+          maxHeapSize = maxHeapSize.substring(4, maxHeapSize.length() - 1);
+          return Double.parseDouble(maxHeapSize);
+        }
+      }
+    } catch (Exception e) {
+      logger.error(" Error gettting max heap ", e);
+    }
+
+    logger.info(" Max heap size not found ");
+    return DEFAULT_MAX_HEAP_SIZE * 1.0;
   }
 }

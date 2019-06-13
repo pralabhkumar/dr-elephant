@@ -55,13 +55,14 @@ public class MRApplicationData {
   private Map<String, String> appliedParameter = null;
   private Map<String, Double> counterValues = null;
 
+  //todo: Reducer time is not valid heuristic , since we have to find ways to change number of reducer from azkaban.
+  // mapreduce.job.reduces, pig.exec.reducers.bytes.per.reducer have not worked from azkaban
   static {
     validHeuristic = new HashSet<String>();
     validHeuristic.add(MAPPER_TIME_HEURISTIC);
     validHeuristic.add(MAPPER_SPEED_HEURISTIC);
     validHeuristic.add(MAPPER_MEMORY_HEURISTIC);
     validHeuristic.add(MAPPER_SPILL_HEURISTIC);
-    validHeuristic.add(REDUCER_TIME_HEURISTIC);
     validHeuristic.add(REDUCER_MEMORY_HEURISTIC);
     MRConstant.MRConfigurationBuilder.buildConfigurations(ElephantContext.instance().getAutoTuningConf());
   }
@@ -74,6 +75,7 @@ public class MRApplicationData {
     this.appliedParameter = appliedParameter;
     this.counterValues = new HashMap<String, Double>();
     processForSuggestedParameter();
+    postFillSuggestedParameterWithAppliedParameter();
   }
 
   public Map<String, Double> getCounterValues() {
@@ -82,6 +84,70 @@ public class MRApplicationData {
 
   public String getApplicationID() {
     return this.applicationID;
+  }
+
+  /**
+   * Fill the suggested parameters with the applied parameter ,
+   * if there is no current suggesteted parameter for particular property.
+   */
+  private void postFillSuggestedParameterWithAppliedParameter() {
+    if (!suggestedParameter.containsKey(MAPPER_MEMORY_HADOOP_CONF.getValue())) {
+      suggestedParameter.put(MAPPER_MEMORY_HADOOP_CONF.getValue(),
+          Double.parseDouble(appliedParameter.get(MAPPER_MEMORY_HEURISTICS_CONF.getValue())));
+    }
+    if (!suggestedParameter.containsKey(REDUCER_MEMORY_HADOOP_CONF.getValue())) {
+      suggestedParameter.put(REDUCER_MEMORY_HADOOP_CONF.getValue(),
+          Double.parseDouble(appliedParameter.get(REDUCER_MEMORY_HEURISTICS_CONF.getValue())));
+    }
+    if (!suggestedParameter.containsKey(MAPPER_HEAP_HADOOP_CONF.getValue())) {
+      suggestedParameter.put(MAPPER_HEAP_HADOOP_CONF.getValue(),
+          TuningHelper.parseMaxHeapSizeInMB(appliedParameter.get(MAPPER_HEAP_HEURISTICS_CONF.getValue())));
+    }
+    if (!suggestedParameter.containsKey(REDUCER_HEAP_HADOOP_CONF.getValue())) {
+      suggestedParameter.put(REDUCER_HEAP_HADOOP_CONF.getValue(),
+          TuningHelper.parseMaxHeapSizeInMB(appliedParameter.get(REDUCER_HEAP_HEURISTICS_CONF.getValue())));
+    }
+    if (!suggestedParameter.containsKey(SORT_BUFFER_HADOOP_CONF.getValue())) {
+      suggestedParameter.put(SORT_BUFFER_HADOOP_CONF.getValue(),
+          Double.parseDouble(appliedParameter.get(SORT_BUFFER_HEURISTICS_CONF.getValue())));
+    }
+    if (!suggestedParameter.containsKey(SORT_SPILL_HADOOP_CONF.getValue())) {
+      suggestedParameter.put(SORT_SPILL_HADOOP_CONF.getValue(),
+          Double.parseDouble(appliedParameter.get(SORT_SPILL_HEURISTICS_CONF.getValue())));
+    }
+
+    postFillSplitSize();
+    if (debugEnabled) {
+      for (String parameterName : suggestedParameter.keySet()) {
+        logger.debug(" Suggested Parameter Test " + parameterName + "\t" + suggestedParameter.get(parameterName));
+      }
+    }
+  }
+
+  /**
+   *
+   */
+  private void postFillSplitSize() {
+    /**
+     * If Algorithm have not suggested any split size  this time ,
+     * then check for previously applied split size . If previous applied split size
+     * is there in pig.max then put the same in suggested.
+     * If prevoius applied split size is there mapreduce.split , then put the same in suggested.
+     *
+     */
+    if (!suggestedParameter.containsKey(PIG_SPLIT_SIZE_HADOOP_CONF.getValue())) {
+      if (appliedParameter.containsKey(PIG_MAX_SPLIT_SIZE_HEURISTICS_CONF.getValue())) {
+        suggestedParameter.put(PIG_SPLIT_SIZE_HADOOP_CONF.getValue(),
+            Double.parseDouble(appliedParameter.get(PIG_MAX_SPLIT_SIZE_HEURISTICS_CONF.getValue())));
+        suggestedParameter.put(SPLIT_SIZE_HADOOP_CONF.getValue(),
+            Double.parseDouble(appliedParameter.get(PIG_MAX_SPLIT_SIZE_HEURISTICS_CONF.getValue())));
+      } else if (appliedParameter.containsKey(SPLIT_SIZE_HEURISTICS_CONF.getValue())) {
+        suggestedParameter.put(PIG_SPLIT_SIZE_HADOOP_CONF.getValue(),
+            Double.parseDouble(appliedParameter.get(SPLIT_SIZE_HEURISTICS_CONF.getValue())));
+        suggestedParameter.put(SPLIT_SIZE_HADOOP_CONF.getValue(),
+            Double.parseDouble(appliedParameter.get(SPLIT_SIZE_HEURISTICS_CONF.getValue())));
+      }
+    }
   }
 
   /**
@@ -134,6 +200,8 @@ public class MRApplicationData {
 
   /**
    * Since Dr elephant runs on Java 1.5 , switch case is not used.
+   * Not able to set number of reducer from Azkaban and hence not optimizing for
+   * Reducer time
    * @param yarnAppHeuristicResult
    */
   private void processHeuristics(AppHeuristicResult yarnAppHeuristicResult) {
@@ -143,15 +211,18 @@ public class MRApplicationData {
       processForMemory(yarnAppHeuristicResult, Reducer.name());
     } else if (yarnAppHeuristicResult.heuristicName.equals(MAPPER_TIME_HEURISTIC)) {
       processForNumberOfTask(yarnAppHeuristicResult, Mapper.name());
-    } else if (yarnAppHeuristicResult.heuristicName.equals(REDUCER_TIME_HEURISTIC)) {
+    } /*else if (yarnAppHeuristicResult.heuristicName.equals(REDUCER_TIME_HEURISTIC)) {
       processForNumberOfTask(yarnAppHeuristicResult, Reducer.name());
-    } else if (yarnAppHeuristicResult.heuristicName.equals(MAPPER_SPILL_HEURISTIC)) {
+    }*/ else if (yarnAppHeuristicResult.heuristicName.equals(MAPPER_SPILL_HEURISTIC)) {
       processForMemoryBuffer(yarnAppHeuristicResult);
     }
   }
 
   /**
    * Process for Mapper Memory and Heap and reducer memory and heap.
+   * Mapper Memory / Mapper Heap / Reducer Memory /Reducer heap
+   * These values are decided based on maximum virtual memory used,
+   * maximum physical memory used and maximum total committed heap usage.
    * @param yarnAppHeuristicResult
    * @param functionType
    */
@@ -216,6 +287,12 @@ public class MRApplicationData {
             REDUCER_HEAP_HADOOP_CONF.getValue()));
   }
 
+  /**
+   * todo : currently task for reducers are not processed  , since we have to find
+   * out the way to pass number of reducer tasks from azkaban
+   * @param yarnAppHeuristicResult
+   * @param functionType
+   */
   private void processForNumberOfTask(AppHeuristicResult yarnAppHeuristicResult, String functionType) {
     if (functionType.equals(Mapper.name())) {
       processForNumberOfTaskMapper(yarnAppHeuristicResult);
@@ -241,6 +318,15 @@ public class MRApplicationData {
     }
   }
 
+  /**
+   * IF the mapper time heuristics is failed , its failed because either the
+   * average input going to one task is too small or too large .
+   * If its too small , increase the average task input size and that would be the
+   * split size . If time is too big , decrease the average task input size and that would
+   * be split size.
+   * @param yarnAppHeuristicResult
+   * @return
+   */
   private long getNewSplitSize(AppHeuristicResult yarnAppHeuristicResult) {
     logger.info("Calculating Split Size ");
     double averageTaskInputSize = 0.0;
@@ -274,6 +360,12 @@ public class MRApplicationData {
     return newSplitSize;
   }
 
+  /**
+   * This method is created but currently not in used ,since changing number of reducers
+   * from azkaban is todo .
+   * @param yarnAppHeuristicResult
+   * @return
+   */
   private long getNumberOfReducer(AppHeuristicResult yarnAppHeuristicResult) {
     int numberoOfTasks = 0;
     double averageTaskTimeInMinute = 0.0;
@@ -322,6 +414,12 @@ public class MRApplicationData {
     return timeInMinutes;
   }
 
+  /**
+   * This will change value of sort buffer and sort spill
+   * based on ratio of spill records to output records.
+   * If buffer size is changed , then mapper memory should also be modified.
+   * @param yarnAppHeuristicResult
+   */
   private void processForMemoryBuffer(AppHeuristicResult yarnAppHeuristicResult) {
     float ratioOfDiskSpillsToOutputRecords = 0.0f;
     int newBufferSize = 0;
