@@ -18,8 +18,8 @@
 package com.linkedin.drelephant.tuning.hbt;
 
 import com.linkedin.drelephant.ElephantContext;
-import com.linkedin.drelephant.exceptions.util.ExceptionUtils;
 import com.linkedin.drelephant.mapreduce.heuristics.MapperSpillHeuristic;
+import com.linkedin.drelephant.mapreduce.heuristics.ReducerMemoryHeuristic;
 import com.linkedin.drelephant.tuning.TuningHelper;
 import com.linkedin.drelephant.util.MemoryFormatUtils;
 import java.util.HashMap;
@@ -52,7 +52,7 @@ public class MRApplicationData {
   private AppResult _result;
   private Map<String, AppHeuristicResult> failedHeuristics = null;
   private static Set<String> validHeuristic = null;
-  private Map<String, String> appliedParameter = null;
+  private Map<String, Double> appliedParameter = null;
   private Map<String, Double> counterValues = null;
 
   //todo: Reducer time is not valid heuristic , since we have to find ways to change number of reducer from azkaban.
@@ -67,7 +67,8 @@ public class MRApplicationData {
     MRConstant.MRConfigurationBuilder.buildConfigurations(ElephantContext.instance().getAutoTuningConf());
   }
 
-  MRApplicationData(AppResult result, Map<String, String> appliedParameter) {
+  MRApplicationData(AppResult result, Map<String, Double> appliedParameter) {
+    logger.info(" Process for following app id " + result.id);
     this.applicationID = result.id;
     this._result = result;
     this.suggestedParameter = new HashMap<String, Double>();
@@ -91,29 +92,39 @@ public class MRApplicationData {
    * if there is no current suggesteted parameter for particular property.
    */
   private void postFillSuggestedParameterWithAppliedParameter() {
+    String numberOfReducerString = this._result.getHeuristicsResultDetailsMap()
+        .get(ReducerMemoryHeuristic.class.getCanonicalName() + "_" + NUMBER_OF_TASK.getValue());
+    logger.info(" Testing " + numberOfReducerString);
+    int numOfReducer = 0;
+    try {
+      numOfReducer = Integer.parseInt(numberOfReducerString.trim());
+    } catch (NumberFormatException e) {
+      logger.error(" Error parsing reducer , hence assuming number of reducer 0");
+    }
+
     if (!suggestedParameter.containsKey(MAPPER_MEMORY_HADOOP_CONF.getValue())) {
       suggestedParameter.put(MAPPER_MEMORY_HADOOP_CONF.getValue(),
-          Double.parseDouble(appliedParameter.get(MAPPER_MEMORY_HEURISTICS_CONF.getValue())));
+          appliedParameter.get(MAPPER_MEMORY_HEURISTICS_CONF.getValue()));
     }
-    if (!suggestedParameter.containsKey(REDUCER_MEMORY_HADOOP_CONF.getValue())) {
+    if (!suggestedParameter.containsKey(REDUCER_MEMORY_HADOOP_CONF.getValue()) && numOfReducer > 0) {
       suggestedParameter.put(REDUCER_MEMORY_HADOOP_CONF.getValue(),
-          Double.parseDouble(appliedParameter.get(REDUCER_MEMORY_HEURISTICS_CONF.getValue())));
+          appliedParameter.get(REDUCER_MEMORY_HEURISTICS_CONF.getValue()));
     }
     if (!suggestedParameter.containsKey(MAPPER_HEAP_HADOOP_CONF.getValue())) {
       suggestedParameter.put(MAPPER_HEAP_HADOOP_CONF.getValue(),
-          TuningHelper.parseMaxHeapSizeInMB(appliedParameter.get(MAPPER_HEAP_HEURISTICS_CONF.getValue())));
+          appliedParameter.get(MAPPER_HEAP_HEURISTICS_CONF.getValue()));
     }
-    if (!suggestedParameter.containsKey(REDUCER_HEAP_HADOOP_CONF.getValue())) {
+    if (!suggestedParameter.containsKey(REDUCER_HEAP_HADOOP_CONF.getValue()) && numOfReducer > 0) {
       suggestedParameter.put(REDUCER_HEAP_HADOOP_CONF.getValue(),
-          TuningHelper.parseMaxHeapSizeInMB(appliedParameter.get(REDUCER_HEAP_HEURISTICS_CONF.getValue())));
+          appliedParameter.get(REDUCER_HEAP_HEURISTICS_CONF.getValue()));
     }
     if (!suggestedParameter.containsKey(SORT_BUFFER_HADOOP_CONF.getValue())) {
       suggestedParameter.put(SORT_BUFFER_HADOOP_CONF.getValue(),
-          Double.parseDouble(appliedParameter.get(SORT_BUFFER_HEURISTICS_CONF.getValue())));
+          appliedParameter.get(SORT_BUFFER_HEURISTICS_CONF.getValue()));
     }
     if (!suggestedParameter.containsKey(SORT_SPILL_HADOOP_CONF.getValue())) {
       suggestedParameter.put(SORT_SPILL_HADOOP_CONF.getValue(),
-          Double.parseDouble(appliedParameter.get(SORT_SPILL_HEURISTICS_CONF.getValue())));
+          appliedParameter.get(SORT_SPILL_HEURISTICS_CONF.getValue()));
     }
 
     postFillSplitSize();
@@ -138,14 +149,14 @@ public class MRApplicationData {
     if (!suggestedParameter.containsKey(PIG_SPLIT_SIZE_HADOOP_CONF.getValue())) {
       if (appliedParameter.containsKey(PIG_MAX_SPLIT_SIZE_HEURISTICS_CONF.getValue())) {
         suggestedParameter.put(PIG_SPLIT_SIZE_HADOOP_CONF.getValue(),
-            Double.parseDouble(appliedParameter.get(PIG_MAX_SPLIT_SIZE_HEURISTICS_CONF.getValue())));
+            appliedParameter.get(PIG_MAX_SPLIT_SIZE_HEURISTICS_CONF.getValue()));
         suggestedParameter.put(SPLIT_SIZE_HADOOP_CONF.getValue(),
-            Double.parseDouble(appliedParameter.get(PIG_MAX_SPLIT_SIZE_HEURISTICS_CONF.getValue())));
+            appliedParameter.get(PIG_MAX_SPLIT_SIZE_HEURISTICS_CONF.getValue()));
       } else if (appliedParameter.containsKey(SPLIT_SIZE_HEURISTICS_CONF.getValue())) {
         suggestedParameter.put(PIG_SPLIT_SIZE_HADOOP_CONF.getValue(),
-            Double.parseDouble(appliedParameter.get(SPLIT_SIZE_HEURISTICS_CONF.getValue())));
+            appliedParameter.get(SPLIT_SIZE_HEURISTICS_CONF.getValue()));
         suggestedParameter.put(SPLIT_SIZE_HADOOP_CONF.getValue(),
-            Double.parseDouble(appliedParameter.get(SPLIT_SIZE_HEURISTICS_CONF.getValue())));
+            appliedParameter.get(SPLIT_SIZE_HEURISTICS_CONF.getValue()));
       }
     }
   }
@@ -205,6 +216,7 @@ public class MRApplicationData {
    * @param yarnAppHeuristicResult
    */
   private void processHeuristics(AppHeuristicResult yarnAppHeuristicResult) {
+    logger.info("Fixing Heuristics " + yarnAppHeuristicResult.heuristicName);
     if (yarnAppHeuristicResult.heuristicName.equals(MAPPER_MEMORY_HEURISTIC)) {
       processForMemory(yarnAppHeuristicResult, Mapper.name());
     } else if (yarnAppHeuristicResult.heuristicName.equals(REDUCER_MEMORY_HEURISTIC)) {
@@ -296,9 +308,9 @@ public class MRApplicationData {
   private void processForNumberOfTask(AppHeuristicResult yarnAppHeuristicResult, String functionType) {
     if (functionType.equals(Mapper.name())) {
       processForNumberOfTaskMapper(yarnAppHeuristicResult);
-    } else if (functionType.equals(Reducer.name())) {
+    } /*else if (functionType.equals(Reducer.name())) {
       processForNumberOfTaskReducer(yarnAppHeuristicResult);
-    }
+    }*/
   }
 
   private void processForNumberOfTaskMapper(AppHeuristicResult yarnAppHeuristicResult) {
@@ -309,14 +321,15 @@ public class MRApplicationData {
       suggestedParameter.put(PIG_SPLIT_SIZE_HADOOP_CONF.getValue(), splitSize * 1.0);
     }
   }
-
-  private void processForNumberOfTaskReducer(AppHeuristicResult yarnAppHeuristicResult) {
+  // Todo : This will be required once passing number of reducer from schduler figures out.
+  //
+  /*private void processForNumberOfTaskReducer(AppHeuristicResult yarnAppHeuristicResult) {
     long numberOfReduceTask;
     numberOfReduceTask = getNumberOfReducer(yarnAppHeuristicResult);
     if (numberOfReduceTask > 0) {
       suggestedParameter.put(NUMBER_OF_REDUCER_CONF.getValue(), numberOfReduceTask * 1.0);
     }
-  }
+  }*/
 
   /**
    * IF the mapper time heuristics is failed , its failed because either the
@@ -431,8 +444,8 @@ public class MRApplicationData {
     if (ratioOfSpillRecordsToOutputRecordsValue != null) {
       ratioOfDiskSpillsToOutputRecords = Float.parseFloat(ratioOfSpillRecordsToOutputRecordsValue);
     }
-    int previousBufferSize = Integer.parseInt(appliedParameter.get(SORT_BUFFER.getValue()));
-    float previousSortSpill = Float.parseFloat(appliedParameter.get(SORT_SPILL.getValue()));
+    int previousBufferSize = appliedParameter.get(SORT_BUFFER.getValue()).intValue();
+    float previousSortSpill = appliedParameter.get(SORT_SPILL.getValue()).floatValue();
     addCounterData(new String[]{RATIO_OF_SPILLED_RECORDS_TO_OUTPUT_RECORDS.getValue(), SORT_BUFFER.getValue(),
             SORT_SPILL.getValue()}, ratioOfDiskSpillsToOutputRecords * 1.0, previousBufferSize * 1.0,
         previousSortSpill * 1.0);
@@ -460,8 +473,8 @@ public class MRApplicationData {
   }
 
   private void modifyMapperMemory() {
-    Double mapperMemory = suggestedParameter.get(MAPPER_MEMORY_HADOOP_CONF.getValue()) == null ? Double.parseDouble(
-        appliedParameter.get(MAPPER_MEMORY_HEURISTIC)) : suggestedParameter.get(MAPPER_MEMORY_HADOOP_CONF.getValue());
+    Double mapperMemory = suggestedParameter.get(MAPPER_MEMORY_HADOOP_CONF.getValue()) == null ? appliedParameter.get(
+        MAPPER_MEMORY_HEURISTIC) : suggestedParameter.get(MAPPER_MEMORY_HADOOP_CONF.getValue());
     Double sortBuffer = suggestedParameter.get(SORT_BUFFER_HADOOP_CONF.getValue());
     Double minimumMemoryBasedonSortBuffer =
         max(sortBuffer + SORT_BUFFER_CUSHION.getValue(), sortBuffer * MINIMUM_MEMORY_SORT_BUFFER_RATIO.getValue());

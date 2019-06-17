@@ -20,7 +20,7 @@ import static common.DBTestUtil.*;
 
 
 public class ParameterGenerateManagerTestRunner implements Runnable {
-  private Map<String, String> appliedParameter = null;
+  private Map<String, Double> appliedParameter = null;
   private List<MRApplicationData> mrApplicationDatas = null;
   private Map<String, Double> suggestedParameter = null;
 
@@ -52,11 +52,11 @@ public class ParameterGenerateManagerTestRunner implements Runnable {
         .findList();
     processData(results);
     assertTrue(" Number of MapReduce Application ", results.size() == 2);
-    assertTrue(" Mapper Memory " + appliedParameter.size(), appliedParameter.get("Mapper Memory").equals("2048"));
-    assertTrue(" Reducer Memory ", appliedParameter.get("Reducer Memory").equals("2048"));
-    assertTrue(" Sort Buffer ", appliedParameter.get("Sort Buffer").equals("100"));
-    assertTrue(" Sort Spill ", appliedParameter.get("Sort Spill").equals("0.80"));
-    assertTrue(" Split Size ", appliedParameter.get("Split Size").equals("536870912"));
+    assertTrue(" Mapper Memory " +appliedParameter.get("Mapper Memory"), appliedParameter.get("Mapper Memory").equals(2048.0));
+    assertTrue(" Reducer Memory "+appliedParameter.get("Reducer Memory"), appliedParameter.get("Reducer Memory").equals(2048.0));
+    assertTrue(" Sort Buffer "+appliedParameter.get("Sort Buffer").intValue(), appliedParameter.get("Sort Buffer").intValue()==100);
+    assertTrue(" Sort Spill "+appliedParameter.get("Sort Spill"), appliedParameter.get("Sort Spill")==0.80);
+    assertTrue(" Split Size "+appliedParameter.get("Split Size").intValue(), appliedParameter.get("Split Size").intValue()==536870912);
 
     testApplicationRecommendedMemoryParameter(mrApplicationDatas);
     testApplicationRecommendedNumberoFTasks(mrApplicationDatas);

@@ -16,6 +16,7 @@
 
 package com.linkedin.drelephant.tuning.hbt;
 
+import com.linkedin.drelephant.tuning.TuningHelper;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -25,20 +26,23 @@ import models.AppHeuristicResultDetails;
 import models.AppResult;
 import org.apache.log4j.Logger;
 
+import static com.linkedin.drelephant.mapreduce.heuristics.CommonConstantsHeuristic.ParameterKeys.*;
+
 
 /**
  * This class represents Map Reduce Job and the suggested parameter and the Map Reduce Job level.
  */
 public class MRJob {
   private final Logger logger = Logger.getLogger(getClass());
+  private boolean debugEnabled = logger.isDebugEnabled();
   private Map<String, Double> suggestedParameter = null;
   private List<MRApplicationData> applications = null;
-  private Map<String, String> appliedParameter = null;
+  private Map<String, Double> appliedParameter = null;
   private List<AppResult> applicationResults = null;
 
   public MRJob(List<AppResult> results) {
     this.applicationResults = results;
-    this.appliedParameter = new HashMap<String, String>();
+    this.appliedParameter = new HashMap<String, Double>();
     setAppliedParameter(results);
     applications = new ArrayList<MRApplicationData>();
     suggestedParameter = new HashMap<String, Double>();
@@ -50,14 +54,27 @@ public class MRJob {
       for (AppHeuristicResult appHeuristicResult : appResult.yarnAppHeuristicResults) {
         if (appHeuristicResult != null && appHeuristicResult.heuristicName.equals("MapReduceConfiguration")) {
           for (AppHeuristicResultDetails appHeuristicResultDetails : appHeuristicResult.yarnAppHeuristicResultDetails) {
-            appliedParameter.put(appHeuristicResultDetails.name, appHeuristicResultDetails.value);
+            try {
+              if (appHeuristicResultDetails.name.equals(MAPPER_HEAP_HEURISTICS_CONF.getValue())
+                  || appHeuristicResultDetails.name.equals(REDUCER_HEAP_HEURISTICS_CONF.getValue())) {
+                appliedParameter.put(appHeuristicResultDetails.name,
+                    TuningHelper.parseMaxHeapSizeInMB(appHeuristicResultDetails.value));
+              } else {
+                appliedParameter.put(appHeuristicResultDetails.name,
+                    Double.parseDouble(appHeuristicResultDetails.value));
+              }
+            } catch (NumberFormatException e) {
+              logger.error("Unable to parse configuration " + appHeuristicResultDetails.name, e);
+            } catch (RuntimeException e) {
+              logger.error(" Unknown error while parsing configuration " + appHeuristicResultDetails.name, e);
+            }
           }
         }
       }
     }
   }
 
-  public Map<String, String> getAppliedParameter() {
+  public Map<String, Double> getAppliedParameter() {
     return this.appliedParameter;
   }
 
@@ -90,9 +107,22 @@ public class MRJob {
         }
       }
     }
+    printInformation();
   }
 
   public Map<String, Double> getJobSuggestedParameter() {
     return this.suggestedParameter;
+  }
+
+  /**
+   * This information will be changed to debug mode in future (once system is stable).
+   */
+  private void printInformation() {
+    for (String parameter : appliedParameter.keySet()) {
+      logger.info(" Parameter Applied  " + appliedParameter.get(parameter));
+    }
+    for (String suggested : suggestedParameter.keySet()) {
+      logger.info(" Suggested Parameter " + suggestedParameter.get(suggested));
+    }
   }
 }
