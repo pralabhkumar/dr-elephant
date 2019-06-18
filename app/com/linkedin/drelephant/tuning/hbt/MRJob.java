@@ -48,6 +48,10 @@ public class MRJob {
     suggestedParameter = new HashMap<String, Double>();
   }
 
+  /**
+   * Get and parse Parameters from MapREduceConfiguration heuristics.
+   * @param results
+   */
   private void setAppliedParameter(List<AppResult> results) {
     if (results != null && results.size() >= 0) {
       AppResult appResult = results.get(0);
@@ -123,10 +127,10 @@ public class MRJob {
    */
   private void printInformation() {
     for (String parameter : appliedParameter.keySet()) {
-      logger.info(" Parameter Applied  " + appliedParameter.get(parameter));
+      logger.info(" Parameter Applied  " + parameter + "\t" + appliedParameter.get(parameter));
     }
     for (String suggested : suggestedParameter.keySet()) {
-      logger.info(" Suggested Parameter " + suggestedParameter.get(suggested));
+      logger.info(" Suggested Parameter " + suggested + "\t" + suggestedParameter.get(suggested));
     }
   }
 }

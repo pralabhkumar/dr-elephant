@@ -83,6 +83,7 @@ public class ParameterGenerateManagerHBT extends AbstractParameterGenerateManage
         .eq(JobExecution.TABLE.job, job)
         .ne(JobExecution.TABLE.executionState, ExecutionState.CANCELLED)
         .ne(JobExecution.TABLE.executionState, ExecutionState.FAILED)
+        .ne(JobExecution.TABLE.executionState, ExecutionState.NOT_STARTED)
         .order()
         .desc(JobExecution.TABLE.updatedTs)
         .setMaxRows(1)
