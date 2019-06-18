@@ -64,7 +64,7 @@ final class MRConstant {
 
   enum Function_Name {Mapper, Reducer}
 
-  enum TimeUnit {hr, min, sec}
+
 
 
   /**

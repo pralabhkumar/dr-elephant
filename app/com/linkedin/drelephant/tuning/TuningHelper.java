@@ -1,5 +1,6 @@
 package com.linkedin.drelephant.tuning;
 
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -22,6 +23,7 @@ public class TuningHelper {
   private static final int MINIMUM_HEAP_SIZE_MB = 600;
   private static final String PATTERN_FOR_MEMORY = "(^|\\s)-Xmx[0-9]+[GgMm]($|\\s)";
   private static final int DEFAULT_MAX_HEAP_SIZE = 1536;
+  private enum TimeUnit {hr, min, sec}
 
   public static List<TuningParameter> getTuningParameterList(TuningJobDefinition tuningJobDefinition) {
     List<TuningParameter> tuningParameterList = TuningParameter.find.where()
@@ -165,4 +167,22 @@ public class TuningHelper {
     logger.info(" Max heap size not found ");
     return DEFAULT_MAX_HEAP_SIZE * 1.0;
   }
+
+  public static double getTimeInMinute(String value) {
+    value = value.replaceAll(" ", "");
+    String timeSplit[] = value.split("hr|min|sec");
+    double timeInMinutes = 0.0;
+    if (timeSplit.length == TimeUnit.sec.ordinal() + 1) {
+      timeInMinutes = timeInMinutes + Integer.parseInt(timeSplit[0]) * 60;
+      timeInMinutes = timeInMinutes + Integer.parseInt(timeSplit[1]);
+      timeInMinutes = timeInMinutes + Integer.parseInt(timeSplit[2]) * 1.0 / 60 * 1.0;
+    } else if (timeSplit.length == TimeUnit.min.ordinal() + 1) {
+      timeInMinutes = timeInMinutes + Integer.parseInt(timeSplit[0]);
+      timeInMinutes = timeInMinutes + Integer.parseInt(timeSplit[1]) * 1.0 / 60 * 1.0;
+    } else if (timeSplit.length == TimeUnit.hr.ordinal() + 1) {
+      timeInMinutes = timeInMinutes + Integer.parseInt(timeSplit[0]) * 1.0 / 60 * 1.0;
+    }
+    return timeInMinutes;
+  }
+
 }
