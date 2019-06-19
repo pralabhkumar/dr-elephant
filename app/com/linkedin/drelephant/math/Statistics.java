@@ -321,7 +321,7 @@ public final class Statistics {
     int length = durationSplit.length;
     int durationInSeconds = 0;
     if (length > 1) {
-      for (int index = 0; index < length-2; index++) {
+      for (int index = 0; index <= length - 2; index++) {
         durationInSeconds = (durationInSeconds * 60) + Integer.parseInt(durationSplit[index]) * 60;
       }
     }
