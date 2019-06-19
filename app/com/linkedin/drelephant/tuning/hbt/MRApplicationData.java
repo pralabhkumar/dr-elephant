@@ -232,6 +232,23 @@ public class MRApplicationData {
         processForMemory(memoryHeuristics.get(value.name()), value.name());
       }
     }
+    else if(isOnlySpecificTypeHeuristicsFailed(Reducer.name())) {
+      logger.info(" No Reducer specific heuristic failed , hence trying to optimize memory for reducer ");
+      processForMemory(memoryHeuristics.get(Reducer.name()),Reducer.name());
+    }
+    else if(isOnlySpecificTypeHeuristicsFailed(Mapper.name())) {
+      logger.info(" No Mapper specific heuristic failed , hence trying to optimize memory for Mapper ");
+      processForMemory(memoryHeuristics.get(Mapper.name()),Mapper.name());
+    }
+  }
+
+  private boolean isOnlySpecificTypeHeuristicsFailed(String functionName){
+    for(String heuristicName : failedHeuristics.keySet()){
+      if(heuristicName.toLowerCase().contains(functionName.toLowerCase())){
+        return false;
+      }
+    }
+    return true;
   }
 
   public Map<String, Double> getSuggestedParameter() {
