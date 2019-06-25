@@ -1,6 +1,7 @@
 package com.linkedin.drelephant.tuning;
 
 
+import com.linkedin.drelephant.util.MemoryFormatUtils;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -21,7 +22,7 @@ public class TuningHelper {
   private static boolean debugEnabled = logger.isDebugEnabled();
   private static final int ONE_GB = 1024;
   private static final int MINIMUM_HEAP_SIZE_MB = 600;
-  private static final String PATTERN_FOR_MEMORY = "(^|\\s)-Xmx[0-9]+[GgMm]($|\\s)";
+  private static final String PATTERN_FOR_MEMORY = "(^|\\s)-Xmx[0-9]+[GgMmBbKk]($|\\s)";
   private static final int DEFAULT_MAX_HEAP_SIZE = 1536;
   private enum TimeUnit {hr, min, sec}
 
@@ -152,13 +153,8 @@ public class TuningHelper {
       String maxHeapSize;
       if (m.find()) {
         maxHeapSize = m.group().trim();
-        if (maxHeapSize.toLowerCase().endsWith("g")) {
-          maxHeapSize = maxHeapSize.substring(4, maxHeapSize.length() - 1);
-          return Double.parseDouble(maxHeapSize) * 1024.0;
-        } else {
-          maxHeapSize = maxHeapSize.substring(4, maxHeapSize.length() - 1);
-          return Double.parseDouble(maxHeapSize);
-        }
+        maxHeapSize = maxHeapSize.substring(4);
+        return MemoryFormatUtils.stringToBytes(maxHeapSize)/(1024.0*1024.0);
       }
     } catch (Exception e) {
       logger.error(" Error gettting max heap ", e);

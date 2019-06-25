@@ -49,7 +49,6 @@ public class MRApplicationData {
   private final Logger logger = Logger.getLogger(getClass());
   private static final int HEURISTIC_THRESHOLD = 2;
   private boolean debugEnabled = logger.isDebugEnabled();
-  private String applicationID;
   private Map<String, Double> suggestedParameter;
   private AppResult _result;
   private Map<String, AppHeuristicResult> failedHeuristics = null;
@@ -76,7 +75,6 @@ public class MRApplicationData {
    */
   MRApplicationData(AppResult result, Map<String, Double> appliedParameter) {
     logger.info(" Process for following app id " + result.id);
-    this.applicationID = result.id;
     this._result = result;
     this.suggestedParameter = new HashMap<String, Double>();
     this.failedHeuristics = new HashMap<String, AppHeuristicResult>();
@@ -91,7 +89,7 @@ public class MRApplicationData {
   }
 
   public String getApplicationID() {
-    return this.applicationID;
+    return this._result.id;
   }
 
   /**
@@ -218,7 +216,7 @@ public class MRApplicationData {
         if (yarnAppHeuristicResult.heuristicName.equals(REDUCER_MEMORY_HEURISTIC)) {
           memoryHeuristics.put(Reducer.name(), yarnAppHeuristicResult);
         }
-        if (isValidHeuristic(yarnAppHeuristicResult)) {
+        if (isFailedHeuristic(yarnAppHeuristicResult)) {
           logger.info(" Following Heuristic is valid for Optimization. As it have some failure "
               + yarnAppHeuristicResult.heuristicName);
           processHeuristics(yarnAppHeuristicResult);
@@ -260,7 +258,7 @@ public class MRApplicationData {
    * @param yarnAppHeuristicResult : Heuristics details for the application
    * @return : If its valid heuristic for tuning.
    */
-  private boolean isValidHeuristic(AppHeuristicResult yarnAppHeuristicResult) {
+  private boolean isFailedHeuristic(AppHeuristicResult yarnAppHeuristicResult) {
     if (validHeuristic.contains(yarnAppHeuristicResult.heuristicName)
         && yarnAppHeuristicResult.severity.getValue() > HEURISTIC_THRESHOLD) {
       return true;
