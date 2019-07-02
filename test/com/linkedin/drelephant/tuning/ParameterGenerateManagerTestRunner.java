@@ -1,22 +1,18 @@
 package com.linkedin.drelephant.tuning;
 
-import com.linkedin.drelephant.tuning.engine.MRExecutionEngine;
-import com.linkedin.drelephant.tuning.hbt.FitnessManagerHBT;
+
 import com.linkedin.drelephant.tuning.hbt.MRApplicationData;
 import com.linkedin.drelephant.tuning.hbt.MRJob;
-import com.linkedin.drelephant.tuning.hbt.ParameterGenerateManagerHBT;
-import java.text.DecimalFormat;
 import java.util.List;
 import java.util.Map;
 import models.AppHeuristicResult;
-import models.AppHeuristicResultDetails;
 import models.AppResult;
-import models.JobSuggestedParamSet;
+
 
 import static org.junit.Assert.*;
 import static play.test.Helpers.*;
 import static common.DBTestUtil.*;
-import static common.DBTestUtil.*;
+
 
 
 public class ParameterGenerateManagerTestRunner implements Runnable {
@@ -39,6 +35,7 @@ public class ParameterGenerateManagerTestRunner implements Runnable {
     testNumberOfReducerTaskAndMapperSpillRecommendations();
     testNoHeuristicFailRecommendations();
     testParseMaxHeapSizeInMB();
+    testTimeInMinutes();
   }
 
   private void testMemoryAndNumberOfTaskRecommendations() {
@@ -46,9 +43,9 @@ public class ParameterGenerateManagerTestRunner implements Runnable {
         .fetch(AppResult.TABLE.APP_HEURISTIC_RESULTS, "*")
         .fetch(AppResult.TABLE.APP_HEURISTIC_RESULTS + "." + AppHeuristicResult.TABLE.APP_HEURISTIC_RESULT_DETAILS, "*")
         .where()
-        .eq(AppResult.TABLE.FLOW_EXEC_ID, "https://ltx1-holdemaz01.grid.linkedin.com:8443/executor?execid=5416293")
+        .eq(AppResult.TABLE.FLOW_EXEC_ID, "https://sample:8443/executor?execid=5416293")
         .eq(AppResult.TABLE.JOB_EXEC_ID,
-            "https://ltx1-holdemaz01.grid.linkedin.com:8443/executor?execid=5416293&job=countByCountryFlow_countByCountry&attempt=0")
+            "https://sample:8443/executor?execid=5416293&job=countByCountryFlow_countByCountry&attempt=0")
         .findList();
     processData(results);
     assertTrue(" Number of MapReduce Application ", results.size() == 2);
@@ -68,9 +65,9 @@ public class ParameterGenerateManagerTestRunner implements Runnable {
         .fetch(AppResult.TABLE.APP_HEURISTIC_RESULTS, "*")
         .fetch(AppResult.TABLE.APP_HEURISTIC_RESULTS + "." + AppHeuristicResult.TABLE.APP_HEURISTIC_RESULT_DETAILS, "*")
         .where()
-        .eq(AppResult.TABLE.FLOW_EXEC_ID, "https://ltx1-faroaz02.grid.linkedin.com:8443/executor?execid=1200332")
+        .eq(AppResult.TABLE.FLOW_EXEC_ID, "https://sample:8443/executor?execid=1200332")
         .eq(AppResult.TABLE.JOB_EXEC_ID,
-            "https://ltx1-faroaz02.grid.linkedin.com:8443/executor?execid=1200332&job=untitled&attempt=0")
+            "https://sample:8443/executor?execid=1200332&job=untitled&attempt=0")
         .findList();
     assertTrue(" Number of MapReduce Application " + results.size(), results.size() == 1);
     processData(results);
@@ -83,9 +80,9 @@ public class ParameterGenerateManagerTestRunner implements Runnable {
         .fetch(AppResult.TABLE.APP_HEURISTIC_RESULTS, "*")
         .fetch(AppResult.TABLE.APP_HEURISTIC_RESULTS + "." + AppHeuristicResult.TABLE.APP_HEURISTIC_RESULT_DETAILS, "*")
         .where()
-        .eq(AppResult.TABLE.FLOW_EXEC_ID, "https://ltx1-faroaz01.grid.linkedin.com:8443/executor?execid=1342802")
+        .eq(AppResult.TABLE.FLOW_EXEC_ID, "https://sample:8443/executor?execid=1342802")
         .eq(AppResult.TABLE.JOB_EXEC_ID,
-            "https://ltx1-faroaz01.grid.linkedin.com:8443/executor?execid=1342802&job=fetl-dupe_fetlDupeLog&attempt=0")
+            "https://sample:8443/executor?execid=1342802&job=fetl-dupe_fetlDupeLog&attempt=0")
         .findList();
     assertTrue(" Number of MapReduce Application " + results.size(), results.size() == 1);
     processData(results);
@@ -262,5 +259,12 @@ public class ParameterGenerateManagerTestRunner implements Runnable {
     assertTrue(" Heap Size ", TuningHelper.parseMaxHeapSizeInMB(
         "-Xmx700m") == 700);
 
+  }
+
+  private void testTimeInMinutes(){
+    assertTrue(" time in minutes", TuningHelper.getTimeInMinute("1 hr 1 min") == 61);
+    assertTrue(" time in minutes ", TuningHelper.getTimeInMinute("2 hr ") == 120);
+    assertTrue(" time in minutes "+TuningHelper.getTimeInMinute("1 hr 1 min 30 sec "), TuningHelper.getTimeInMinute("1 hr 1 min 30 sec ") == 61.5);
+    assertTrue(" time in minutes "+TuningHelper.getTimeInMinute("1 hr 30 sec "), TuningHelper.getTimeInMinute("1 hr 30 sec ") == 60.5);
   }
 }

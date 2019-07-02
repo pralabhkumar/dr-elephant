@@ -39,12 +39,12 @@ ALTER TABLE tuning_job_definition ADD PRIMARY KEY (job_definition_id);
 
 
 # --- !Downs
-DELETE FROM tuning_parameter WHERE tuning_algorithm_id=28;
-DELETE FROM tuning_parameter WHERE tuning_algorithm_id=29;
-DELETE FROM tuning_parameter WHERE tuning_algorithm_id=30;
-DELETE FROM tuning_parameter WHERE tuning_algorithm_id=31;
-DELETE FROM tuning_parameter WHERE tuning_algorithm_id=32;
-DELETE FROM tuning_parameter WHERE tuning_algorithm_id=33;
-DELETE FROM tuning_parameter WHERE tuning_algorithm_id=34;
-DELETE FROM tuning_parameter WHERE tuning_algorithm_id=35;
+DELETE FROM tuning_parameter WHERE id=28;
+DELETE FROM tuning_parameter WHERE id=29;
+DELETE FROM tuning_parameter WHERE id=30;
+DELETE FROM tuning_parameter WHERE id=31;
+DELETE FROM tuning_parameter WHERE id=32;
+DELETE FROM tuning_parameter WHERE id=33;
+DELETE FROM tuning_parameter WHERE id=34;
+DELETE FROM tuning_parameter WHERE id=35;
 ALTER TABLE tuning_job_definition DROP PRIMARY KEY;

@@ -1,6 +1,5 @@
 package com.linkedin.drelephant.tuning;
 
-
 import com.linkedin.drelephant.util.MemoryFormatUtils;
 import java.util.ArrayList;
 import java.util.List;
@@ -23,7 +22,10 @@ public class TuningHelper {
   private static final int ONE_GB = 1024;
   private static final int MINIMUM_HEAP_SIZE_MB = 600;
   private static final String PATTERN_FOR_MEMORY = "(^|\\s)-Xmx[0-9]+[GgMmBbKk]($|\\s)";
+  private static final String PATTERN_FOR_TIME = "[0-9]+[hr|min|sec]+";
+  private static final String MAX_HEAP_SIZE_KEYWORD="-Xmx";
   private static final int DEFAULT_MAX_HEAP_SIZE = 1536;
+
   private enum TimeUnit {hr, min, sec}
 
   public static List<TuningParameter> getTuningParameterList(TuningJobDefinition tuningJobDefinition) {
@@ -153,8 +155,8 @@ public class TuningHelper {
       String maxHeapSize;
       if (m.find()) {
         maxHeapSize = m.group().trim();
-        maxHeapSize = maxHeapSize.substring(4);
-        return MemoryFormatUtils.stringToBytes(maxHeapSize)/(1024.0*1024.0);
+        maxHeapSize = maxHeapSize.substring(MAX_HEAP_SIZE_KEYWORD.length());
+        return MemoryFormatUtils.stringToBytes(maxHeapSize) / (1024.0 * 1024.0);
       }
     } catch (Exception e) {
       logger.error(" Error gettting max heap ", e);
@@ -166,19 +168,25 @@ public class TuningHelper {
 
   public static double getTimeInMinute(String value) {
     value = value.replaceAll(" ", "");
-    String timeSplit[] = value.split("hr|min|sec");
+    Pattern pattern = Pattern.compile(PATTERN_FOR_TIME);
+    Matcher m = pattern.matcher(value);
     double timeInMinutes = 0.0;
-    if (timeSplit.length == TimeUnit.sec.ordinal() + 1) {
-      timeInMinutes = timeInMinutes + Integer.parseInt(timeSplit[0]) * 60;
-      timeInMinutes = timeInMinutes + Integer.parseInt(timeSplit[1]);
-      timeInMinutes = timeInMinutes + Integer.parseInt(timeSplit[2]) * 1.0 / 60 * 1.0;
-    } else if (timeSplit.length == TimeUnit.min.ordinal() + 1) {
-      timeInMinutes = timeInMinutes + Integer.parseInt(timeSplit[0]);
-      timeInMinutes = timeInMinutes + Integer.parseInt(timeSplit[1]) * 1.0 / 60 * 1.0;
-    } else if (timeSplit.length == TimeUnit.hr.ordinal() + 1) {
-      timeInMinutes = timeInMinutes + Integer.parseInt(timeSplit[0]) * 1.0 / 60 * 1.0;
+    try {
+      while (m.find()) {
+        String s = m.group().trim();
+        if (s.contains(TimeUnit.hr.name())) {
+          timeInMinutes =
+              timeInMinutes + Double.parseDouble(s.substring(0, s.length() - TimeUnit.hr.name().length())) * 60;
+        } else if (s.contains(TimeUnit.min.name())) {
+          timeInMinutes = timeInMinutes + Double.parseDouble(s.substring(0, s.length() - TimeUnit.min.name().length()));
+        } else if (s.contains(TimeUnit.sec.name())) {
+          timeInMinutes =
+              timeInMinutes + Double.parseDouble(s.substring(0, s.length() - TimeUnit.sec.name().length())) / 60.0;
+        }
+      }
+    } catch (NumberFormatException exception) {
+      logger.error(" Error while parsing data in time ");
     }
     return timeInMinutes;
   }
-
 }

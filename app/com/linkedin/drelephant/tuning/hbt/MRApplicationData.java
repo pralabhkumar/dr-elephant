@@ -416,8 +416,14 @@ public class MRApplicationData {
    */
   private void addMapperMemoryAndHeapToSuggestedParameter(Double heapSizeMax, Double containerSize,
       String heuristicsResultID) {
-    suggestedParameter.put(MAPPER_MEMORY_HADOOP_CONF.getValue(), containerSize);
-    suggestedParameter.put(MAPPER_HEAP_HADOOP_CONF.getValue(), heapSizeMax);
+    double mapperMemoryAlreadySuggested = suggestedParameter.get(MAPPER_MEMORY_HADOOP_CONF.getValue()) == null ? 0.0
+        : suggestedParameter.get(MAPPER_MEMORY_HADOOP_CONF.getValue());
+    double mapperHeapAlreadySuggested = suggestedParameter.get(MAPPER_HEAP_HADOOP_CONF.getValue()) == null ? 0.0
+        : suggestedParameter.get(MAPPER_HEAP_HADOOP_CONF.getValue());
+
+    suggestedParameter.put(MAPPER_MEMORY_HADOOP_CONF.getValue(), Math.max(containerSize, mapperMemoryAlreadySuggested));
+    suggestedParameter.put(MAPPER_HEAP_HADOOP_CONF.getValue(), Math.max(heapSizeMax, mapperHeapAlreadySuggested));
+
     logDebuggingStatement(" Memory Assigned " + heuristicsResultID + "_Mapper " + suggestedParameter.get(
         MAPPER_MEMORY_HADOOP_CONF.getValue()),
         " Heap Assigned " + heuristicsResultID + "_Mapper " + suggestedParameter.get(
@@ -504,15 +510,15 @@ public class MRApplicationData {
     if (averageTaskInputSize > 0 && averageTaskTimeInMinute > 0) {
       return true;
     } else {
-      logger.info(" Unable to parse previous Split records ");
+      logger.warn(" Unable to parse previous Split records ");
       return false;
     }
   }
 
   /**
    *  Get Average Task Input Size from Mapper Time Heuristics .
-   * @param heuristicsResults
-   * @return
+   * @param heuristicsResults  : Pass heuristics results
+   * @return : Previouse average task input size.
    */
   private double getPreviousAverageTaskInputSize(Map<String, String> heuristicsResults) {
     double averageTaskInputSize = 0.0;
@@ -532,8 +538,8 @@ public class MRApplicationData {
 
   /**
    * Get previous task run time from Mapper Time Heuristics
-   * @param heuristicsResults
-   * @return
+   * @param heuristicsResults : Heuristics Results
+   * @return : Previous Average Task Run Time
    */
   private double getPreviousAverageTaskRunTime(Map<String, String> heuristicsResults) {
     double averageTaskRunTime = 0.0;
