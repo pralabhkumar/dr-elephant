@@ -1043,8 +1043,9 @@ public class Application extends Controller {
         outputParamFormatted.put(param.getKey(), String.valueOf(param.getValue()));
       } else if (param.getKey().equals("mapreduce.map.java.opts")
           || param.getKey().equals("mapreduce.reduce.java.opts")) {
-        outputParamFormatted.put(param.getKey(), "-XX:ReservedCodeCacheSize=100M " + "-XX:MaxMetaspaceSize=256m -XX:CompressedClassSpaceSize=256m "
-            + "-XX:ParallelGCThreads=5 -Djava.net.preferIPv4Stack=true -Xms512m -Xmx" + Math.round(param.getValue()) + "m");
+        outputParamFormatted.put(param.getKey(),
+            "-XX:ReservedCodeCacheSize=100M -XX:MaxMetaspaceSize=256m -XX:CompressedClassSpaceSize=256m -XX:ParallelGCThreads=5 -Djava.net.preferIPv4Stack=true -Xms512m -Xmx"
+                + Math.round(param.getValue()) + "m");
       } else {
         outputParamFormatted.put(param.getKey(), String.valueOf(Math.round(param.getValue())));
       }
