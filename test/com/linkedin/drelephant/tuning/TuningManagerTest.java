@@ -107,11 +107,15 @@ public class TuningManagerTest {
   @Test
   public void testAlgoBasedOnVersion() {
     assertTrue("Alorithm Based on Version Test",
-        controllers.Application.getAlgoBasedOnVersion("PIG").equals(TuningAlgorithm.OptimizationAlgo.HBT.name()));
+        controllers.Application.getAlgoBasedOnVersion("PIG",2).equals(TuningAlgorithm.OptimizationAlgo.HBT.name()));
     assertTrue("Alorithm Based on Version Test",
-        controllers.Application.getAlgoBasedOnVersion("SPARK").equals(TuningAlgorithm.OptimizationAlgo.HBT.name()));
+        controllers.Application.getAlgoBasedOnVersion("PIG",1).equals(TuningAlgorithm.OptimizationAlgo.PSO_IPSO.name()));
     assertTrue("Alorithm Based on Version Test",
-        controllers.Application.getAlgoBasedOnVersion("HIVE").equals(TuningAlgorithm.OptimizationAlgo.HBT.name()));
+        controllers.Application.getAlgoBasedOnVersion("SPARK",2).equals(TuningAlgorithm.OptimizationAlgo.HBT.name()));
+    assertTrue("Alorithm Based on Version Test",
+        controllers.Application.getAlgoBasedOnVersion("SPARK",1).equals(TuningAlgorithm.OptimizationAlgo.HBT.name()));
+    assertTrue("Alorithm Based on Version Test",
+        controllers.Application.getAlgoBasedOnVersion("HIVE",2).equals(TuningAlgorithm.OptimizationAlgo.HBT.name()));
   }
 
   @Test

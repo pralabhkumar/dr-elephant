@@ -269,8 +269,7 @@ public class AnalyticJobGeneratorHadoop2 implements AnalyticJobGenerator {
         ApplicationType type =
             ElephantContext.instance().getApplicationTypeForName(app.get("applicationType").getValueAsText());
 
-        // This change is done for the purpose of testing and will be removed , once PR is going to merge to TuneIn branch.
-        if (type != null && (projectName.contains("test_autotuning") || projectName.toUpperCase().contains("HBP_PIG_V1"))) {
+
           AnalyticJob analyticJob = new AnalyticJob();
           logger.info(" Analysis job " + analyticJob.getTrackingUrl());
           analyticJob.setAppId(appId)
@@ -286,7 +285,7 @@ public class AnalyticJobGeneratorHadoop2 implements AnalyticJobGenerator {
               .setAmHostHttpAddress(amHostHttpAddress)
               .setState(jobState);
           appList.add(analyticJob);
-        }
+
       }
     }
     return appList;
