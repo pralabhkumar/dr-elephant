@@ -1,5 +1,6 @@
 package com.linkedin.drelephant.tuning;
 
+import com.linkedin.drelephant.analysis.code.impl.HiveCodeOptimizer;
 import com.linkedin.drelephant.tuning.Schduler.AzkabanJobStatusManager;
 import com.linkedin.drelephant.tuning.obt.BaselineManagerOBT;
 import java.util.List;
@@ -28,6 +29,7 @@ public class JobStatusManagerTestRunner implements Runnable {
   public void run() {
     populateTestData();
     testJobStatusAzkaban();
+    testHiveCodeOptimizer();
   }
 
   private void testJobStatusAzkaban() {
@@ -58,5 +60,11 @@ public class JobStatusManagerTestRunner implements Runnable {
 
     assertTrue(" Update Metrics   " , updateMetrics);
 
+  }
+
+
+  private void testHiveCodeOptimizer(){
+    HiveCodeOptimizer hiveCodeOptimizer = new HiveCodeOptimizer();
+    hiveCodeOptimizer.execute("select * from ${hiveconf:abcd} '${hiveconf:end_date_hour}' '${hivevar:dfd}' ${eeee} '${gggg}' $ad}fg '$hghd'");
   }
 }

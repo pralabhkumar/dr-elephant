@@ -81,7 +81,7 @@ public class ElephantRunner implements Runnable {
     }
 
     try {
-      _analyticJobGenerator.configure(ElephantContext.instance().getGeneralConf());
+          _analyticJobGenerator.configure(ElephantContext.instance().getGeneralConf());
     } catch (Exception e) {
       logger.error("Error occurred when configuring the analysis provider.", e);
       throw new RuntimeException(e);

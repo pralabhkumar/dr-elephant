@@ -46,7 +46,7 @@ public class AnalyticJobGeneratorHadoop2 implements AnalyticJobGenerator {
   private static final String IS_RM_HA_ENABLED = "yarn.resourcemanager.ha.enabled";
   private static final String RESOURCE_MANAGER_IDS = "yarn.resourcemanager.ha.rm-ids";
   private static final String RM_NODE_STATE_URL = "http://%s/ws/v1/cluster/info";
-  private static final String FETCH_INITIAL_WINDOW_MS = "drelephant.analysis.fetch.initial.windowMillis";
+  private static final String   FETCH_INITIAL_WINDOW_MS = "drelephant.analysis.fetch.initial.windowMillis";
   private static final String RM_APPLICATION_FILTER = "rm_application_filter";
 
   private static Configuration configuration;
@@ -77,7 +77,7 @@ public class AnalyticJobGeneratorHadoop2 implements AnalyticJobGenerator {
     if (Boolean.valueOf(configuration.get(IS_RM_HA_ENABLED))) {
       String resourceManagers = configuration.get(RESOURCE_MANAGER_IDS);
       if (resourceManagers != null) {
-        logger.info("The list of RM IDs are " + resourceManagers);
+            logger.info("The list of RM IDs are " + resourceManagers);
         List<String> ids = Arrays.asList(resourceManagers.split(","));
         _currentTime = System.currentTimeMillis();
         updateAuthToken();
@@ -104,6 +104,7 @@ public class AnalyticJobGeneratorHadoop2 implements AnalyticJobGenerator {
       }
     } else {
       _resourceManagerAddress = configuration.get(RESOURCE_MANAGER_ADDRESS);
+      logger.info(" Resource manager address test "+_resourceManagerAddress);
     }
     if (_resourceManagerAddress == null) {
       throw new RuntimeException(
@@ -115,6 +116,7 @@ public class AnalyticJobGeneratorHadoop2 implements AnalyticJobGenerator {
   @Override
   public void configure(Configuration configuration)
       throws IOException {
+
     this.configuration = configuration;
     this.elephantProperties = ElephantContext.instance().getElephnatConf();
     String initialFetchWindowString = configuration.get(FETCH_INITIAL_WINDOW_MS);
@@ -151,6 +153,7 @@ public class AnalyticJobGeneratorHadoop2 implements AnalyticJobGenerator {
     }
 
     // Fetch all succeeded apps
+    logger.info(" Resource Manager address "+_resourceManagerAddress);
     URL succeededAppsURL =
         new URL(new URL("http://" + _resourceManagerAddress), String.format(
             "/ws/v1/cluster/apps?finalStatus=SUCCEEDED&finishedTimeBegin=%s&finishedTimeEnd=%s&" + rmApplicationFilter,
@@ -258,6 +261,7 @@ public class AnalyticJobGeneratorHadoop2 implements AnalyticJobGenerator {
         String amContainerLogsURL = app.get("amContainerLogs").getValueAsText();
         String amHostHttpAddress = app.get("amHostHttpAddress").getValueAsText();
         String jobState = app.get("state").getValueAsText();
+        String projectName = app.get("applicationTags").getTextValue();
 
         if (debugEnabled) {
           logger.debug(" AM Container logs URL " + amContainerLogsURL);
@@ -269,8 +273,10 @@ public class AnalyticJobGeneratorHadoop2 implements AnalyticJobGenerator {
             ElephantContext.instance().getApplicationTypeForName(app.get("applicationType").getValueAsText());
 
 
+        if(queueName.toLowerCase().equals("ump_normal") || queueName.toLowerCase().equals("ump_hp")){
+        //if (type != null && (projectName.contains("test_autotuning") || projectName.toUpperCase().contains("HBP_PIG_V1"))) {
           AnalyticJob analyticJob = new AnalyticJob();
-          logger.info(" Analysis job " + analyticJob.getTrackingUrl());
+         // logger.info(" Analysis job " + analyticJob.getTrackingUrl());
           analyticJob.setAppId(appId)
               .setAppType(type)
               .setUser(user)
@@ -284,7 +290,7 @@ public class AnalyticJobGeneratorHadoop2 implements AnalyticJobGenerator {
               .setAmHostHttpAddress(amHostHttpAddress)
               .setState(jobState);
           appList.add(analyticJob);
-
+        }
       }
     }
     return appList;

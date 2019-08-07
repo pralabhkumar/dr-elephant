@@ -48,10 +48,10 @@ public class AzkabanJobStatusUtil {
     String hostAddress = "https://" + new URL(url).getAuthority();
     AzkabanWorkflowClient workflowClient = null;
     if (workflowClients.containsKey(hostAddress)) {
-      logger.debug("WorkflowClient Exist " + url + " Host Address is " + hostAddress);
+      logger.info("WorkflowClient Exist " + url + " Host Address is " + hostAddress);
       workflowClient = workflowClients.get(hostAddress);
     } else {
-      logger.debug("WorkflowClient Does not Exist " + url + " Host Address is " + hostAddress);
+      logger.info("WorkflowClient Does not Exist " + url + " Host Address is " + hostAddress);
       workflowClient = (AzkabanWorkflowClient) InfoExtractor.getWorkflowClientInstance(scheduler, url);
       workflowClients.put(hostAddress, workflowClient);
     }

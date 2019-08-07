@@ -38,6 +38,8 @@ import com.linkedin.drelephant.tuning.engine.SparkConfigurationConstants;
 import com.linkedin.drelephant.util.Utils;
 import controllers.api.v1.JsonKeys;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.text.DecimalFormat;
@@ -835,7 +837,12 @@ public class Application extends Controller {
     String title = "Help";
     if (topic != null && !topic.isEmpty()) {
       // check if it is a heuristic help
-      page = ElephantContext.instance().getHeuristicToView().get(topic);
+      if(topic.toLowerCase().equals("codeheuristic")){
+        page = getView();
+      }
+      else {
+        page = ElephantContext.instance().getHeuristicToView().get(topic);
+      }
 
       // check if it is a metrics help
       if (page == null) {
@@ -851,6 +858,28 @@ public class Application extends Controller {
       return ok(helpPage.render(title, page));
     }
     return ok(oldHelpPage.render(title, page));
+  }
+
+  private static  Html getView(){
+    try {
+      Class<?> viewClass = Class.forName("views.html.help.mapreduce.helpCodeHeuristic");
+
+      Method render = viewClass.getDeclaredMethod("render");
+      Html page = (Html) render.invoke(null);
+      logger.info("Load View : " +viewClass);
+      return page;
+    } catch (ClassNotFoundException e) {
+      throw new RuntimeException("Could not find view ", e);
+    } catch (IllegalAccessException e) {
+      throw new RuntimeException("Could not access render on view" , e);
+    } catch (RuntimeException e) {
+      // More descriptive on other runtime exception such as ClassCastException
+      throw new RuntimeException( " is not a valid view class.", e);
+    } catch (InvocationTargetException e) {
+      throw new RuntimeException("Could not invoke view " , e);
+    } catch (NoSuchMethodException e) {
+      throw new RuntimeException("Could not find method render for view " , e);
+    }
   }
 
   /**

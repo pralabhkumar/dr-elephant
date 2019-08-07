@@ -237,6 +237,7 @@ public class AzkabanWorkflowClient implements WorkflowClient {
           return true;
         }
       });
+      //httpPost.get
 
       Scheme scheme = new Scheme("https", 443, socketFactory);
       httpClient.getConnectionManager().getSchemeRegistry().register(scheme);
@@ -391,15 +392,43 @@ public class AzkabanWorkflowClient implements WorkflowClient {
     urlParameters.add(new BasicNameValuePair("execid", _executionId));
     try {
       JSONObject jsonObject = fetchJson(urlParameters, _workflowExecutionUrl);
+      //coding here
       JSONArray jobs = jsonObject.getJSONArray("nodes");
+      String projectName = jsonObject.getString("project");
+      String flowName = jsonObject.getString("id");
       Map<String, String> jobMap = new HashMap<String, String>();
       addJobStatusForFlow(jobMap, jobs);
+      //printAzkabanCodePath(jobMap.keySet(),projectName,flowName);
       return jobMap;
     } catch (JSONException e) {
       logger.error("Error in parsing azkaban output ", e);
     }
     return null;
   }
+
+  /**
+   *
+   * @param jobDefID  : Job definition id
+   * @return Path : Get Script Path
+   */
+  public String getCodePathfromJob(String jobDefID) {
+    logger.info(" Getting Path from Job "+jobDefID);
+    List<NameValuePair> urlParameters = new ArrayList<NameValuePair>();
+    urlParameters.add(new BasicNameValuePair("ajax", "fetchJobInfo"));
+    urlParameters.add(new BasicNameValuePair("session.id", _sessionId));
+    String scriptPath = null;
+    try {
+      JSONObject jsonObject = fetchJson(urlParameters, jobDefID);
+      JSONObject parameters = jsonObject.getJSONObject("generalParams");
+      if(parameters.has("script_path")) {
+        scriptPath = jsonObject.getJSONObject("generalParams").getString("script_path");
+      }
+    }catch (JSONException e){
+      logger.error("Error in parsing azkaban output ", e);
+    }
+    return scriptPath;
+  }
+
 
   public void addJobStatusForFlow(Map<String, String> jobMap, JSONArray jobs) throws JSONException {
     if (jobs != null) {
