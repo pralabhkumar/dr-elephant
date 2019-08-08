@@ -29,6 +29,7 @@
                             <tr>
                             </tr></thead>
                             <tbody>
+
                             {{#each yarnappheuristicresult.details as |yarnappheuristicresultdetail|}}
                                 {{#if (eq "Error" yarnappheuristicresultdetail.name) }}
                                   <tr>
@@ -40,7 +41,7 @@
                                 {{else}}
                                   <tr>
                                       <td>{{yarnappheuristicresultdetail.name}}</td>
-                                      <td>{{yarnappheuristicresultdetail.value}}</td>
+                                      <td>{{{yarnappheuristicresultdetail.value}}}</td>
                                   </tr>
                                 {{/if}}
                             {{/each}}

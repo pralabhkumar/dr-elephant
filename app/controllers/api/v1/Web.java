@@ -1092,6 +1092,12 @@ public class Web extends Controller {
 
       JsonObject heuristicObject = new JsonObject();
       heuristicObject.addProperty(JsonKeys.NAME, "Convert following  tables  to views in spark. ");
+      /*StringBuffer tableNames = new StringBuffer();
+      //tableNames.append("<ol>");
+      for(String tableName:codeRecommendation.recommendation.split("\n")) {
+        tableNames.append(tableName).append("<br>");
+      }
+      //tableNames.append("</ol>");*/
       heuristicObject.addProperty(JsonKeys.VALUE, codeRecommendation.recommendation);
       detailArray.add(heuristicObject);
       taskObject.add(JsonKeys.DETAILS,detailArray);

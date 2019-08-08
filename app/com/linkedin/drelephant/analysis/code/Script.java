@@ -1,5 +1,8 @@
 package com.linkedin.drelephant.analysis.code;
 
+/**
+ * This is the representation of the actual script 
+ */
 public class Script {
   private StringBuilder optimizationComment = new StringBuilder();
   private Code code = null;
