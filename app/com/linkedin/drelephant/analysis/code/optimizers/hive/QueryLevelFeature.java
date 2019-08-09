@@ -1,11 +1,5 @@
-package com.linkedin.drelephant.analysis.code.impl;
+package com.linkedin.drelephant.analysis.code.optimizers.hive;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
 import org.apache.hadoop.hive.ql.lib.Node;
 import org.apache.hadoop.hive.ql.parse.ASTNode;
 import org.apache.hadoop.hive.ql.parse.ParseDriver;

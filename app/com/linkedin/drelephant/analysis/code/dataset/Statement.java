@@ -1,4 +1,4 @@
-package com.linkedin.drelephant.analysis.code;
+package com.linkedin.drelephant.analysis.code.dataset;
 
 import java.util.ArrayList;
 import java.util.HashMap;

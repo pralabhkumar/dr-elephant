@@ -1,4 +1,4 @@
-package com.linkedin.drelephant.analysis.code;
+package com.linkedin.drelephant.analysis.code.util;
 
 import java.io.IOException;
 import org.apache.log4j.Logger;

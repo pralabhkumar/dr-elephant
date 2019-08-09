@@ -17,13 +17,13 @@
 package com.linkedin.drelephant.analysis;
 
 import com.linkedin.drelephant.ElephantContext;
-import com.linkedin.drelephant.analysis.code.CodeAnalyzerException;
+import com.linkedin.drelephant.analysis.code.util.CodeAnalyzerException;
 import com.linkedin.drelephant.analysis.code.CodeExtractor;
 import com.linkedin.drelephant.analysis.code.CodeOptimizer;
-import com.linkedin.drelephant.analysis.code.JobCodeInfoDataSet;
-import com.linkedin.drelephant.analysis.code.Script;
-import com.linkedin.drelephant.analysis.code.impl.AzkabanJarvisCodeExtractor;
-import com.linkedin.drelephant.analysis.code.impl.CodeOptimizerFactory;
+import com.linkedin.drelephant.analysis.code.dataset.JobCodeInfoDataSet;
+import com.linkedin.drelephant.analysis.code.dataset.Script;
+import com.linkedin.drelephant.analysis.code.extractors.AzkabanJarvisCodeExtractor;
+import com.linkedin.drelephant.analysis.code.optimizers.CodeOptimizerFactory;
 import com.linkedin.drelephant.exceptions.core.ExceptionFingerprintingRunner;
 import com.linkedin.drelephant.util.InfoExtractor;
 import com.linkedin.drelephant.util.Utils;

@@ -1,7 +1,7 @@
-package com.linkedin.drelephant.analysis.code;
+package com.linkedin.drelephant.analysis.code.dataset;
 
 /**
- * This is the representation of the actual script 
+ * This is the representation of the actual script
  */
 public class Script {
   private StringBuilder optimizationComment = new StringBuilder();

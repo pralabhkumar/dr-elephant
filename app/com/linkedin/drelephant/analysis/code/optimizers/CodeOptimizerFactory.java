@@ -1,6 +1,7 @@
-package com.linkedin.drelephant.analysis.code.impl;
+package com.linkedin.drelephant.analysis.code.optimizers;
 
 import com.linkedin.drelephant.analysis.code.CodeOptimizer;
+import com.linkedin.drelephant.analysis.code.optimizers.hive.HiveCodeOptimizer;
 import org.apache.log4j.Logger;
 
 

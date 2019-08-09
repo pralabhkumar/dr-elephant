@@ -1,9 +1,9 @@
-package com.linkedin.drelephant.analysis.code.impl;
+package com.linkedin.drelephant.analysis.code.optimizers.hive;
 
 import com.linkedin.drelephant.analysis.Severity;
 import com.linkedin.drelephant.analysis.code.CodeOptimizationRule;
-import com.linkedin.drelephant.analysis.code.Script;
-import com.linkedin.drelephant.analysis.code.Statement;
+import com.linkedin.drelephant.analysis.code.dataset.Script;
+import com.linkedin.drelephant.analysis.code.dataset.Statement;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;

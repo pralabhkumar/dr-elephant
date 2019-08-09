@@ -1,14 +1,12 @@
-package com.linkedin.drelephant.analysis.code.impl;
+package com.linkedin.drelephant.analysis.code.optimizers.hive;
 
-import com.linkedin.drelephant.analysis.Severity;
-import com.linkedin.drelephant.analysis.code.Code;
-import com.linkedin.drelephant.analysis.code.CodeAnalyzerException;
+import com.linkedin.drelephant.analysis.code.dataset.Code;
+import com.linkedin.drelephant.analysis.code.util.CodeAnalyzerException;
 import com.linkedin.drelephant.analysis.code.CodeOptimizationRule;
 import com.linkedin.drelephant.analysis.code.CodeOptimizer;
-import com.linkedin.drelephant.analysis.code.Script;
-import com.linkedin.drelephant.analysis.code.Statement;
+import com.linkedin.drelephant.analysis.code.dataset.Script;
+import com.linkedin.drelephant.analysis.code.dataset.Statement;
 import com.linkedin.drelephant.analysis.code.util.HiveStatementSplitter;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 

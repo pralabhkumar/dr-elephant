@@ -1,4 +1,9 @@
-package com.linkedin.drelephant.analysis.code;
+package com.linkedin.drelephant.analysis.code.dataset;
+
+import com.linkedin.drelephant.analysis.code.CodeOptimizer;
+import java.util.HashMap;
+import java.util.Map;
+
 
 public class JobCodeInfoDataSet {
   private String jobExecutionID = null;
@@ -9,7 +14,16 @@ public class JobCodeInfoDataSet {
   private String sourceCode = null;
   private String scmType = null;
   private String repoName = null;
+  private CodeOptimizer _codeOptimizer = null;
+  private Map<String,String> metaData = null;
 
+  public JobCodeInfoDataSet(){
+    this.metaData = new HashMap<String,String>();
+  }
+
+  public Map<String,String> getMetaData(){
+    return  this.metaData;
+  }
   public String getRepoName() {
     return repoName;
   }
@@ -72,6 +86,14 @@ public class JobCodeInfoDataSet {
 
   public void setJobExecutionID(String jobExecutionID) {
     this.jobExecutionID = jobExecutionID;
+  }
+
+  public CodeOptimizer getCodeOptimizer() {
+    return _codeOptimizer;
+  }
+
+  public void setCodeOptimizer(CodeOptimizer codeOptimizer) {
+    _codeOptimizer = codeOptimizer;
   }
 
   @Override

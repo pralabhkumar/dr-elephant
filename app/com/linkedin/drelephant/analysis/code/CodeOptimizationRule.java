@@ -1,6 +1,6 @@
 package com.linkedin.drelephant.analysis.code;
 
-import com.linkedin.drelephant.analysis.Severity;
+import com.linkedin.drelephant.analysis.code.dataset.Script;
 
 
 public interface CodeOptimizationRule {

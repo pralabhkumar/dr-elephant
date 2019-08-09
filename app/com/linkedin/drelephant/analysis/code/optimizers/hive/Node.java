@@ -1,10 +1,9 @@
-package com.linkedin.drelephant.analysis.code.impl;
+package com.linkedin.drelephant.analysis.code.optimizers.hive;
 
-import com.linkedin.drelephant.analysis.code.Statement;
+import com.linkedin.drelephant.analysis.code.dataset.Statement;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import org.apache.hadoop.hive.ql.parse.ParseException;
 import org.json.JSONException;

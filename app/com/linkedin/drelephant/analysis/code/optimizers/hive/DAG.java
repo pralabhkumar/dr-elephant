@@ -1,6 +1,6 @@
-package com.linkedin.drelephant.analysis.code.impl;
+package com.linkedin.drelephant.analysis.code.optimizers.hive;
 
-import com.linkedin.drelephant.analysis.code.Statement;
+import com.linkedin.drelephant.analysis.code.dataset.Statement;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
