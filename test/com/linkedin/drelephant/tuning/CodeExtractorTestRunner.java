@@ -4,7 +4,9 @@ import com.linkedin.drelephant.ElephantContext;
 import com.linkedin.drelephant.analysis.code.CodeExtractor;
 import com.linkedin.drelephant.analysis.code.dataset.JobCodeInfoDataSet;
 import com.linkedin.drelephant.analysis.code.extractors.AzkabanJarvisCodeExtractor;
+import com.linkedin.drelephant.analysis.code.optimizers.hive.HiveCodeOptimizer;
 import com.linkedin.drelephant.analysis.code.util.CodeAnalysisConfiguration;
+import com.linkedin.drelephant.analysis.code.util.CodeAnalyzerException;
 import com.linkedin.drelephant.analysis.code.util.Constant;
 import com.linkedin.drelephant.analysis.code.util.Helper;
 import java.io.IOException;
@@ -27,6 +29,10 @@ import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 
 
+/**
+ * This class is used to test CodeExtractor concrete implementation
+ * AzkabanJarvisCodeExtractor
+ */
 public class CodeExtractorTestRunner implements Runnable {
 
   private void populateTestData() {
@@ -108,13 +114,49 @@ public class CodeExtractorTestRunner implements Runnable {
           .get("URL TO GET SOURCE CODE")
           .equals(
               "http://abcd/efgh/api/v1/file/git/multiproducts%2Fdfjenkins-metric-defs/dfjenkins-metric-defs%2Fmetric-defs-provider%2Fsrc%2Femail_v2%2Fbounces.hql"));
+
+      assertTrue("Hive Optimizer should be return", jobCodeInfoDataSet.getCodeOptimizer() instanceof HiveCodeOptimizer);
+
+
+    _appResult.queueName = "abcd";
+
+    assertTrue("Should return false,since app result is null ", !codeExtractor.arePrerequisiteMatched(null));
+    assertTrue("Should return false , since queue name is not valid",
+        !codeExtractor.arePrerequisiteMatched(_appResult));
+    _appResult.queueName = "ump_hp";
+    assertTrue("Should return true , since queue name is valid", codeExtractor.arePrerequisiteMatched(_appResult));
+
+    try {
+      assertTrue("Code file Name should be null ,since app result is null  ",
+          codeExtractor.getCodeFileName(null) == null);
+      assertTrue("Code file Name should be src/bounces.hql  ",
+          codeExtractor.getCodeFileName(_appResult).equals("src/bounces.hql"));
+    } catch (CodeAnalyzerException e) {
+      StringWriter sw = new StringWriter();
+      e.printStackTrace(new PrintWriter(sw));
+      String exceptionAsString = sw.toString();
+      assertTrue("Error while passing test cases " + exceptionAsString, false);
+    }
+
+      CodeExtractor newCodeExtractor = new AzkabanJarvisCodeExtractor();
+      newCodeExtractor.processCodeLocationInformation(null);
+      assertTrue(" JobCodeInfoDataSet should be null ,since null is passed    ",
+          newCodeExtractor.getJobCodeInfoDataSet() == null);
+
+      try {
+        newCodeExtractor.processCodeLocationInformation("{");
+      } catch (Exception e) {
+        assertTrue(" Exception should be thrown ,since invalid information is passed  " ,
+            e instanceof MalformedURLException);
+      }
     } catch (Exception e) {
       StringWriter sw = new StringWriter();
       e.printStackTrace(new PrintWriter(sw));
       String exceptionAsString = sw.toString();
-      assertTrue("asd " + exceptionAsString, false);
-      //e.printStackTrace();
+      assertTrue("Error while passing test cases " + exceptionAsString, false);
     }
+
+
     /*
 
 

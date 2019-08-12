@@ -132,4 +132,10 @@ public class TuningManagerTest {
   public void testCodeExtraction() throws InterruptedException {
     running(testServer(TEST_SERVER_PORT, fakeApp), new CodeExtractorTestRunner());
   }
+
+
+  @Test
+  public void testCodeOptimizer() throws InterruptedException {
+    running(testServer(TEST_SERVER_PORT, fakeApp), new CodeOptimizerTestRunner());
+  }
 }

@@ -17,6 +17,7 @@
 package com.linkedin.drelephant.analysis;
 
 import com.linkedin.drelephant.ElephantContext;
+import com.linkedin.drelephant.analysis.code.extractors.CodeExtractionFactory;
 import com.linkedin.drelephant.analysis.code.util.CodeAnalyzerException;
 import com.linkedin.drelephant.analysis.code.CodeExtractor;
 import com.linkedin.drelephant.analysis.code.CodeOptimizer;
@@ -24,6 +25,7 @@ import com.linkedin.drelephant.analysis.code.dataset.JobCodeInfoDataSet;
 import com.linkedin.drelephant.analysis.code.dataset.Script;
 import com.linkedin.drelephant.analysis.code.extractors.AzkabanJarvisCodeExtractor;
 import com.linkedin.drelephant.analysis.code.optimizers.CodeOptimizerFactory;
+import com.linkedin.drelephant.analysis.code.util.Helper;
 import com.linkedin.drelephant.exceptions.core.ExceptionFingerprintingRunner;
 import com.linkedin.drelephant.util.InfoExtractor;
 import com.linkedin.drelephant.util.Utils;
@@ -36,7 +38,7 @@ import models.AppResult;
 import models.TuningJobExecutionCodeRecommendation;
 import org.apache.log4j.Logger;
 import com.linkedin.drelephant.exceptions.util.Constant.*;
-
+import org.apache.hadoop.conf.Configuration;
 
 /**
  * This class wraps some basic meta data of a completed application run (notice that the information is generally the
@@ -343,35 +345,15 @@ public class AnalyticJob {
 
     // Retrieve information from job configuration like scheduler information and store them into result.
     InfoExtractor.loadInfo(result, data);
-    if (result.queueName.toLowerCase().equals("ump_normal") || result.queueName.toLowerCase().equals("ump_hp")) {
-      logger.info("UMP Job and hence finding path");
-      try {
-        CodeExtractor codeExtractor = new AzkabanJarvisCodeExtractor();
-        JobCodeInfoDataSet dataJob = codeExtractor.execute(result);
-        if (dataJob != null && dataJob.getSourceCode() != null) {
-          CodeOptimizer codeOptimizer = CodeOptimizerFactory.getCodeOptimizer(dataJob.getFileName());
-          if (codeOptimizer != null) {
-            Script script = codeOptimizer.execute(dataJob.getSourceCode());
-            if (script.getOptimizationComment().length() > 0) {
-              TuningJobExecutionCodeRecommendation tuningJobExecutionCodeRecommendation =
-                  new TuningJobExecutionCodeRecommendation();
-              tuningJobExecutionCodeRecommendation.jobDefId = result.jobDefId;
-              tuningJobExecutionCodeRecommendation.jobExecUrl = result.jobExecUrl;
-              tuningJobExecutionCodeRecommendation.codeLocation =
-                  "SCM=" + dataJob.getScmType() + ",RepoName=" + dataJob.getRepoName() + ",FileName="
-                      + dataJob.getFileName();
 
-              tuningJobExecutionCodeRecommendation.recommendation = script.getOptimizationComment().toString();
-              logger.info(" Severity of the script is " + codeOptimizer.getSeverity());
-              tuningJobExecutionCodeRecommendation.severity = codeOptimizer.getSeverity();
-              tuningJobExecutionCodeRecommendation.save();
-            }
-          }
-        }
-      } catch (CodeAnalyzerException e) {
-        logger.error("Error comes while extracting code ", e);
-      }
+    try {
+      codeLevelOptimization(result);
+    }catch (CodeAnalyzerException e){
+      logger.error("Error in analysing the code for "+result.jobExecId,e);
     }
+
+
+
 
     /**
      * Exception fingerprinting is applied (if required)
@@ -381,6 +363,38 @@ public class AnalyticJob {
       logger.debug(" Exception Fingerprinting is successfully applied ");
     }
     return result;
+  }
+
+
+
+  private void codeLevelOptimization(AppResult result) throws CodeAnalyzerException{
+    logger.info(" Code Analysis Process Started  " + result.queueName);
+    Configuration configuration = ElephantContext.instance().getAutoTuningConf();
+    Helper.ConfigurationBuilder.buildConfigurations(configuration);
+    CodeExtractor codeExtractor = CodeExtractionFactory.getCodeExtractor(result);
+    JobCodeInfoDataSet jobCodeInfoDataSet = codeExtractor.execute(result);
+    if(jobCodeInfoDataSet.getCodeOptimizer()!=null) {
+      logger.info(" Optimizer is available for the code , hence optimizing it " + jobCodeInfoDataSet);
+      Script script = jobCodeInfoDataSet.getCodeOptimizer().execute(jobCodeInfoDataSet.getSourceCode());
+      saveOptimizationResultIntoDB(script,jobCodeInfoDataSet,result);
+    }
+  }
+
+  private void saveOptimizationResultIntoDB(Script script,JobCodeInfoDataSet jobCodeInfoDataSet,AppResult result){
+    if (script!=null && script.getOptimizationComment().length() > 0) {
+      TuningJobExecutionCodeRecommendation tuningJobExecutionCodeRecommendation =
+          new TuningJobExecutionCodeRecommendation();
+      tuningJobExecutionCodeRecommendation.jobDefId = result.jobDefId;
+      tuningJobExecutionCodeRecommendation.jobExecUrl = result.jobExecUrl;
+      tuningJobExecutionCodeRecommendation.codeLocation =
+          "SCM=" + jobCodeInfoDataSet.getScmType() + ",RepoName=" + jobCodeInfoDataSet.getRepoName() + ",FileName="
+              + jobCodeInfoDataSet.getFileName();
+
+      tuningJobExecutionCodeRecommendation.recommendation = script.getOptimizationComment().toString();
+      logger.info(" Severity of the script is " + jobCodeInfoDataSet.getCodeOptimizer().getSeverity());
+      tuningJobExecutionCodeRecommendation.severity = jobCodeInfoDataSet.getCodeOptimizer().getSeverity();
+      tuningJobExecutionCodeRecommendation.save();
+    }
   }
 
   /**

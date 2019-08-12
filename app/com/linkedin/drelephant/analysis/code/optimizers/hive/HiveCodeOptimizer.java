@@ -17,6 +17,7 @@ import org.apache.hadoop.hive.ql.tools.LineageInfo;
 import org.apache.hadoop.hive.ql.parse.ASTNode;
 import org.apache.hadoop.hive.ql.parse.ParseDriver;
 import org.apache.hadoop.hive.ql.parse.ParseException;
+import org.apache.hadoop.hive.ql.parse.SemanticException;
 import org.apache.log4j.Logger;
 import org.json.JSONException;
 
@@ -39,34 +40,53 @@ public class HiveCodeOptimizer implements CodeOptimizer {
 
   @Override
   public Script execute(String sourceCode) {
-    Script script = new Script(sourceCode);
-    Code code = generateCode(sourceCode);
-    script.setCode(code);
-    applyRules(script);
-    logger.info(" Following is an optimizing comment "+script.getOptimizationComment());
+    Script script = null;
+    if (sourceCode != null) {
+      script = new Script(sourceCode);
+      Code code = generateCode(sourceCode);
+      script.setCode(code);
+      List<CodeOptimizationRule> rules = new ArrayList<CodeOptimizationRule>();
+      rules.add(new ActionTransformationRule("Convert Temp Table To Views"));
+      // todo : Apply caching Rule
+      //rules.add(new CachingRule("Caching Recommendation ", statements));
+      optimizationEngine(script, rules);
+      logger.info(" Following is an optimizing comment " + script.getOptimizationComment());
+    }
     return script;
   }
 
-
-
+  @Override
   public Code generateCode(String sourceCode) {
-    Code code = new Code();
-    List<Statement> statements = new ArrayList<Statement>();
-    List<String> inputStatement = HiveStatementSplitter.splitStatements(sourceCode);
-    int sequenceNumber = 0;
-    for (String input : inputStatement) {
-      Statement statement = new Statement(sequenceNumber, input);
-      if (parseStatement(statement)) {
-        statements.add(statement);
-        sequenceNumber++;
+    Code code = null;
+    if (sourceCode != null) {
+      code = new Code();
+      List<Statement> statements = new ArrayList<Statement>();
+      List<String> inputStatement = HiveStatementSplitter.splitStatements(sourceCode);
+      int sequenceNumber = 0;
+      for (String input : inputStatement) {
+        Statement statement = new Statement(sequenceNumber, input);
+        if (parseStatement(statement)) {
+          statements.add(statement);
+          sequenceNumber++;
+        } else {
+          logger.info("Unable to parse following input command " + input);
+        }
       }
+      code.setStatements(statements);
     }
-    code.setStatements(statements);
     return code;
   }
 
-  //removeUnExecutableStatementsAndAddtoComment(scriptLevelComment);
-
+  /**
+   *  Parse each HiveQuery ,convert it into Statement.
+   *  1) Handle comments in the query
+   *  2) Handle the parameters
+   *  3) Create Framework Parsebale query
+   *  4) Get metadata , for e.g in case of hive , get input and output tables.
+   *
+   * @param statement : Statement to be filled
+   * @return : If not able to parse it correctly then return false
+   */
   private boolean parseStatement(Statement statement) {
     try {
       String orginalQuery = queryCommentHandling(statement);
@@ -81,11 +101,15 @@ public class HiveCodeOptimizer implements CodeOptimizer {
           new CodeAnalyzerException(e));
       return false;
     }
-    //  conversionToSpark();
-
   }
 
-  private void metaDataHandling(Statement statement, String hiveParsableQuery) throws ParseException {
+  /**
+   *  Create AST and fill inputTable and output Tables (to Create DAG)
+   * @param statement :
+   * @param hiveParsableQuery : Query which can be parsed with Hive Parse
+   *
+   */
+  private void metaDataHandling(Statement statement, String hiveParsableQuery) {
     try {
       ASTNode node = pd.parse(hiveParsableQuery);
       LineageInfo lep = new LineageInfo();
@@ -102,8 +126,13 @@ public class HiveCodeOptimizer implements CodeOptimizer {
       enrichOutputTablesWithCreateTable(node, outputSinks);
       statement.setInputSources(inputSources);
       statement.setOutputSinks(outputSinks);
-    } catch (Exception e) {
-      statement.setBaseTree(pd.parse(DUMMY_QUERY));
+    } catch (ParseException | SemanticException e) {
+      logger.error(" Unable to parse ,following query " + hiveParsableQuery, e);
+      try {
+        statement.setBaseTree(pd.parse(DUMMY_QUERY));
+      } catch (ParseException e1) {
+        logger.error(" Unable to parse ,dummy query " + DUMMY_QUERY, e1);
+      }
     }
   }
 
@@ -126,6 +155,11 @@ public class HiveCodeOptimizer implements CodeOptimizer {
     }
   }
 
+  /**
+   * Handle the comments of the query and return the query without comment
+   * @param statement
+   * @return
+   */
   private String queryCommentHandling(Statement statement) {
     String lines[] = statement.getOriginalStatement().split(NEWLINE);
     StringBuilder queryWithoutComments = new StringBuilder();
@@ -137,10 +171,18 @@ public class HiveCodeOptimizer implements CodeOptimizer {
         queryWithoutComments.append(line).append(NEWLINE);
       }
     }
+    logger.debug(" Following are the comments of the query " + comments);
     return queryWithoutComments.toString();
   }
 
-  private String hiveParametersHandler(String originalQuery) {
+  /**
+   * Handles the parameters in query , since for parsing the query into AST ,
+   * Parameters has to be handle .
+   * @param originalQuery
+   * @return Query with handling parameter handler
+   * This is protected to test it .
+   */
+  protected String hiveParametersHandler(String originalQuery) {
     String temperoraryQuery = processForShellVariable(originalQuery);
     String queryWithParmeterHandler = processForHiveVariable(temperoraryQuery);
     logger.debug(" Query before parameter handler " + originalQuery);
@@ -159,7 +201,7 @@ public class HiveCodeOptimizer implements CodeOptimizer {
     return originalQuery;
   }
 
-  public String processForHiveVariable(String originalQuery) {
+  private String processForHiveVariable(String originalQuery) {
     Matcher match = hiveVariablePattern.matcher(originalQuery);
     while (match.find()) {
       String group = match.group();
@@ -180,17 +222,15 @@ public class HiveCodeOptimizer implements CodeOptimizer {
     return actualString;
   }
 
-  private void applyRules(Script script) {
+  @Override
+  public void optimizationEngine(Script script, List<CodeOptimizationRule> rules) {
     try {
-      List<CodeOptimizationRule> rules = new ArrayList<CodeOptimizationRule>();
-      rules.add(new ActionTransformationRule("Convert Temp Table To Views"));
-      //rules.add(new CachingRule("Caching Recommendation ", statements));
       for (CodeOptimizationRule rule : rules) {
         rule.processRule(script);
         scriptSeverity = rule.getSeverity();
-        logger.info("Severity at the rule level "+scriptSeverity);
+        logger.info("Severity at the rule level " + scriptSeverity);
       }
-    } catch (Exception e) {
+    } catch (CodeAnalyzerException e) {
       logger.error(" Unable to apply rules ", e);
     }
   }

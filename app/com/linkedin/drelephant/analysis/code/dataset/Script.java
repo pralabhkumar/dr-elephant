@@ -1,7 +1,9 @@
 package com.linkedin.drelephant.analysis.code.dataset;
 
 /**
- * This is the representation of the actual script
+ * This is the representation of the actual script . Script consist of two things
+ * 1) Code (which is executable part)
+ * 2) comment  (non executable part , user level comment , optimization comment)
  */
 public class Script {
   private StringBuilder optimizationComment = new StringBuilder();

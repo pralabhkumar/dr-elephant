@@ -22,15 +22,17 @@ public class Helper {
     public static CodeAnalysisConfiguration<String[]> QUEUE_NAMES_VALID_FOR_CODE_NAME_EXTRACTION = null;
 
     public static void buildConfigurations(Configuration configuration) {
-      BASE_URL_FOR_EXTRACTING_CODE =
-          new CodeAnalysisConfiguration<String>().setConfigurationName(BASE_URL_FOR_EXTRACTING_CODE_NAME)
-              .setValue(configuration.get(BASE_URL_FOR_EXTRACTING_CODE_NAME,"http://abcd/efgh/api/v1/"))
-              .setDoc(" Base URL to extract the source code");
-
-      QUEUE_NAMES_VALID_FOR_CODE_NAME_EXTRACTION =
-          new CodeAnalysisConfiguration<String[]>().setConfigurationName(QUEUE_NAMES_VALID_FOR_CODE_NAME_EXTRACTION_NAME)
-                .setValue(configuration.getStrings(QUEUE_NAMES_VALID_FOR_CODE_NAME_EXTRACTION_NAME))
-              .setDoc(" Projects/queues which are valid for code name extraction");
+      if(BASE_URL_FOR_EXTRACTING_CODE==null) {
+        BASE_URL_FOR_EXTRACTING_CODE = new CodeAnalysisConfiguration<String>().setConfigurationName(BASE_URL_FOR_EXTRACTING_CODE_NAME)
+            .setValue(configuration.get(BASE_URL_FOR_EXTRACTING_CODE_NAME))
+            .setDoc(" Base URL to extract the source code");
+      }
+      if(QUEUE_NAMES_VALID_FOR_CODE_NAME_EXTRACTION==null) {
+        QUEUE_NAMES_VALID_FOR_CODE_NAME_EXTRACTION = new CodeAnalysisConfiguration<String[]>().setConfigurationName(
+            QUEUE_NAMES_VALID_FOR_CODE_NAME_EXTRACTION_NAME)
+            .setValue(configuration.getStrings(QUEUE_NAMES_VALID_FOR_CODE_NAME_EXTRACTION_NAME))
+            .setDoc(" Projects/queues which are valid for code name extraction");
+      }
 
       if (debugEnabled) {
         logger.debug(" Code Level Analysis configurations ");

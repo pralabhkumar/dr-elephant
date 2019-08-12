@@ -100,6 +100,7 @@ public class JobCodeInfoDataSet {
   public String toString() {
     return "JobCodeInfoDataSet{" + "jobExecutionID='" + jobExecutionID + '\'' + ", jobName='" + jobName + '\''
         + ", flowName='" + flowName + '\'' + ", projectName='" + projectName + '\'' + ", fileName='" + fileName + '\''
-        + ", scmType='" + scmType + '\'' + '}';
+        + ", scmType='" + scmType + '\'' + ", repoName='" + repoName + '\'' + ", _codeOptimizer=" + _codeOptimizer
+        + ", metaData=" + metaData + '}';
   }
 }

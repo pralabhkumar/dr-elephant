@@ -6,6 +6,11 @@ import java.util.List;
 import java.util.Map;
 import org.antlr.runtime.tree.BaseTree;
 
+
+/**
+ * Lowest executable unit in the code .
+ * This class will be DAO and its creation is dependent on the framework.
+ */
 public class Statement {
   private int sequenceNumber;
   private String type;

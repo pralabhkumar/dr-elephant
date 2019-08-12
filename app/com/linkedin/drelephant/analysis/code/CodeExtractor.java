@@ -40,4 +40,9 @@ public interface CodeExtractor {
    * @throws JSONException
    */
   void processCodeLocationInformation(String codeInformation) throws IOException, JSONException;
+
+  /**
+   * Get JobCodeInfoDataSet ,contains information about JobCode
+   */
+  JobCodeInfoDataSet getJobCodeInfoDataSet();
 }
