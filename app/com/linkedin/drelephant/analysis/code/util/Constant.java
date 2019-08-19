@@ -25,8 +25,10 @@ package com.linkedin.drelephant.analysis.code.util;
 public final class Constant {
   static final String BASE_URL_FOR_EXTRACTING_CODE_NAME = "ca.url.extract.code";
   static final String QUEUE_NAMES_VALID_FOR_CODE_NAME_EXTRACTION_NAME = "ca.queue.name.valid.code.extraction";
-  static final String THRESHOLD_FOR_CHECKPOINT_IN_ACTION_TRANSFORMATION_RULE_NAME ="ca.threshold.checkpoint.actiontransformation";
-  static final String SHUFFLE_OPERATIONS_IN_HIVE_NAME="ca.hive.shuffle.operations";
+  static final String THRESHOLD_FOR_CHECKPOINT_IN_ACTION_TRANSFORMATION_RULE_NAME =
+      "ca.threshold.checkpoint.actiontransformation";
+  static final String SHUFFLE_OPERATIONS_IN_HIVE_NAME = "ca.hive.shuffle.operations";
+  public static final String CODE_LEVEL_OPTIMIZATION_ENABLED = "code.level.optimization.enabled";
 
   public enum CodeLocationJSONKey {
     PATH("paths"),
@@ -47,8 +49,7 @@ public final class Constant {
   }
 
   public enum ShuffleOperationThreshold {
-    FIRST_THRESHOLD(1),
-    SECOND_THRESHOLD(2);
+    FIRST_THRESHOLD(1), SECOND_THRESHOLD(2);
     private final int keyName;
 
     ShuffleOperationThreshold(int keyName) {
@@ -61,9 +62,7 @@ public final class Constant {
   }
 
   public enum NodeComplexity {
-    LOW(1),
-    MEDIUM(2),
-    HIGH(3);
+    LOW(1), MEDIUM(2), HIGH(3);
     private final int keyName;
 
     NodeComplexity(int keyName) {

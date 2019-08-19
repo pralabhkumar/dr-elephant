@@ -25,6 +25,7 @@ import com.linkedin.drelephant.analysis.code.dataset.JobCodeInfoDataSet;
 import com.linkedin.drelephant.analysis.code.dataset.Script;
 import com.linkedin.drelephant.analysis.code.extractors.AzkabanJarvisCodeExtractor;
 import com.linkedin.drelephant.analysis.code.optimizers.CodeOptimizerFactory;
+import com.linkedin.drelephant.analysis.code.util.Constant;
 import com.linkedin.drelephant.analysis.code.util.Helper;
 import com.linkedin.drelephant.exceptions.core.ExceptionFingerprintingRunner;
 import com.linkedin.drelephant.util.InfoExtractor;
@@ -40,6 +41,7 @@ import org.apache.log4j.Logger;
 import com.linkedin.drelephant.exceptions.util.Constant.*;
 import org.apache.hadoop.conf.Configuration;
 
+
 /**
  * This class wraps some basic meta data of a completed application run (notice that the information is generally the
  * same regardless of hadoop versions and application types), and then promises to return the analyzed result later.
@@ -48,8 +50,7 @@ public class AnalyticJob {
   private static final Logger logger = Logger.getLogger(AnalyticJob.class);
 
   private static final String UNKNOWN_JOB_TYPE = "Unknown";   // The default job type when the data matches nothing.
-  private static final int _RETRY_LIMIT = 3;
-  // Number of times a job needs to be tried before going into second retry queue
+  private static final int _RETRY_LIMIT = 3;  // Number of times a job needs to be tried before going into second retry queue
   private static final int _SECOND_RETRY_LIMIT = 5;           // Number of times a job needs to be tried before dropping
   private static final String EXCLUDE_JOBTYPE = "exclude_jobtypes_filter"; // excluded Job Types for heuristic
 
@@ -278,7 +279,8 @@ public class AnalyticJob {
       for (Heuristic heuristic : heuristics) {
         String confExcludedApps = heuristic.getHeuristicConfData().getParamMap().get(EXCLUDE_JOBTYPE);
 
-        if (confExcludedApps == null || confExcludedApps.length() == 0 || !Arrays.asList(confExcludedApps.split(","))
+        if (confExcludedApps == null || confExcludedApps.length() == 0 ||
+            !Arrays.asList(confExcludedApps.split(","))
             .contains(jobTypeName)) {
           HeuristicResult result = heuristic.apply(data);
           if (result != null) {
@@ -288,8 +290,7 @@ public class AnalyticJob {
       }
     }
 
-    HadoopMetricsAggregator hadoopMetricsAggregator =
-        ElephantContext.instance().getAggregatorForApplicationType(getAppType());
+    HadoopMetricsAggregator hadoopMetricsAggregator = ElephantContext.instance().getAggregatorForApplicationType(getAppType());
     hadoopMetricsAggregator.aggregate(data);
     HadoopAggregatedData hadoopAggregatedData = hadoopMetricsAggregator.getResult();
 
@@ -346,14 +347,14 @@ public class AnalyticJob {
     // Retrieve information from job configuration like scheduler information and store them into result.
     InfoExtractor.loadInfo(result, data);
 
+    //Code Level optimization
     try {
-      codeLevelOptimization(result);
-    }catch (CodeAnalyzerException e){
-      logger.error("Error in analysing the code for "+result.jobExecId,e);
+      if (ElephantContext.instance().getAutoTuningConf().getBoolean(Constant.CODE_LEVEL_OPTIMIZATION_ENABLED, true)) {
+        codeLevelOptimization(result);
+      }
+    } catch (CodeAnalyzerException e) {
+      logger.error("Error in analysing the code for " + result.jobExecId, e);
     }
-
-
-
 
     /**
      * Exception fingerprinting is applied (if required)
@@ -365,23 +366,21 @@ public class AnalyticJob {
     return result;
   }
 
-
-
-  private void codeLevelOptimization(AppResult result) throws CodeAnalyzerException{
+  private void codeLevelOptimization(AppResult result) throws CodeAnalyzerException {
     logger.info(" Code Analysis Process Started  " + result.queueName);
     Configuration configuration = ElephantContext.instance().getAutoTuningConf();
     Helper.ConfigurationBuilder.buildConfigurations(configuration);
     CodeExtractor codeExtractor = CodeExtractionFactory.getCodeExtractor(result);
     JobCodeInfoDataSet jobCodeInfoDataSet = codeExtractor.execute(result);
-    if(jobCodeInfoDataSet.getCodeOptimizer()!=null) {
+    if (jobCodeInfoDataSet.getCodeOptimizer() != null) {
       logger.info(" Optimizer is available for the code , hence optimizing it " + jobCodeInfoDataSet);
       Script script = jobCodeInfoDataSet.getCodeOptimizer().execute(jobCodeInfoDataSet.getSourceCode());
-      saveOptimizationResultIntoDB(script,jobCodeInfoDataSet,result);
+      saveOptimizationResultIntoDB(script, jobCodeInfoDataSet, result);
     }
   }
 
-  private void saveOptimizationResultIntoDB(Script script,JobCodeInfoDataSet jobCodeInfoDataSet,AppResult result){
-    if (script!=null && script.getOptimizationComment().length() > 0) {
+  private void saveOptimizationResultIntoDB(Script script, JobCodeInfoDataSet jobCodeInfoDataSet, AppResult result) {
+    if (script != null && script.getOptimizationComment().length() > 0) {
       TuningJobExecutionCodeRecommendation tuningJobExecutionCodeRecommendation =
           new TuningJobExecutionCodeRecommendation();
       tuningJobExecutionCodeRecommendation.jobDefId = result.jobDefId;
