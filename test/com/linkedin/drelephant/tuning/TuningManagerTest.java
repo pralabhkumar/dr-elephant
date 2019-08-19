@@ -138,4 +138,9 @@ public class TuningManagerTest {
   public void testCodeOptimizer() throws InterruptedException {
     running(testServer(TEST_SERVER_PORT, fakeApp), new CodeOptimizerTestRunner());
   }
+
+  @Test
+  public void testHiveDAGOptimizer() throws InterruptedException {
+    running(testServer(TEST_SERVER_PORT, fakeApp), new HiveDAGTestRunner());
+  }
 }

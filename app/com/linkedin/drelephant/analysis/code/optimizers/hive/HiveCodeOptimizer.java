@@ -1,3 +1,19 @@
+/*
+ * Copyright 2016 LinkedIn Corp.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ */
+
 package com.linkedin.drelephant.analysis.code.optimizers.hive;
 
 import com.linkedin.drelephant.analysis.code.dataset.Code;
@@ -107,7 +123,8 @@ public class HiveCodeOptimizer implements CodeOptimizer {
    *  Create AST and fill inputTable and output Tables (to Create DAG)
    * @param statement :
    * @param hiveParsableQuery : Query which can be parsed with Hive Parse
-   *
+   * Catching runtime exception since this exception can be thrown
+   * org.antlr.v4.runtime.NoViableAltException ,if query is not parasable.
    */
   private void metaDataHandling(Statement statement, String hiveParsableQuery) {
     try {
@@ -126,7 +143,7 @@ public class HiveCodeOptimizer implements CodeOptimizer {
       enrichOutputTablesWithCreateTable(node, outputSinks);
       statement.setInputSources(inputSources);
       statement.setOutputSinks(outputSinks);
-    } catch (ParseException | SemanticException e) {
+    } catch (ParseException | SemanticException | RuntimeException e) {
       logger.error(" Unable to parse ,following query " + hiveParsableQuery, e);
       try {
         statement.setBaseTree(pd.parse(DUMMY_QUERY));
@@ -178,11 +195,11 @@ public class HiveCodeOptimizer implements CodeOptimizer {
   /**
    * Handles the parameters in query , since for parsing the query into AST ,
    * Parameters has to be handle .
-   * @param originalQuery
+   * @param originalQuery : Query with parameter
    * @return Query with handling parameter handler
    * This is protected to test it .
    */
-  protected String hiveParametersHandler(String originalQuery) {
+  public String hiveParametersHandler(String originalQuery) {
     String temperoraryQuery = processForShellVariable(originalQuery);
     String queryWithParmeterHandler = processForHiveVariable(temperoraryQuery);
     logger.debug(" Query before parameter handler " + originalQuery);
@@ -224,14 +241,16 @@ public class HiveCodeOptimizer implements CodeOptimizer {
 
   @Override
   public void optimizationEngine(Script script, List<CodeOptimizationRule> rules) {
-    try {
-      for (CodeOptimizationRule rule : rules) {
-        rule.processRule(script);
-        scriptSeverity = rule.getSeverity();
-        logger.info("Severity at the rule level " + scriptSeverity);
+    if (script != null && rules != null && rules.size() > 0) {
+      try {
+        for (CodeOptimizationRule rule : rules) {
+          rule.processRule(script);
+          scriptSeverity = rule.getSeverity();
+          logger.info("Severity at the rule level " + scriptSeverity);
+        }
+      } catch (CodeAnalyzerException e) {
+        logger.error(" Unable to apply rules ", e);
       }
-    } catch (CodeAnalyzerException e) {
-      logger.error(" Unable to apply rules ", e);
     }
   }
 

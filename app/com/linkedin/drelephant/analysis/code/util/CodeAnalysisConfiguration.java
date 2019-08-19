@@ -1,5 +1,3 @@
-package com.linkedin.drelephant.analysis.code.util;
-
 /*
  * Copyright 2016 LinkedIn Corp.
  *
@@ -15,6 +13,10 @@ package com.linkedin.drelephant.analysis.code.util;
  * License for the specific language governing permissions and limitations under
  * the License.
  */
+
+
+package com.linkedin.drelephant.analysis.code.util;
+
 
 /**
  * This class defines all the configuration

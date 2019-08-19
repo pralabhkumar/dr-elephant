@@ -1,3 +1,19 @@
+/*
+ * Copyright 2016 LinkedIn Corp.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ */
+
 package com.linkedin.drelephant.analysis.code.extractors;
 
 import com.linkedin.drelephant.analysis.code.CodeOptimizer;
@@ -30,9 +46,9 @@ import org.codehaus.jettison.json.JSONObject;
 public class AzkabanJarvisCodeExtractor implements CodeExtractor {
   private static final Logger logger = Logger.getLogger(AzkabanJarvisCodeExtractor.class);
   private static AzkabanJobStatusUtil azkabanJobStatusUtil = null;
-  private  final String BASE_URL = Helper.ConfigurationBuilder.BASE_URL_FOR_EXTRACTING_CODE.getValue();
-  private  final String COMPLETE_URL_TO_GET_LOCATION = BASE_URL + "filepaths?query=%s";
-  private  final String COMPLETE_URL_TO_GET_CODE = BASE_URL + "file/%1$s/%2$s/%3$s";
+  private final String BASE_URL = Helper.ConfigurationBuilder.BASE_URL_FOR_EXTRACTING_CODE.getValue();
+  private final String COMPLETE_URL_TO_GET_LOCATION = BASE_URL + "filepaths?query=%s";
+  private final String COMPLETE_URL_TO_GET_CODE = BASE_URL + "file/%1$s/%2$s/%3$s";
   private JobCodeInfoDataSet _jobCodeInfoDataSet = null;
   private static final int TOP_RANK_INDEX_FOR_SEARCH_RESULT = 0;
 
@@ -40,7 +56,6 @@ public class AzkabanJarvisCodeExtractor implements CodeExtractor {
     azkabanJobStatusUtil = new AzkabanJobStatusUtil();
     logger.info(" Intialized Azkaban Job status Util to query azkaban for Code analysis ");
   }
-
 
   /**
    *
@@ -134,7 +149,7 @@ public class AzkabanJarvisCodeExtractor implements CodeExtractor {
       if (appResult != null) {
         String modifiedURL = appResult.jobDefId.replaceAll("&job=", "&jobName=").replaceAll("&flow=", "&flowName=");
         logger.info("Query following url to azkaban " + modifiedURL);
-        if(_jobCodeInfoDataSet==null){
+        if (_jobCodeInfoDataSet == null) {
           _jobCodeInfoDataSet = new JobCodeInfoDataSet();
         }
         _jobCodeInfoDataSet.getMetaData().put("URL TO GET SCRIPT NAME", modifiedURL);
@@ -157,7 +172,7 @@ public class AzkabanJarvisCodeExtractor implements CodeExtractor {
       JSONObject jsonJobInfo = parseURL(codeInformation);
       JSONArray paths = jsonJobInfo.getJSONArray(Constant.CodeLocationJSONKey.PATH.getJSONKey());
       JSONObject information = paths.getJSONObject(TOP_RANK_INDEX_FOR_SEARCH_RESULT);
-      if(_jobCodeInfoDataSet==null){
+      if (_jobCodeInfoDataSet == null) {
         _jobCodeInfoDataSet = new JobCodeInfoDataSet();
       }
       _jobCodeInfoDataSet.setFileName(
@@ -170,7 +185,7 @@ public class AzkabanJarvisCodeExtractor implements CodeExtractor {
   }
 
   @Override
-  public JobCodeInfoDataSet getJobCodeInfoDataSet(){
+  public JobCodeInfoDataSet getJobCodeInfoDataSet() {
     return _jobCodeInfoDataSet;
   }
 
@@ -186,8 +201,8 @@ public class AzkabanJarvisCodeExtractor implements CodeExtractor {
     _jobCodeInfoDataSet.setSourceCode(sourceCode);
   }
 
-  protected String getSourceCode(JSONObject jsonJobInfo) throws IOException, JSONException{
-    return  jsonJobInfo.getJSONObject(Constant.CodeLocationJSONKey.FILE_INFO.getJSONKey())
+  protected String getSourceCode(JSONObject jsonJobInfo) throws IOException, JSONException {
+    return jsonJobInfo.getJSONObject(Constant.CodeLocationJSONKey.FILE_INFO.getJSONKey())
         .getString(Constant.CodeLocationJSONKey.SOURCE_CODE.getJSONKey());
   }
 

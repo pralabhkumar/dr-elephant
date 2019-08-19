@@ -36,18 +36,6 @@ INSERT INTO `tuning_parameter` VALUES (35,'mapreduce.job.reduces',4,1,1,999,10,0
 
 ALTER TABLE tuning_job_definition ADD PRIMARY KEY (job_definition_id);
 
-CREATE TABLE tuning_job_execution_code_recommendation (
-  id int(10) unsigned NOT NULL AUTO_INCREMENT COMMENT 'Auto increment unique id',
-  job_def_id varchar(700) DEFAULT NULL,
-  job_exec_url varchar(700) DEFAULT NULL,
-  code_location varchar(700) DEFAULT NULL,
-  recommendation varchar(700) DEFAULT NULL,
-  severity varchar(700) DEFAULT NULL,
-  created_ts timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_ts timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (id)
-) ENGINE=InnoDB
-
 # --- !Downs
 DELETE FROM tuning_parameter WHERE id=28;
 DELETE FROM tuning_parameter WHERE id=29;

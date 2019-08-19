@@ -1,7 +1,25 @@
+/*
+ * Copyright 2016 LinkedIn Corp.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ */
+
+
 package com.linkedin.drelephant.analysis.code.optimizers.hive;
 
 import com.linkedin.drelephant.analysis.code.dataset.Statement;
-import java.io.IOException;
+import com.linkedin.drelephant.analysis.code.util.Constant;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -10,6 +28,9 @@ import org.json.JSONException;
 import org.apache.hadoop.hive.ql.parse.ASTNode;
 
 
+/**
+ * This class represent the Node in the DAG
+ */
 public class Node {
   private String outputTable = null;
   private String query = null;
@@ -23,30 +44,20 @@ public class Node {
     return nodeComplexity;
   }
 
-  public void setNodeComplexity(int nodeComplexity) {
-    this.nodeComplexity = nodeComplexity;
-  }
-
-  public void generateNodeComplexity() throws ParseException, IOException, JSONException {
-    String queryForHiveParsing = statement.getFrameWorkParsableQuery();
-    String queryLevelFeatures =
-        QueryLevelFeature.generateFeatures((ASTNode) statement.getBaseTree(), queryForHiveParsing);
+  /**
+   * Generate the complexity of the Node , based on the number of shuffle operation.
+   * @throws ParseException , Can throws parse exception and JSON exception
+   * @throws JSONException
+   */
+  public void generateNodeComplexity() throws ParseException, JSONException {
+    String queryLevelFeatures = QueryLevelFeature.generateFeatures((ASTNode) statement.getBaseTree());
     int numberOfShuffleOperation = Integer.parseInt(queryLevelFeatures.split(QueryLevelFeature.DELIMITER)[0]);
-    //int queryComplexity = Constant.getMLPriority(queryLevelFeatures.replaceAll("<FEATURE_DELIMETER>", "@"));
-    /*int queryComplexity = 1;
-    if (queryComplexity == 0) {
-      this.nodeComplexity = 3;
-    } else if (queryComplexity == 1) {
-      this.nodeComplexity = 2;
-    } else {
-      this.nodeComplexity = 1;
-    }*/
-    if (numberOfShuffleOperation == 1) {
-      this.nodeComplexity = 1;
-    } else if (numberOfShuffleOperation == 2) {
-      this.nodeComplexity = 2;
-    } else if (numberOfShuffleOperation > 2) {
-      this.nodeComplexity = 3;
+    if (numberOfShuffleOperation == Constant.ShuffleOperationThreshold.FIRST_THRESHOLD.getValue()) {
+      this.nodeComplexity = Constant.NodeComplexity.LOW.getValue();
+    } else if (numberOfShuffleOperation == Constant.ShuffleOperationThreshold.SECOND_THRESHOLD.getValue()) {
+      this.nodeComplexity = Constant.NodeComplexity.MEDIUM.getValue();
+    } else if (numberOfShuffleOperation > Constant.ShuffleOperationThreshold.SECOND_THRESHOLD.getValue()) {
+      this.nodeComplexity = Constant.NodeComplexity.HIGH.getValue();
     }
   }
 
@@ -58,10 +69,6 @@ public class Node {
     if (statement != null) {
       query = statement.getFrameWorkParsableQuery();
     }
-  }
-
-  public String getOutputTable() {
-    return this.outputTable;
   }
 
   public void addChild(Node node) {
@@ -96,10 +103,18 @@ public class Node {
     return statement;
   }
 
+  /**
+   * Currently not is us , but will be helpful for DAG analysis.
+   * @return
+   */
   public int getINDegree() {
     return this.getParent().size();
   }
 
+  /**
+   * Currently not is us , but will be helpful for DAG analysis.
+   * @return
+   */
   public int getOUTDegree() {
     return this.getChildren().size();
   }

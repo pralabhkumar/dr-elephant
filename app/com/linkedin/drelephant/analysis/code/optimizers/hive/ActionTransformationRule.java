@@ -1,3 +1,19 @@
+/*
+ * Copyright 2016 LinkedIn Corp.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ */
+
 package com.linkedin.drelephant.analysis.code.optimizers.hive;
 
 import com.linkedin.drelephant.analysis.Severity;
@@ -13,6 +29,17 @@ import org.apache.log4j.Logger;
 import org.apache.hadoop.hive.ql.parse.ASTNode;
 
 
+/**
+ * This class implements ActionTransformationRule ,specifically for hive.
+ * 1) Create DAG where ,each hive query in script is node .  Input and output tables are edges
+ * 2) Then based on number of shuffle operations in each node ,defines complexity of the node
+ * 3) Suggest the temperary tables to convert into Views in Spark (based on the weight of the Path),
+ *    this is to avoid Narrow DAG in Spark
+ *
+ *  This Rule assumes ,especially in ETL queries lot of temperary tables are created .
+ *  This tables can be converted to views in Spark , which helps in avoiding unnecessary
+ *  Shuffle and disk IO.
+ */
 public class ActionTransformationRule implements CodeOptimizationRule {
   private static final Logger logger = Logger.getLogger(ActionTransformationRule.class);
   private String ruleName = null;
@@ -94,21 +121,21 @@ public class ActionTransformationRule implements CodeOptimizationRule {
 
   @Override
   public String getSeverity() {
-    logger.info(" Size of the tables to create views "+tablesConvertedToViews.size());
+    logger.info(" Size of the tables to create views " + tablesConvertedToViews.size());
     if (tablesConvertedToViews.size() == 1) {
-      logger.info(" Severity is  "+Severity.LOW);
+      logger.info(" Severity is  " + Severity.LOW);
       return Severity.LOW.getText();
     } else if (tablesConvertedToViews.size() == 2) {
-      logger.info(" Severity is  "+Severity.MODERATE);
+      logger.info(" Severity is  " + Severity.MODERATE);
       return Severity.MODERATE.getText();
     } else if (tablesConvertedToViews.size() == 3) {
-      logger.info(" Severity is  "+Severity.SEVERE);
+      logger.info(" Severity is  " + Severity.SEVERE);
       return Severity.SEVERE.getText();
-    } else if (tablesConvertedToViews.size() >3){
-      logger.info(" Severity is  "+Severity.CRITICAL);
+    } else if (tablesConvertedToViews.size() > 3) {
+      logger.info(" Severity is  " + Severity.CRITICAL);
       return Severity.CRITICAL.getText();
     }
-    logger.info("MAtches noting  Severity is  "+Severity.LOW);
-    return Severity.LOW.getText();
+    logger.info("Matches noting  Severity is  " + Severity.LOW);
+    return Severity.NONE.getText();
   }
 }
