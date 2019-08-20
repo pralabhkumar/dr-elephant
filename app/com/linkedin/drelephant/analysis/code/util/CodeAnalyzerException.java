@@ -27,24 +27,28 @@ import org.codehaus.jettison.json.JSONException;
  */
 public class CodeAnalyzerException extends Exception {
   private static final Logger logger = Logger.getLogger(CodeAnalyzerException.class);
+  private static final String EXCEPTION_RECOGNIZE_KEYWORD ="CodeAnalyzerException";
 
   public CodeAnalyzerException(IOException exception) {
     super(exception);
-    logger.error("Unable to get code ", exception);
+    logger.error(EXCEPTION_RECOGNIZE_KEYWORD+ " Unable to get code ", exception);
   }
 
   public CodeAnalyzerException(JSONException exception) {
     super(exception);
-    logger.error("Unable to  parse JSON ", exception);
+    logger.error(EXCEPTION_RECOGNIZE_KEYWORD+ " Unable to  parse JSON ", exception);
   }
 
   /**
    * Blanket exception is used , so as to avoid any side effects in the
-   * Dr Elephant framework , because of unknown exception in Code level analysis.
+   * Dr Elephant framework , because of unknown exception in Code level analysis
+   * .
+   * This will also help to parse log to see if exception is because of Code Analyzer or not.
    * @param exception
    */
   public CodeAnalyzerException(Exception exception) {
     super(exception);
-    logger.error("Unknown exception have come , catching this , to not halt the system because of unknown exception ", exception);
+    logger.error(EXCEPTION_RECOGNIZE_KEYWORD+" Unknown exception have come , catching this , to not halt the system because of unknown exception ",
+        exception);
   }
 }

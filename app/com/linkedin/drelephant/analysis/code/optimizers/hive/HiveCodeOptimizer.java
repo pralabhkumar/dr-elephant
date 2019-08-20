@@ -36,7 +36,7 @@ import org.apache.hadoop.hive.ql.parse.ParseException;
 import org.apache.hadoop.hive.ql.parse.SemanticException;
 import org.apache.log4j.Logger;
 import org.json.JSONException;
-
+import org.antlr.runtime.NoViableAltException;
 
 public class HiveCodeOptimizer implements CodeOptimizer {
 
@@ -143,7 +143,7 @@ public class HiveCodeOptimizer implements CodeOptimizer {
       enrichOutputTablesWithCreateTable(node, outputSinks);
       statement.setInputSources(inputSources);
       statement.setOutputSinks(outputSinks);
-    } catch (ParseException | SemanticException | RuntimeException e) {
+    } catch (ParseException | SemanticException  e) {
       logger.error(" Unable to parse ,following query " + hiveParsableQuery);
       try {
         statement.setBaseTree(pd.parse(DUMMY_QUERY));
