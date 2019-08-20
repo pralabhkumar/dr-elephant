@@ -29,6 +29,8 @@ public final class Constant {
       "ca.threshold.checkpoint.actiontransformation";
   static final String SHUFFLE_OPERATIONS_IN_HIVE_NAME = "ca.hive.shuffle.operations";
   public static final String CODE_LEVEL_OPTIMIZATION_ENABLED = "code.level.optimization.enabled";
+  public static final String CODE_HEURISTIC_NAME = "codeheuristic";
+  public static final String CODE_HEURISTIC_VIEW_NAME = "views.html.help.mapreduce.helpCodeHeuristic";
 
   public enum CodeLocationJSONKey {
     PATH("paths"),

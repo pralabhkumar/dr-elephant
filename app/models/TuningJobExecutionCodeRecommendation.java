@@ -33,7 +33,7 @@ import play.db.ebean.Model;
 
 
 /**
- * Table describe about the job which is for tuning. It have one entry per job .
+ * Table describe about the job which is for tuning. It have one entry per job execution.
  */
 @Entity
 @Table(name = "tuning_job_execution_code_recommendation")

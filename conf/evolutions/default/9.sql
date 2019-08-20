@@ -36,6 +36,8 @@ INSERT INTO `tuning_parameter` VALUES (35,'mapreduce.job.reduces',4,1,1,999,10,0
 
 ALTER TABLE tuning_job_definition ADD PRIMARY KEY (job_definition_id);
 
+
+
 # --- !Downs
 DELETE FROM tuning_parameter WHERE id=28;
 DELETE FROM tuning_parameter WHERE id=29;

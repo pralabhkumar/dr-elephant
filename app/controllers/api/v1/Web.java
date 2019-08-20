@@ -31,6 +31,7 @@ import com.linkedin.drelephant.analysis.ApplicationType;
 import com.linkedin.drelephant.analysis.Heuristic;
 import com.linkedin.drelephant.analysis.JobType;
 import com.linkedin.drelephant.analysis.Severity;
+import com.linkedin.drelephant.analysis.code.util.Constant;
 import com.linkedin.drelephant.exceptions.ExceptionFinder;
 import com.linkedin.drelephant.exceptions.HadoopException;
 import com.linkedin.drelephant.security.HadoopSecurity;
@@ -210,16 +211,19 @@ public class Web extends Controller {
   ;
 
   /**
-   * Returns a list of AppResult with the given jobExecId
+   *
    * @param jobExecId The job execution id of the job
-   * @return The list of AppResult filtered by job execution id
+   * @return Returns a latest TuningJobExecutionCodeRecommendation
    */
   private static TuningJobExecutionCodeRecommendation getCodeRecommendationFromJobExecutionId(String jobExecId) {
-    TuningJobExecutionCodeRecommendation codeRecommendations =
-        TuningJobExecutionCodeRecommendation.find.select("*").where().eq(TuningJobExecutionCodeRecommendation.TABLE.jobExecUrl, jobExecId).order()
-            .desc(TuningJobExecutionCodeRecommendation.TABLE.updatedTs)
-            .setMaxRows(1)
-            .findUnique();;
+    TuningJobExecutionCodeRecommendation codeRecommendations = TuningJobExecutionCodeRecommendation.find.select("*")
+        .where()
+        .eq(TuningJobExecutionCodeRecommendation.TABLE.jobExecUrl, jobExecId)
+        .order()
+        .desc(TuningJobExecutionCodeRecommendation.TABLE.updatedTs)
+        .setMaxRows(1)
+        .findUnique();
+    ;
     return codeRecommendations;
   }
 
@@ -1046,7 +1050,6 @@ public class Web extends Controller {
       }
     }
 
-
     JsonArray taskSeverity = new JsonArray();
     List<Severity> keys = getSortedSeverityKeys(taskSeverityCount.keySet());
     for (Severity key : keys) {
@@ -1056,56 +1059,9 @@ public class Web extends Controller {
       taskSeverity.add(severityObject);
     }
 
-    TuningJobExecutionCodeRecommendation codeRecommendation =   getCodeRecommendationFromJobExecutionId(jobid);
+
     JsonArray codeSummaryArray = new JsonArray();
-    if(codeRecommendation!=null) {
-
-      JsonObject taskObject = new JsonObject();
-
-
-      String codeLocationInfo[] = codeRecommendation.codeLocation.split(",");
-      JsonArray detailArray = new JsonArray();
-      if(codeLocationInfo.length>=3) {
-        for (String keyValue : codeLocationInfo) {
-          String keyValueSplit[] = keyValue.split("=");
-          if (keyValueSplit.length >= 2) {
-            JsonObject heuristicObject = new JsonObject();
-            heuristicObject.addProperty(JsonKeys.NAME, keyValueSplit[0]);
-            heuristicObject.addProperty(JsonKeys.VALUE, keyValueSplit[1].replaceAll("%2F","/"));
-            detailArray.add(heuristicObject);
-          }
-        }
-      }
-      else{
-        JsonObject heuristicObject = new JsonObject();
-        heuristicObject.addProperty(JsonKeys.NAME, "Code Location");
-        heuristicObject.addProperty(JsonKeys.VALUE, codeRecommendation.codeLocation.replaceAll("%2F","/"));
-        detailArray.add(heuristicObject);
-      }
-
-      if(codeRecommendation.severity.toLowerCase().equals("critical") || codeRecommendation.severity.toLowerCase().equals("severe")){
-        JsonObject heuristicObject = new JsonObject();
-        heuristicObject.addProperty(JsonKeys.NAME, " Recommendation ");
-        heuristicObject.addProperty(JsonKeys.VALUE, "Convert your code to Spark for better run time and resource utilization/compute efficiency");
-        detailArray.add(heuristicObject);
-      }
-
-      JsonObject heuristicObject = new JsonObject();
-      heuristicObject.addProperty(JsonKeys.NAME, "Convert following  tables  to views in spark. ");
-      /*StringBuffer tableNames = new StringBuffer();
-      //tableNames.append("<ol>");
-      for(String tableName:codeRecommendation.recommendation.split("\n")) {
-        tableNames.append(tableName).append("<br>");
-      }
-      //tableNames.append("</ol>");*/
-      heuristicObject.addProperty(JsonKeys.VALUE, codeRecommendation.recommendation);
-      detailArray.add(heuristicObject);
-      taskObject.add(JsonKeys.DETAILS,detailArray);
-      taskObject.addProperty(JsonKeys.NAME, "CodeHeuristic");
-      taskObject.addProperty(JsonKeys.SEVERITY, codeRecommendation.severity);
-      codeSummaryArray.add(taskObject);
-    }
-    logger.info(codeSummaryArray);
+    addCodeLevelOptimizationSummaryToJSON(jobid, codeSummaryArray);
 
     jobRuntime = Utils.getTotalRuntime(results);
     jobDelay = Utils.getTotalWaittime(results);
@@ -1134,8 +1090,55 @@ public class Web extends Controller {
 
     JsonObject parent = new JsonObject();
     parent.add(JsonKeys.JOBS, data);
-
     return ok(new Gson().toJson(parent));
+  }
+
+  /**
+   * This method will query TuningJobExecutionCodeRecommendation table and get the data
+   * corresponding to the jobExecutionID and then save the same data to JSON.
+   * @param jobid
+   * @param codeSummaryArray
+   */
+  private static void addCodeLevelOptimizationSummaryToJSON(String jobid, JsonArray codeSummaryArray) {
+    TuningJobExecutionCodeRecommendation codeRecommendation = getCodeRecommendationFromJobExecutionId(jobid);
+    if (codeRecommendation != null) {
+      JsonObject taskObject = new JsonObject();
+      String codeLocationInfo[] = codeRecommendation.codeLocation.split(",");
+      JsonArray detailArray = new JsonArray();
+      if (codeLocationInfo.length >= 3) {
+        for (String keyValue : codeLocationInfo) {
+          String keyValueSplit[] = keyValue.split("=");
+          if (keyValueSplit.length >= 2) {
+            JsonObject heuristicObject = new JsonObject();
+            heuristicObject.addProperty(JsonKeys.NAME, keyValueSplit[0]);
+            heuristicObject.addProperty(JsonKeys.VALUE, keyValueSplit[1].replaceAll("%2F", "/"));
+            detailArray.add(heuristicObject);
+          }
+        }
+      } else {
+        JsonObject heuristicObject = new JsonObject();
+        heuristicObject.addProperty(JsonKeys.NAME, "Code Location");
+        heuristicObject.addProperty(JsonKeys.VALUE, codeRecommendation.codeLocation.replaceAll("%2F", "/"));
+        detailArray.add(heuristicObject);
+      }
+      if (codeRecommendation.severity.toLowerCase().equals("critical") || codeRecommendation.severity.toLowerCase()
+          .equals("severe")) {
+        JsonObject heuristicObject = new JsonObject();
+        heuristicObject.addProperty(JsonKeys.NAME, " Recommendation ");
+        heuristicObject.addProperty(JsonKeys.VALUE,
+            "Convert your code to Spark for better run time and resource utilization/compute efficiency");
+        detailArray.add(heuristicObject);
+      }
+      JsonObject heuristicObject = new JsonObject();
+      heuristicObject.addProperty(JsonKeys.NAME, "Convert following  tables  to views in spark. ");
+      heuristicObject.addProperty(JsonKeys.VALUE, codeRecommendation.recommendation);
+      detailArray.add(heuristicObject);
+      taskObject.add(JsonKeys.DETAILS, detailArray);
+      taskObject.addProperty(JsonKeys.NAME, Constant.CODE_HEURISTIC_NAME);
+      taskObject.addProperty(JsonKeys.SEVERITY, codeRecommendation.severity);
+      codeSummaryArray.add(taskObject);
+    }
+    logger.info(codeSummaryArray);
   }
 
   /**

@@ -66,7 +66,7 @@ public class QueryLevelFeature {
       }
 
       for (Node rootNode : node.getChildren()) {
-        logger.info(" Node operation " + rootNode.toString());
+        logger.debug(" Node operation " + rootNode.toString());
         if (shuffleOperation.contains(rootNode.toString())) {
           operation = operation + 1;
         }

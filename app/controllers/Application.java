@@ -30,6 +30,7 @@ import com.google.gson.JsonObject;
 import com.linkedin.drelephant.ElephantContext;
 import com.linkedin.drelephant.analysis.Metrics;
 import com.linkedin.drelephant.analysis.Severity;
+import com.linkedin.drelephant.analysis.code.util.Constant;
 import com.linkedin.drelephant.tuning.AutoTuningAPIHelper;
 import com.linkedin.drelephant.tuning.Constant.AlgorithmType;
 import com.linkedin.drelephant.tuning.Constant.TuningType;
@@ -836,8 +837,10 @@ public class Application extends Controller {
     Html page = null;
     String title = "Help";
     if (topic != null && !topic.isEmpty()) {
-      // check if it is a heuristic help
-      if(topic.toLowerCase().equals("codeheuristic")){
+      // Currently code heuristic view is loaded from the code and not from
+      // config file (since it has only one view)
+      // todo: load view for code level heuristic also from configuration file
+      if(topic.toLowerCase().equals(Constant.CODE_HEURISTIC_NAME)){
         page = getView();
       }
       else {
@@ -862,8 +865,7 @@ public class Application extends Controller {
 
   private static  Html getView(){
     try {
-      Class<?> viewClass = Class.forName("views.html.help.mapreduce.helpCodeHeuristic");
-
+      Class<?> viewClass = Class.forName(Constant.CODE_HEURISTIC_VIEW_NAME);
       Method render = viewClass.getDeclaredMethod("render");
       Html page = (Html) render.invoke(null);
       logger.info("Load View : " +viewClass);

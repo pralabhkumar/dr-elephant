@@ -144,11 +144,11 @@ public class HiveCodeOptimizer implements CodeOptimizer {
       statement.setInputSources(inputSources);
       statement.setOutputSinks(outputSinks);
     } catch (ParseException | SemanticException | RuntimeException e) {
-      logger.error(" Unable to parse ,following query " + hiveParsableQuery, e);
+      logger.error(" Unable to parse ,following query " + hiveParsableQuery);
       try {
         statement.setBaseTree(pd.parse(DUMMY_QUERY));
       } catch (ParseException e1) {
-        logger.error(" Unable to parse ,dummy query " + DUMMY_QUERY, e1);
+        logger.error(" Unable to parse ,dummy query " + DUMMY_QUERY);
       }
     }
   }

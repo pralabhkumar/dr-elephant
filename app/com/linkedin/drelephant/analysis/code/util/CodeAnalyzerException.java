@@ -38,6 +38,11 @@ public class CodeAnalyzerException extends Exception {
     logger.error("Unable to  parse JSON ", exception);
   }
 
+  /**
+   * Blanket exception is used , so as to avoid any side effects in the
+   * Dr Elephant framework , because of unknown exception in Code level analysis.
+   * @param exception
+   */
   public CodeAnalyzerException(Exception exception) {
     super(exception);
     logger.error("Unknown exception have come , catching this , to not halt the system because of unknown exception ", exception);

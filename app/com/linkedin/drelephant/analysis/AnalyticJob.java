@@ -372,7 +372,7 @@ public class AnalyticJob {
     Helper.ConfigurationBuilder.buildConfigurations(configuration);
     CodeExtractor codeExtractor = CodeExtractionFactory.getCodeExtractor(result);
     JobCodeInfoDataSet jobCodeInfoDataSet = codeExtractor.execute(result);
-    if (jobCodeInfoDataSet.getCodeOptimizer() != null) {
+    if (jobCodeInfoDataSet!=null && jobCodeInfoDataSet.getCodeOptimizer() != null) {
       logger.info(" Optimizer is available for the code , hence optimizing it " + jobCodeInfoDataSet);
       Script script = jobCodeInfoDataSet.getCodeOptimizer().execute(jobCodeInfoDataSet.getSourceCode());
       saveOptimizationResultIntoDB(script, jobCodeInfoDataSet, result);

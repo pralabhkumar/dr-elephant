@@ -392,13 +392,11 @@ public class AzkabanWorkflowClient implements WorkflowClient {
     urlParameters.add(new BasicNameValuePair("execid", _executionId));
     try {
       JSONObject jsonObject = fetchJson(urlParameters, _workflowExecutionUrl);
-      //coding here
       JSONArray jobs = jsonObject.getJSONArray("nodes");
       String projectName = jsonObject.getString("project");
       String flowName = jsonObject.getString("id");
       Map<String, String> jobMap = new HashMap<String, String>();
       addJobStatusForFlow(jobMap, jobs);
-      //printAzkabanCodePath(jobMap.keySet(),projectName,flowName);
       return jobMap;
     } catch (JSONException e) {
       logger.error("Error in parsing azkaban output ", e);

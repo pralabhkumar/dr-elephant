@@ -95,8 +95,6 @@ public class JsonKeys {
   public static final String APPLICATIONS = "applications";
   public static final String TOTAL_APPLICATIONS = "totalapplications";
 
-  // Code Level tuneIN
-
   // TuneIn
   public static final String TUNEIN = "tunein";
   public static final String JOB = "job";
