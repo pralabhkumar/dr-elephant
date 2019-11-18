@@ -21,15 +21,22 @@ import com.linkedin.drelephant.analysis.HadoopApplicationData;
 import com.linkedin.drelephant.exceptions.ExceptionFingerprinting;
 import com.linkedin.drelephant.exceptions.HadoopException;
 import com.linkedin.drelephant.exceptions.util.ExceptionInfo;
+import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import models.AppResult;
 import models.JobsExceptionFingerPrinting;
 import org.apache.log4j.Logger;
+import org.codehaus.jackson.JsonGenerationException;
+import org.codehaus.jackson.map.JsonMappingException;
+import org.codehaus.jackson.map.ObjectMapper;
 
 import static com.linkedin.drelephant.exceptions.util.Constant.*;
+import static com.linkedin.drelephant.exceptions.util.ExceptionUtils.ConfigurationBuilder.*;
 
 
 /**
@@ -62,7 +69,8 @@ public class ExceptionFingerprintingRunner implements Runnable {
       ExceptionFingerprinting exceptionFingerprinting =
           ExceptionFingerprintingFactory.getExceptionFingerprinting(executionType, data);
       List<ExceptionInfo> exceptionInfos = exceptionFingerprinting.processRawData(_analyticJob);
-      saveDriverExceptionLogForExceptionFingerPrinting(exceptionInfos);
+      saveDriverExceptionLogForExceptionFingerPrinting(exceptionInfos,
+          exceptionFingerprinting.getExceptionLogSourceInformation());
       LogClass logClass = exceptionFingerprinting.classifyException(exceptionInfos);
       boolean isAutoTuningFault = false;
       if (logClass != null && logClass.equals(LogClass.AUTOTUNING_ENABLED)) {
@@ -80,12 +88,13 @@ public class ExceptionFingerprintingRunner implements Runnable {
         + (endTime - startTime) * 1.0 / (1000000000.0) + "s");
   }
 
-  private void saveDriverExceptionLogForExceptionFingerPrinting(List<ExceptionInfo> exceptionInfoList) {
+  private void saveDriverExceptionLogForExceptionFingerPrinting(List<ExceptionInfo> exceptionInfoList,
+      Map<String, String> logSourceInformation) {
     if (exceptionInfoList != null) {
       final String NOT_APPLICABLE = "NA";
-      Optional<ExceptionInfo> driverExceptionInfo = exceptionInfoList.parallelStream()
-          .filter(ex -> ex.getExceptionSource().equals(ExceptionInfo.ExceptionSource.DRIVER))
-          .findFirst();
+
+      String exceptionsTrace = parseExceptions(exceptionInfoList);
+
       JobsExceptionFingerPrinting jobsExceptionFingerPrinting = new JobsExceptionFingerPrinting();
       jobsExceptionFingerPrinting.appId = NOT_APPLICABLE;
       jobsExceptionFingerPrinting.taskId = NOT_APPLICABLE;
@@ -99,8 +108,10 @@ public class ExceptionFingerprintingRunner implements Runnable {
       sparkJobException.appId = _appResult.id;
       sparkJobException.taskId = NOT_APPLICABLE;
       sparkJobException.jobName = getJobName(_appResult.jobExecUrl);
-      if (driverExceptionInfo.isPresent()) {
-        sparkJobException.exceptionLog = driverExceptionInfo.get().getExcptionStackTrace();
+      sparkJobException.logSourceInformation = processLogSourceInformation(logSourceInformation);
+      //sparkJobException.exceptionLog = exceptionsTrace;
+      if (exceptionsTrace.trim().length() > 2) {
+        sparkJobException.exceptionLog = exceptionsTrace;
       } else {
         sparkJobException.exceptionLog = "Couldn't gather driver logs for the job";
       }
@@ -110,9 +121,43 @@ public class ExceptionFingerprintingRunner implements Runnable {
     }
   }
 
+  private String parseExceptions(List<ExceptionInfo> exceptionInfoList) {
+    ObjectMapper Obj = new ObjectMapper();
+    StringBuilder exceptionString = new StringBuilder();
+    int countOfExceptions = 0;
+    Collections.sort(exceptionInfoList);
+    String exceptionInJson = null;
+    try {
+      exceptionInJson = Obj.writeValueAsString(exceptionInfoList.subList(0,
+          exceptionInfoList.size() > NUMBER_OF_EXCEPTION_TO_PUT_IN_DB.getValue()
+              ? NUMBER_OF_EXCEPTION_TO_PUT_IN_DB.getValue() : exceptionInfoList.size()));
+    } catch (IOException e) {
+      logger.error(" Exception while writing stack trace to DB ", e);
+    }
+    logger.debug(" Final String to be saved in dB " + exceptionInJson);
+   /* for (ExceptionInfo exceptionInfo : exceptionInfoList) {
+      try {
+        if (countOfExceptions < NUMBER_OF_EXCEPTION_TO_PUT_IN_DB.getValue()) {
+          exceptionString.append(Obj.writeValueAsString(exceptionInfo)).append("\n");
+          countOfExceptions++;
+        }
+      } catch (IOException e) {
+        logger.error(" Exception while writing stack trace to DB ", e);
+      }*/
+    return exceptionInJson;
+  }
+
+  private String processLogSourceInformation(Map<String, String> logSourceInformation) {
+    StringBuilder logSource = new StringBuilder();
+    for (Map.Entry<String, String> entry : logSourceInformation.entrySet()) {
+      logSource.append("SOURCE=" + entry.getKey() + "\tURL=" + entry.getValue()).append("\n");
+    }
+    return logSource.toString();
+  }
+
   private String getJobName(String jobExecUrl) {
     Matcher matcher = jobNamePattern.matcher(jobExecUrl);
-    if (matcher.find()){
+    if (matcher.find()) {
       return matcher.group(1);
     }
     return matcher.group(1);

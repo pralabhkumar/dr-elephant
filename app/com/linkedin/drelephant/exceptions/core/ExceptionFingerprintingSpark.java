@@ -29,7 +29,11 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
+import java.util.ListIterator;
+import java.util.Map;
 import models.JobDefinition;
 import models.JobExecution;
 import models.TuningJobDefinition;
@@ -58,18 +62,27 @@ public class ExceptionFingerprintingSpark implements ExceptionFingerprinting {
 
   private AnalyticJob analyticJob;
   private List<StageData> failedStageData;
+  private Map<String, String> logSourceInfo ;
   private boolean useRestAPI = true;
+  private int globalExceptionsWeight = 0;
+
 
   static {
     ConfigurationBuilder.buildConfigurations(ElephantContext.instance().getAutoTuningConf());
   }
 
-  public ExceptionFingerprintingSpark(List<StageData> failedStageData) {
+  public ExceptionFingerprintingSpark(List<StageData> failedStageData, String targetURIofFailedStage) {
     this.failedStageData = failedStageData;
-    if (failedStageData == null) {
-      logger.debug(" No data fetched for stages ");
-    }
+    this.logSourceInfo = new HashMap<String, String>();
+    this.logSourceInfo.put(ExceptionSource.EXECUTOR.name(),targetURIofFailedStage);
+    logger.info(" Rest API for Getting Stage failure logs "+targetURIofFailedStage);
   }
+
+  public ExceptionFingerprintingSpark(){
+    this.logSourceInfo = new HashMap<String, String>();
+    logger.debug(" No data fetched for stages ");
+  }
+
 
   /*
    *
@@ -94,6 +107,7 @@ public class ExceptionFingerprintingSpark implements ExceptionFingerprinting {
     //driver logs ,to optimize the process .But it can lead to false positivies  in the system,
     //since failure of stage may or may not be the reason for application failure
     processDriverLogs(exceptions);
+    processExceptionsFromBlackListingPattern(exceptions);
     return exceptions;
   }
 
@@ -112,8 +126,8 @@ public class ExceptionFingerprintingSpark implements ExceptionFingerprinting {
            * which will give same id , if they similar exceptions .
            */
           //TODO : ID should be same for simillar exceptions
-          addExceptions((stageData.failureReason().get() + "" + stageData.details()).hashCode(),
-              stageData.failureReason().get(), stageData.details(), ExceptionSource.EXECUTOR, exceptions);
+          addExceptions((stageData.failureReason().toString() + "" + stageData.details()).hashCode(),
+              stageData.failureReason().toString(), stageData.details(), ExceptionSource.EXECUTOR, exceptions);
         }
       } else {
         logger.info(" There are no failed stages data ");
@@ -128,7 +142,9 @@ public class ExceptionFingerprintingSpark implements ExceptionFingerprinting {
 
   private void addExceptions(int uniqueID, String exceptionName, String exceptionStackTrace,
       ExceptionSource exceptionSource, List<ExceptionInfo> exceptions) {
-    ExceptionInfo exceptionInfo = new ExceptionInfo(uniqueID, exceptionName, exceptionStackTrace, exceptionSource);
+    globalExceptionsWeight++;
+    ExceptionInfo exceptionInfo =
+        new ExceptionInfo(uniqueID, exceptionName, exceptionStackTrace, exceptionSource, globalExceptionsWeight);
     if (debugEnabled) {
       logger.debug(" Exception Information " + exceptionInfo);
     }
@@ -151,12 +167,13 @@ public class ExceptionFingerprintingSpark implements ExceptionFingerprinting {
       String urlToQuery = buildURLtoQuery();
       long startTimeForFirstQuery = System.nanoTime();
       String completeURLToQuery = completeURLToQuery(urlToQuery);
+      logSourceInfo.put(ExceptionInfo.ExceptionSource.DRIVER.name(), completeURLToQuery);
       long endTimeForFirstQuery = System.nanoTime();
       logger.info(
           " Time taken for first query " + (endTimeForFirstQuery - startTimeForFirstQuery) * 1.0 / (1000000000.0)
               + "s");
       logger.info(" URL to query for driver logs  " + completeURLToQuery);
-      connection =  intializeHTTPConnection(completeURLToQuery);
+      connection = intializeHTTPConnection(completeURLToQuery);
       in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
       String inputLine;
       String logLengthTrigger = LogLengthSchema.LOG_LENGTH.name().replace("_", " ");
@@ -195,12 +212,15 @@ public class ExceptionFingerprintingSpark implements ExceptionFingerprinting {
     BufferedReader in = null;
     HttpURLConnection connection = null;
     try {
-      connection =  intializeHTTPConnection(url);
+      connection = intializeHTTPConnection(url);
       in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
       String inputLine;
       long logLength = 0l;
       String logLengthTrigger = LogLengthSchema.LOG_LENGTH.name().replace("_", " ");
+      logger.info(" Log length " + logLengthTrigger);
+      int numberOfLinesRead = 0;
       while ((inputLine = in.readLine()) != null) {
+        numberOfLinesRead++;
         if (inputLine.toUpperCase().contains(logLengthTrigger)) {
           logLength = getLogLength(inputLine.toUpperCase());
           long startIndex = getStartIndexOfDriverLogs(logLength);
@@ -212,12 +232,15 @@ public class ExceptionFingerprintingSpark implements ExceptionFingerprinting {
           break;
         }
       }
+      logger.info(" URL build process completed " + numberOfLinesRead);
     } catch (Exception e) {
       logger.error(" Exception while creating complete URL to query ", e);
       return url;
-    }
-    finally{
+    } finally {
       gracefullyCloseConnection(in, connection);
+    }
+    if (completeURLToQuery == null) {
+      return url;
     }
     return completeURLToQuery;
   }
@@ -297,7 +320,7 @@ public class ExceptionFingerprintingSpark implements ExceptionFingerprinting {
         int stackTraceLine = NUMBER_OF_STACKTRACE_LINE.getValue();
         StringBuffer stackTrace = new StringBuffer();
         while (stackTraceLine >= 0 && inputLine != null) {
-          stackTrace.append(inputLine);
+          stackTrace.append(inputLine).append("\n");
           stackTraceLine--;
           inputLine = in.readLine();
         }
@@ -308,6 +331,20 @@ public class ExceptionFingerprintingSpark implements ExceptionFingerprinting {
         }
       }
     }
+  }
+
+  private void processExceptionsFromBlackListingPattern(List<ExceptionInfo> exceptions) {
+    List<ExceptionInfo> blackListedException = new ArrayList<>();
+    for (ExceptionInfo exceptionInfo : exceptions) {
+      for (String blackListedPattern : BLACK_LISTED_EXCEPTION_PATTERN.getValue()) {
+        if (exceptionInfo.getExceptionName().trim().toLowerCase().contains(blackListedPattern.trim().toLowerCase())) {
+          logger.debug(" Blacked listed following exception " + exceptionInfo);
+          blackListedException.add(exceptionInfo);
+          break;
+        }
+      }
+    }
+    exceptions.removeAll(blackListedException);
   }
 
   @Override
@@ -336,7 +373,7 @@ public class ExceptionFingerprintingSpark implements ExceptionFingerprinting {
         return false;
       } else {
         if (!tuningJobDefinition.autoApply) {
-          logger.info(" Auto tuning is not enabled on the job "+tuningJobDefinition);
+          logger.info(" Auto tuning is not enabled on the job " + tuningJobDefinition);
           return false;
         } else {
           logger.info(" Job execution is failed because of autotuning . Saving this result to DB" + jobExecution);
@@ -346,5 +383,10 @@ public class ExceptionFingerprintingSpark implements ExceptionFingerprinting {
         }
       }
     }
+  }
+
+  @Override
+  public Map<String, String> getExceptionLogSourceInformation() {
+    return this.logSourceInfo;
   }
 }

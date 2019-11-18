@@ -56,6 +56,7 @@ public class JsonKeys {
   public static final String SCHEDULERS = "schedulers";
   public static final String EXCEPTION_ENABLED = "exceptionenabled";
   public static String EXCEPTION_SUMMARY = "exceptionSummary";
+  public static String EXCEPTION_LOG_SOURCE = "exceptionLogSource";
   public static String STATUS = "status";
   public static String TYPE = "type";
   public static String TASKS = "tasks";

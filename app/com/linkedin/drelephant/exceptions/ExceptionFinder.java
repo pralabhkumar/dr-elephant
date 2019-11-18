@@ -273,6 +273,7 @@ public class ExceptionFinder {
             .eq(JobsExceptionFingerPrinting.TABLE.JOB_NAME, jobName)
             .eq(JobsExceptionFingerPrinting.TABLE.APP_ID, NOT_APPLICABLE)
             .eq(JobsExceptionFingerPrinting.TABLE.TASK_ID, NOT_APPLICABLE)
+            .setMaxRows(1)
             .findUnique();
         logger.info(savedJobExceptionFingerPrintingResult);
         if (savedJobExceptionFingerPrintingResult == null) {

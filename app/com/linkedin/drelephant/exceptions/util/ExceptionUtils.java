@@ -59,6 +59,7 @@ public class ExceptionUtils {
     return false;
   }
 
+
   public static HttpURLConnection intializeHTTPConnection(String url) throws IOException {
     URL amAddress = new URL(url);
     HttpURLConnection connection = (HttpURLConnection) amAddress.openConnection();
@@ -95,6 +96,8 @@ public class ExceptionUtils {
     public static EFConfiguration<String[]> REGEX_FOR_EXCEPTION_IN_LOGS = null;
     public static EFConfiguration<String[]> REGEX_AUTO_TUNING_FAULT = null;
     public static EFConfiguration<Integer> THRESHOLD_LOG_LINE_LENGTH = null;
+    public static EFConfiguration<Integer> NUMBER_OF_EXCEPTION_TO_PUT_IN_DB = null;
+    public static EFConfiguration<String[]> BLACK_LISTED_EXCEPTION_PATTERN = null;
 
 
     private static final String[] DEFAULT_REGEX_FOR_EXCEPTION_IN_LOGS =
@@ -103,6 +106,8 @@ public class ExceptionUtils {
     private static final String[] DEFAULT_REGEX_AUTO_TUNING_FAULT =
         {".*java.lang.OutOfMemoryError.*", ".*is running beyond virtual memory limits.*",".*is running beyond physical memory limits.*",
             ".*Container killed on request. Exit code is 103.*", ".*Container killed on request. Exit code is 104.*"};
+
+    private static final String[] DEFAULT_BLACK_LISTED_EXCEPTION_PATTERN = {"-XX:OnOutOfMemoryError='kill %p'"};
 
     public static void buildConfigurations(Configuration configuration) {
       FIRST_THRESHOLD_LOG_LENGTH_IN_BYTES =
@@ -136,7 +141,7 @@ public class ExceptionUtils {
               .setDoc("If the framework is supposed to read the complete logs ,"
                   + "then in that case , it will skip the intial these many bytes");
       NUMBER_OF_STACKTRACE_LINE = new com.linkedin.drelephant.exceptions.util.EFConfiguration<Integer>().setConfigurationName(NUMBER_OF_STACKTRACE_LINE_NAME)
-          .setValue(configuration.getInt(NUMBER_OF_STACKTRACE_LINE_NAME, 3))
+          .setValue(configuration.getInt(NUMBER_OF_STACKTRACE_LINE_NAME, 5))
           .setDoc("Number of stack trace lines read , after the exception encountered");
 
       JHS_TIME_OUT = new com.linkedin.drelephant.exceptions.util.EFConfiguration<Integer>().setConfigurationName(JHS_TIME_OUT_NAME)
@@ -156,6 +161,16 @@ public class ExceptionUtils {
           .setConfigurationName(THRESHOLD_LOG_LINE_LENGTH_NAME)
           .setValue(configuration.getInt(THRESHOLD_LOG_LINE_LENGTH_NAME, 1000))
           .setDoc("Log lines which have length less than this threshold will only get analyszed or looked for exception");
+
+      NUMBER_OF_EXCEPTION_TO_PUT_IN_DB = new EFConfiguration<Integer>().setConfigurationName(NUMBER_OF_EXCEPTION_TO_PUT_IN_DB_NAME)
+          .setValue(configuration.getInt(NUMBER_OF_EXCEPTION_TO_PUT_IN_DB_NAME, 10))
+          .setDoc(" Number of exception to put in database for UI");
+
+      BLACK_LISTED_EXCEPTION_PATTERN = new com.linkedin.drelephant.exceptions.util.EFConfiguration<String[]>()
+          .setConfigurationName(BLACK_LISTED_EXCEPTION_CONF)
+          .setValue(DEFAULT_BLACK_LISTED_EXCEPTION_PATTERN)
+          .setDoc(" patterns which are blacklisted ");
+
 
       if (debugEnabled) {
         logger.debug(" Exception Fingerprinting configurations ");

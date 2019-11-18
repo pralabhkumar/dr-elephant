@@ -94,7 +94,7 @@ class ExceptionFingerprintingSparkTest extends FunSpec with Matchers {
       classificationValue.name() should be("AUTOTUNING_ENABLED")
     }
     it("check for build URL for query driver logs ") {
-      val sparkExceptionFingerPrinting = new ExceptionFingerprintingSpark(null)
+      val sparkExceptionFingerPrinting = new ExceptionFingerprintingSpark()
       val analyticJob = getAnalyticalJob(false,
         "http://hostname:8042/node/containerlogs/container_e24_1547063162911_185371_01_000001/dssadmin",
         "ltx1-hcl5294.grid.linkedin.com:8042")
@@ -143,26 +143,26 @@ class ExceptionFingerprintingSparkTest extends FunSpec with Matchers {
       val exceptionOutOfMemory = new ExceptionInfo(1,
         "java.lang.OutOfMemoryError: Exception thrown in awaitResult:",
         "  at org.apache.spark.util.ThreadUtils$.awaitResult(ThreadUtils.scala:194)",
-        ExceptionInfo.ExceptionSource.EXECUTOR)
+        ExceptionInfo.ExceptionSource.EXECUTOR,1)
 
       val exceptionVirtualMemory = new ExceptionInfo(1,
         "[pid=116086,containerID=container_1535113754342_0003_01_000002] " +
           "is running beyond virtual memory limits. Current usage: 106.2 MB of 1 GB " +
           "physical memory used; 5.8 GB of 2.1 GB virtual memory used. Killing container",
         "",
-        ExceptionInfo.ExceptionSource.EXECUTOR)
+        ExceptionInfo.ExceptionSource.EXECUTOR,1)
 
       val exceptionExitCode = new ExceptionInfo(1,
         "Container killed by the ApplicationMaster. " +
           "Container killed on request. Exit code is " +
           "103 Container exited with a non-zero exit code 103",
         "",
-        ExceptionInfo.ExceptionSource.EXECUTOR)
+        ExceptionInfo.ExceptionSource.EXECUTOR,1)
 
       val exceptionNonAutoTuningFault = new ExceptionInfo(1,
         "java.io.FileNotFoundException: File webhdfs://nn1.grid.example.com:50070/logs/spark/application_1.lz4 does not exist.",
         "at com.linkedin.drelephant.util.SparkUtils$class.com$linkedin$drelephant$util$SparkUtils$$openEventLog(SparkUtils.scala:313)",
-        ExceptionInfo.ExceptionSource.EXECUTOR)
+        ExceptionInfo.ExceptionSource.EXECUTOR,1)
 
       val exceptionList = new java.util.ArrayList[ExceptionInfo]()
       val rule = new RegexRule()
@@ -188,7 +188,7 @@ class ExceptionFingerprintingSparkTest extends FunSpec with Matchers {
     }
 
     it("check for start index based on log length") {
-      val exceptionFingerPrintingSpark = new ExceptionFingerprintingSpark(null)
+      val exceptionFingerPrintingSpark = new ExceptionFingerprintingSpark()
 
       /**
         * If value is less than first threshold .
@@ -221,7 +221,7 @@ class ExceptionFingerprintingSparkTest extends FunSpec with Matchers {
       ConfigurationBuilder.THRESHOLD_PERCENTAGE_OF_LOG_TO_READ.getValue should be(0.95F)
       ConfigurationBuilder.THRESHOLD_LOG_LINE_LENGTH.getValue should be(1000)
       ConfigurationBuilder.JHS_TIME_OUT.getValue should be(150000)
-      ConfigurationBuilder.NUMBER_OF_STACKTRACE_LINE.getValue should be(3)
+      ConfigurationBuilder.NUMBER_OF_STACKTRACE_LINE.getValue should be(5)
       val configuration = new Configuration()
 
       /**

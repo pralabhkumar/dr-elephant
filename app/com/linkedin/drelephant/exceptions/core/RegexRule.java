@@ -51,9 +51,9 @@ public class RegexRule implements Rule {
   public LogClass logic (List<ExceptionInfo> exceptions){
     this.exceptions = exceptions;
     for (ExceptionInfo exceptionInfo : this.exceptions) {
-      if(checkForPattern((exceptionInfo.getExceptionName() + " " + exceptionInfo.getExcptionStackTrace()))) {
+      if(checkForPattern((exceptionInfo.getExceptionName() + " " + exceptionInfo.getExceptionStackTrace()))) {
         logger.info(
-            "Exception Found " + exceptionInfo.getExceptionName() + " " + exceptionInfo.getExcptionStackTrace());
+            "Exception Found " + exceptionInfo.getExceptionName() + " " + exceptionInfo.getExceptionStackTrace());
         logger.info(" Exceptions which can be because of Auto tuning is found .Hence classifying it AutoTuning Fault ");
         return LogClass.AUTOTUNING_ENABLED;
       }

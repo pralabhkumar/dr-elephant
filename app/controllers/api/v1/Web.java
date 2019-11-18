@@ -24,8 +24,11 @@ import com.avaje.ebean.SqlQuery;
 import com.avaje.ebean.SqlRow;
 import com.google.common.collect.Lists;
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import com.google.gson.reflect.TypeToken;
+import com.google.gson.JsonElement;
 import com.linkedin.drelephant.ElephantContext;
 import com.linkedin.drelephant.analysis.ApplicationType;
 import com.linkedin.drelephant.analysis.Heuristic;
@@ -33,6 +36,7 @@ import com.linkedin.drelephant.analysis.JobType;
 import com.linkedin.drelephant.analysis.Severity;
 import com.linkedin.drelephant.exceptions.ExceptionFinder;
 import com.linkedin.drelephant.exceptions.HadoopException;
+import com.linkedin.drelephant.exceptions.util.ExceptionInfo;
 import com.linkedin.drelephant.util.InfoExtractor;
 import com.linkedin.drelephant.util.Utils;
 import controllers.Application;
@@ -57,6 +61,7 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 import play.data.DynamicForm;
 import play.data.Form;
+import org.codehaus.jackson.map.ObjectMapper;
 import play.mvc.Controller;
 import play.mvc.Result;
 
@@ -1886,6 +1891,8 @@ public class Web extends Controller {
     }
   }
 
+
+
   /**
    * Maps the sort key to the actual field values
    * @param sortKey The sortKey
@@ -2007,21 +2014,45 @@ public class Web extends Controller {
   }
 
   private static JsonArray getSparkJobExceptionDetails(String flowExecUrl, String jobName) {
-     JobsExceptionFingerPrinting sparkJobsExceptionDetail = JobsExceptionFingerPrinting.find.select("*")
+       List<JobsExceptionFingerPrinting> sparkJobsExceptionDetails = JobsExceptionFingerPrinting.find.select("*")
         .where()
         .eq(JobsExceptionFingerPrinting.TABLE.FLOW_EXEC_URL, flowExecUrl)
         .eq(JobsExceptionFingerPrinting.TABLE.JOB_NAME, jobName)
         .ne(JobsExceptionFingerPrinting.TABLE.APP_ID, NOT_APPLICABLE)
         .eq(JobsExceptionFingerPrinting.TABLE.EXCEPTION_TYPE, "DRIVER")
-        .findUnique();
+        .findList();
 
      JsonArray sparkJobArray = new JsonArray();
-     JsonObject sparkJobException = new JsonObject();
-     sparkJobException.addProperty(JsonKeys.NAME, sparkJobsExceptionDetail.appId);
-     sparkJobException.addProperty(JsonKeys.EXCEPTION_SUMMARY, sparkJobsExceptionDetail.exceptionLog);
-     sparkJobException.add(JsonKeys.TASKS, new JsonArray());
-     sparkJobArray.add(sparkJobException);
+     for(JobsExceptionFingerPrinting jobsExceptionFingerPrinting : sparkJobsExceptionDetails) {
+       JsonObject sparkJobException = new JsonObject();
+       sparkJobException.addProperty(JsonKeys.NAME, jobsExceptionFingerPrinting.appId);
+       sparkJobException.add(JsonKeys.EXCEPTION_SUMMARY, getSparkExceptionDetails(jobsExceptionFingerPrinting.exceptionLog));
+       if (jobsExceptionFingerPrinting.logSourceInformation != null
+           && jobsExceptionFingerPrinting.logSourceInformation.length() > 0) {
+         sparkJobException.addProperty(JsonKeys.EXCEPTION_LOG_SOURCE, jobsExceptionFingerPrinting.logSourceInformation);
+       }
+       sparkJobException.add(JsonKeys.TASKS, new JsonArray());
+       sparkJobArray.add(sparkJobException);
+     }
      return sparkJobArray;
+  }
+
+  private static JsonArray getSparkExceptionDetails(String exceptionLog) {
+    ObjectMapper mapper = new ObjectMapper();
+    JsonElement element = null;
+    try {
+      ExceptionInfo[] exceptionInfos = mapper.readValue(exceptionLog, ExceptionInfo[].class);
+      Gson gson = new Gson();
+      element = gson.toJsonTree(Arrays.asList(exceptionInfos), new TypeToken<List<ExceptionInfo>>() {
+      }.getType());
+    } catch (IOException e) {
+      logger.error("Unable to parse exception ", e);
+    }
+    if (element != null) {
+      return element.getAsJsonArray();
+    } else {
+      return new JsonArray();
+    }
   }
 
 

@@ -19,21 +19,32 @@ package com.linkedin.drelephant.exceptions.util;
 /**
  * Class to store exception information
  */
-public class ExceptionInfo {
+public class ExceptionInfo implements Comparable<ExceptionInfo> {
 
   private int exceptionID;
+  private Integer weightOfException;
   private String exceptionName;
   private String exceptionStackTrace;
   private ExceptionSource exceptionSource;
 
+  public ExceptionInfo(){
+
+  }
+
+  @Override
+  public int compareTo(ExceptionInfo o) {
+    return o.weightOfException.compareTo(this.weightOfException);
+  }
+
   public enum ExceptionSource {DRIVER, EXECUTOR, SCHEDULER}
 
   public ExceptionInfo(int exceptionID, String exceptionName, String exceptionStackTrace,
-      ExceptionSource exceptionSource) {
+      ExceptionSource exceptionSource, int weightOfException) {
     this.exceptionID = exceptionID;
     this.exceptionName = exceptionName;
     this.exceptionStackTrace = exceptionStackTrace;
     this.exceptionSource = exceptionSource;
+    this.weightOfException = weightOfException;
   }
 
   //TODO: Currently this has not been used . But the idea to have ID of two excpetion same
@@ -48,23 +59,44 @@ public class ExceptionInfo {
     this.exceptionID = exceptionID;
   }
 
+  public Integer getWeightOfException() {
+    return weightOfException;
+  }
+
+  public void setWeightOfException(Integer weightOfException) {
+    this.weightOfException = weightOfException;
+  }
+
   public String getExceptionName() {
     return exceptionName;
   }
 
-  public String getExcptionStackTrace() {
+  public void setExceptionName(String exceptionName) {
+    this.exceptionName = exceptionName;
+  }
+
+  public String getExceptionStackTrace() {
     return exceptionStackTrace;
   }
 
+  public void setExceptionStackTrace(String exceptionStackTrace) {
+    this.exceptionStackTrace = exceptionStackTrace;
+  }
+
   public ExceptionSource getExceptionSource() {
-    return this.exceptionSource;
+    return exceptionSource;
+  }
+
+  public void setExceptionSource(ExceptionSource exceptionSource) {
+    this.exceptionSource = exceptionSource;
   }
 
   //TODO : Use exception source to prioritize  the exception
 
   @Override
   public String toString() {
-    return "ExceptionInfo{" + "exceptionID=" + exceptionID + ", exceptionName='" + exceptionName + '\''
-        + ", exceptionStackTrace='" + exceptionStackTrace + '\'' + ", exceptionSource='" + exceptionSource.name() + '\'' + '}';
+    return "ExceptionInfo{" + "exceptionID=" + exceptionID + ", weightOfException=" + weightOfException
+        + ", exceptionName='" + exceptionName + '\'' + ", exceptionStackTrace='" + exceptionStackTrace + '\''
+        + ", exceptionSource=" + exceptionSource + '}';
   }
 }

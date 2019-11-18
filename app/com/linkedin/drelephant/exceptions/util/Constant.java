@@ -61,4 +61,6 @@ public final class Constant {
   public static final String NUMBER_OF_STACKTRACE_LINE_NAME = "ef.stacktrace.lines";
   public static final String JHS_TIME_OUT_NAME = "ef.jhs.timeout";
   public static final String THRESHOLD_LOG_LINE_LENGTH_NAME = "ef.log.line.threshold";
+  static final String NUMBER_OF_EXCEPTION_TO_PUT_IN_DB_NAME = "ef.number.put.db";
+  static final String BLACK_LISTED_EXCEPTION_CONF = "ef.blacklisted.exception";
 }

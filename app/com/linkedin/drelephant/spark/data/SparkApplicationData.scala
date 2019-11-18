@@ -31,7 +31,8 @@ case class SparkApplicationData(
   jobDatas: Seq[JobData],
   stageDatas: Seq[StageData],
   executorSummaries: Seq[ExecutorSummary],
-  stagesWithFailedTasks: Seq[StageData]
+  stagesWithFailedTasks: Seq[StageData],
+  targetRestURIForEF :String = ""
 ) extends HadoopApplicationData {
   import SparkApplicationData._
   import JavaConverters._
@@ -48,6 +49,8 @@ case class SparkApplicationData(
 
   // This instance will always have data, or at least the data the Spark REST API gives us.
   override def isEmpty(): Boolean = false
+
+
 }
 
 object SparkApplicationData {
@@ -67,6 +70,7 @@ object SparkApplicationData {
     val stageDatas = restDerivedData.stageDatas
     val executorSummaries = restDerivedData.executorSummaries
     val stagesWithFailedTasks = restDerivedData.stagesWithFailedTasks
-    apply(appId, appConfigurationProperties, applicationInfo, jobDatas, stageDatas, executorSummaries, stagesWithFailedTasks)
+    val targetRestURIForEF = restDerivedData.targetRestURI
+    apply(appId, appConfigurationProperties, applicationInfo, jobDatas, stageDatas, executorSummaries, stagesWithFailedTasks, targetRestURIForEF)
   }
 }

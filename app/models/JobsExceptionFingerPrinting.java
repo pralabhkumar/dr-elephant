@@ -26,6 +26,7 @@ public class JobsExceptionFingerPrinting extends Model {
     public static final String APP_ID = "app_id";
     public static final String TASK_ID = "task_id";
     public static final String EXCEPTION_TYPE = "exception_type";
+    public static final String LOG_SOURCE_INFORMATION = "log_source_information";
   }
 
   @JsonIgnore
@@ -47,6 +48,9 @@ public class JobsExceptionFingerPrinting extends Model {
 
   @Column(length = EXCEPTION_TYPE_LENGTH_LIMIT, nullable = false)
   public String exceptionType;
+
+  @Column(nullable = true)
+  public String logSourceInformation;
 
   @Column(length = ID_LIMIT)
   public String taskId;
