@@ -58,6 +58,9 @@ public interface ExceptionFingerprinting {
   /**
    *
    * @return Return the source information of Logs
+   * For e.g in Spark ,key would be driver and value would be
+   * driver log URL . and key can be executor and value would be rest api
+   * to get failed stage logs
    */
-  Map<String,String> getExceptionLogSourceInformation();
+  Map<String, String> getExceptionLogSourceInformation();
 }

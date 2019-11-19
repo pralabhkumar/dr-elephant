@@ -99,4 +99,28 @@ public class ExceptionInfo implements Comparable<ExceptionInfo> {
         + ", exceptionName='" + exceptionName + '\'' + ", exceptionStackTrace='" + exceptionStackTrace + '\''
         + ", exceptionSource=" + exceptionSource + '}';
   }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+
+    ExceptionInfo that = (ExceptionInfo) o;
+
+    if (!exceptionName.equals(that.exceptionName)) {
+      return false;
+    }
+    return exceptionStackTrace.equals(that.exceptionStackTrace);
+  }
+
+  @Override
+  public int hashCode() {
+    int result = exceptionName.hashCode();
+    result = 31 * result + exceptionStackTrace.hashCode();
+    return result;
+  }
 }

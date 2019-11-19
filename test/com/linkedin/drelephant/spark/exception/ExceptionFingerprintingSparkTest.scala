@@ -69,9 +69,14 @@ class ExceptionFingerprintingSparkTest extends FunSpec with Matchers {
         "ltx1-hcl5294.grid.linkedin.com:8042")
       val exceptionInfoList = exceptionFingerprinting.processRawData(analyticJob)
       val classificationValue = exceptionFingerprinting.classifyException(exceptionInfoList)
+      // Test to check for log source Information
+      val logSourceInformation = exceptionFingerprinting.getExceptionLogSourceInformation
       className should be("ExceptionFingerprintingSpark")
       exceptionInfoList.size() should be(1)
       classificationValue.name() should be("USER_ENABLED")
+      logSourceInformation.containsKey("DRIVER") should be(true)
+      logSourceInformation.get("DRIVER") should be("http://0.0.0.0:19888/jobhistory/nmlogs/hostname:0" +
+        "/container_e24_1547063162911_185371_01_000001/container_e24_1547063162911_185371_01_000001/dssadmin")
     }
     it("check for auto tuning  enabled exception") {
       val stage = createStage(1, StageStatus.FAILED, Some("java.lang.OutOfMemoryError: Exception thrown in " +

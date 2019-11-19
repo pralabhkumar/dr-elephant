@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import javax.persistence.PersistenceException;
 import models.AppResult;
 import models.JobsExceptionFingerPrinting;
 import org.apache.log4j.Logger;
@@ -88,12 +89,17 @@ public class ExceptionFingerprintingRunner implements Runnable {
         + (endTime - startTime) * 1.0 / (1000000000.0) + "s");
   }
 
+  /**
+   *
+   * @param exceptionInfoList : List contains all the exceptions
+   * @param logSourceInformation : Map containing sources of exception
+   */
   private void saveDriverExceptionLogForExceptionFingerPrinting(List<ExceptionInfo> exceptionInfoList,
       Map<String, String> logSourceInformation) {
     if (exceptionInfoList != null) {
       final String NOT_APPLICABLE = "NA";
 
-      String exceptionsTrace = parseExceptions(exceptionInfoList);
+      String exceptionsTrace = parseExceptions(exceptionInfoList,true);
 
       JobsExceptionFingerPrinting jobsExceptionFingerPrinting = new JobsExceptionFingerPrinting();
       jobsExceptionFingerPrinting.appId = NOT_APPLICABLE;
@@ -116,41 +122,58 @@ public class ExceptionFingerprintingRunner implements Runnable {
         sparkJobException.exceptionLog = "Couldn't gather driver logs for the job";
       }
       sparkJobException.exceptionType = ExceptionInfo.ExceptionSource.DRIVER.toString();
-      sparkJobException.save();
+      saveSparkJobException(sparkJobException, exceptionInfoList);
       jobsExceptionFingerPrinting.save();
     }
   }
 
-  private String parseExceptions(List<ExceptionInfo> exceptionInfoList) {
+  private void saveSparkJobException(JobsExceptionFingerPrinting sparkJobException,
+      List<ExceptionInfo> exceptionInfoList) {
+    try {
+      sparkJobException.save();
+      logger.debug(" Final String to be saved in dB " + sparkJobException.exceptionLog);
+    } catch (PersistenceException pe) {
+      logger.error(" Error while storing spark job exception ", pe);
+      List<ExceptionInfo> halfExceptionList = exceptionInfoList.subList(0, exceptionInfoList.size() / 2);
+      sparkJobException.exceptionLog = parseExceptions(halfExceptionList, false);
+      try {
+        sparkJobException.save();
+        logger.debug(" Final String to be saved in dB " + sparkJobException.exceptionLog);
+      } catch (PersistenceException pe1) {
+        logger.error(" Error while storing half of the spark job exception ", pe1);
+        List<ExceptionInfo> firstException = exceptionInfoList.subList(0, 0);
+        sparkJobException.exceptionLog = parseExceptions(firstException, false);
+        sparkJobException.save();
+        logger.debug(" Final String to be saved in dB " + sparkJobException.exceptionLog);
+      }
+    }
+  }
+
+  /**
+   *  User provided configuration is being used to set the number of
+   *  exceptions in DB
+   * @param exceptionInfoList : Exception List
+   * @param isFirstTime : Is the list parsed first time
+   * @return JSON Array as String containing exceptions
+   */
+  private String parseExceptions(List<ExceptionInfo> exceptionInfoList, boolean isFirstTime) {
     ObjectMapper Obj = new ObjectMapper();
-    StringBuilder exceptionString = new StringBuilder();
-    int countOfExceptions = 0;
-    Collections.sort(exceptionInfoList);
+    if (isFirstTime) {
+      Collections.sort(exceptionInfoList);
+    }
     String exceptionInJson = null;
     try {
-      exceptionInJson = Obj.writeValueAsString(exceptionInfoList.subList(0,
-          exceptionInfoList.size() > NUMBER_OF_EXCEPTION_TO_PUT_IN_DB.getValue()
-              ? NUMBER_OF_EXCEPTION_TO_PUT_IN_DB.getValue() : exceptionInfoList.size()));
+      exceptionInJson = Obj.writeValueAsString(
+          exceptionInfoList.subList(0, Math.min(exceptionInfoList.size(), NUMBER_OF_EXCEPTION_TO_PUT_IN_DB.getValue())));
     } catch (IOException e) {
       logger.error(" Exception while writing stack trace to DB ", e);
-    }
-    logger.debug(" Final String to be saved in dB " + exceptionInJson);
-   /* for (ExceptionInfo exceptionInfo : exceptionInfoList) {
-      try {
-        if (countOfExceptions < NUMBER_OF_EXCEPTION_TO_PUT_IN_DB.getValue()) {
-          exceptionString.append(Obj.writeValueAsString(exceptionInfo)).append("\n");
-          countOfExceptions++;
-        }
-      } catch (IOException e) {
-        logger.error(" Exception while writing stack trace to DB ", e);
-      }*/
-    return exceptionInJson;
+    } return exceptionInJson;
   }
 
   private String processLogSourceInformation(Map<String, String> logSourceInformation) {
     StringBuilder logSource = new StringBuilder();
     for (Map.Entry<String, String> entry : logSourceInformation.entrySet()) {
-      logSource.append("SOURCE=" + entry.getKey() + "\tURL=" + entry.getValue()).append("\n");
+      logSource.append("SOURCE " + entry.getKey() + "\tURL " + entry.getValue()).append("\n");
     }
     return logSource.toString();
   }

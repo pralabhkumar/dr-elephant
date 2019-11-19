@@ -30,10 +30,12 @@ import java.net.URL;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
+import java.util.Set;
 import models.JobDefinition;
 import models.JobExecution;
 import models.TuningJobDefinition;
@@ -65,6 +67,7 @@ public class ExceptionFingerprintingSpark implements ExceptionFingerprinting {
   private Map<String, String> logSourceInfo ;
   private boolean useRestAPI = true;
   private int globalExceptionsWeight = 0;
+
 
 
   static {
@@ -314,13 +317,13 @@ public class ExceptionFingerprintingSpark implements ExceptionFingerprinting {
     while ((inputLine = in.readLine()) != null) {
       if (inputLine.length() <= THRESHOLD_LOG_LINE_LENGTH.getValue() && isExceptionContains(inputLine)) {
         if (debugEnabled) {
-          logger.debug(" ExceptionFingerprinting " + inputLine + "\t" + inputLine);
+          logger.debug(" ExceptionFingerprinting " + inputLine + "\t" + inputLine.length());
         }
         String exceptionName = inputLine;
         int stackTraceLine = NUMBER_OF_STACKTRACE_LINE.getValue();
         StringBuffer stackTrace = new StringBuffer();
         while (stackTraceLine >= 0 && inputLine != null) {
-          stackTrace.append(inputLine).append("\n");
+          stackTrace.append(inputLine.substring(500)).append("\n");
           stackTraceLine--;
           inputLine = in.readLine();
         }
@@ -346,6 +349,8 @@ public class ExceptionFingerprintingSpark implements ExceptionFingerprinting {
     }
     exceptions.removeAll(blackListedException);
   }
+
+
 
   @Override
   public LogClass classifyException(List<ExceptionInfo> exceptionInformation) {
