@@ -94,7 +94,7 @@ public class WebTest {
             JsonObject applicationJsonObject = element.getAsJsonObject();
             Assert.assertEquals(applicationJsonObject.get(JsonKeys.NAME).getAsString(), ".....");
             Assert.assertEquals(applicationJsonObject.get(JsonKeys.TASKS).getAsJsonArray().size(), 0);
-            Assert.assertEquals(applicationJsonObject.get(JsonKeys.EXCEPTION_SUMMARY).getAsString(), "stack_trace_1");
+           Assert.assertEquals(applicationJsonObject.get(JsonKeys.EXCEPTION_SUMMARY).getAsString(), "stack_trace_1");
           }
         }
       }
@@ -147,7 +147,25 @@ public class WebTest {
       Assert.assertEquals(applicationJsonObject.get(JsonKeys.NAME).getAsString(), "application_id_1");
       JsonArray taskExceptionDetail = applicationJsonObject.getAsJsonArray(JsonKeys.TASKS);
       Assert.assertEquals(taskExceptionDetail.size(), 0);
-      Assert.assertEquals(applicationJsonObject.get(JsonKeys.EXCEPTION_SUMMARY).getAsString(), "stack_trace_3");
+      Assert.assertEquals(applicationJsonObject.get(JsonKeys.EXCEPTION_SUMMARY)
+          .getAsJsonArray()
+          .get(0)
+          .getAsJsonObject()
+          .get("exceptionName")
+          .getAsString(), "Caused by: java.lang.ClassNotFoundException");
+      Assert.assertEquals(applicationJsonObject.get(JsonKeys.EXCEPTION_SUMMARY)
+          .getAsJsonArray()
+          .get(0)
+          .getAsJsonObject()
+          .get("exceptionStackTrace")
+          .getAsString(), "ABCD");
+      Assert.assertEquals(applicationJsonObject.get(JsonKeys.EXCEPTION_SUMMARY)
+          .getAsJsonArray()
+          .get(0)
+          .getAsJsonObject()
+          .get("weightOfException")
+          .getAsString(), "5");
+
     }
   }
 }
