@@ -57,6 +57,7 @@ public class ExceptionFingerprintingSpark implements ExceptionFingerprinting {
   private static final int STARTING_INDEX_FOR_URL = 2;
   private static final String CONTAINER_PATTERN = "container";
   private static final String HOSTNAME_PATTERN = ":";
+  private static final String STDERR = "STDERR";
   private static final String URL_PATTERN = "/";
   private static final String JOBHISTORY_ADDRESS_FOR_LOG = "http://{0}/jobhistory/nmlogs/{1}";
 
@@ -170,7 +171,7 @@ public class ExceptionFingerprintingSpark implements ExceptionFingerprinting {
     try {
       String urlToQuery = buildURLtoQuery();
       long startTimeForFirstQuery = System.nanoTime();
-      String completeURLToQuery = completeURLToQuery(urlToQuery);
+      String completeURLToQuery = procesForDriverLogURL(urlToQuery);
       logSourceInfo.put(ExceptionInfo.ExceptionSource.DRIVER.name(), completeURLToQuery);
       long endTimeForFirstQuery = System.nanoTime();
       logger.info(
@@ -179,10 +180,11 @@ public class ExceptionFingerprintingSpark implements ExceptionFingerprinting {
       logger.info(" URL to query for driver logs  " + completeURLToQuery);
       connection = intializeHTTPConnection(completeURLToQuery);
       in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-      String inputLine;
-      String logLengthTrigger = LogLengthSchema.LOG_LENGTH.name().replace("_", " ");
+      //String inputLine;
+      //String logLengthTrigger = LogLengthSchema.LOG_LENGTH.name().replace("_", " ");
       try {
-        while ((inputLine = in.readLine()) != null) {
+        driverLogProcessingForException(in, exceptions);
+        /*while ((inputLine = in.readLine()) != null) {
           if (inputLine.toUpperCase().contains(logLengthTrigger)) {
             if (debugEnabled) {
               logger.debug(" Processing of logs ");
@@ -190,7 +192,7 @@ public class ExceptionFingerprintingSpark implements ExceptionFingerprinting {
             driverLogProcessingForException(in, exceptions);
             break;
           }
-        }
+        }*/
       } catch (IOException e) {
         logger.error(" IO Exception while processing driver logs for ", e);
       }
@@ -204,6 +206,34 @@ public class ExceptionFingerprintingSpark implements ExceptionFingerprinting {
     logger.info(" Time taken for driver logs " + (endTime - startTime) * 1.0 / (1000000000.0) + "s");
   }
 
+  private String procesForDriverLogURL(String urlToQuery) {
+    String completeQuery = completeURLToQuery(urlToQuery, true);
+    if(completeQuery == null) {
+      logger.info("Since Logs are not there in JHS trying am container logs ");
+      completeQuery = completeURLToQuery(analyticJob.getAmContainerLogsURL(), false);
+    }
+    int numberOfRetries = 0 ;
+    while(completeQuery == null && numberOfRetries<= NUMBER_OF_RETRIES_FOR_FETCHING_DRIVER_LOGS.getValue()) {
+      numberOfRetries++;
+      logger.info(" Retry for fetching logs from JHS "+numberOfRetries);
+      try {
+        Thread.sleep(DURATION_FOR_THREAD_SLEEP_FOR_FETCHING_DRIVER_LOGS.getValue());
+      } catch (InterruptedException e) {
+       logger.warn(" Thread interupted ",e);
+      }
+      completeQuery = completeURLToQuery(urlToQuery, true);
+    }
+    if(completeQuery == null) {
+      logger.warn(" Cannot get driver logs for app " + analyticJob.getAppId());
+      return urlToQuery;
+    } else {
+      return completeQuery;
+    }
+
+
+
+  }
+
   /**
    * If unable to get log length , then read by default last 4096 bytes
    * If log length is greater than threshold then read last some percentage of logs
@@ -211,22 +241,26 @@ public class ExceptionFingerprintingSpark implements ExceptionFingerprinting {
    * @param url
    * @return
    */
-  private String completeURLToQuery(String url) {
+  private String completeURLToQuery(String url,boolean isJHS) {
     String completeURLToQuery = null;
     BufferedReader in = null;
     HttpURLConnection connection = null;
-    int numberOfLinesRead = 0;
     try {
       connection = intializeHTTPConnection(url);
       in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
       String inputLine;
       long logLength = 0l;
-      String logLengthTrigger = LogLengthSchema.LOG_LENGTH.name().replace("_", " ");
-      logger.debug(" Log length " + logLengthTrigger);
+      String logLengthTrigger = null ;
+      if(isJHS) {
+        logLengthTrigger = LogLengthSchema.LOG_LENGTH.name().replace("_", " ");
+      }
+      else{
+        logLengthTrigger = STDERR+" "+HOSTNAME_PATTERN;
+      }
       while ((inputLine = in.readLine()) != null) {
-        numberOfLinesRead++;
+        logger.debug(inputLine);
         if (inputLine.toUpperCase().contains(logLengthTrigger)) {
-          logLength = getLogLength(inputLine.toUpperCase());
+          logLength = getLogLength(inputLine.toUpperCase(), logLengthTrigger);
           long startIndex = getStartIndexOfDriverLogs(logLength);
           if (startIndex == 0) {
             completeURLToQuery = url;
@@ -241,10 +275,6 @@ public class ExceptionFingerprintingSpark implements ExceptionFingerprinting {
       return url;
     } finally {
       gracefullyCloseConnection(in, connection);
-    }
-    if (completeURLToQuery == null) {
-      logger.warn(" Complete URL to Query is null . Number of lines read "+numberOfLinesRead);
-      return url;
     }
     return completeURLToQuery;
   }
@@ -269,12 +299,12 @@ public class ExceptionFingerprintingSpark implements ExceptionFingerprinting {
     }
   }
 
-  private long getLogLength(String logLenghtLine) {
+  private long getLogLength(String logLenghtLine, String logLengthTrigger) {
     long logLength = 0;
     try {
-      String split[] = logLenghtLine.split(HOSTNAME_PATTERN);
-      if (split.length >= LogLengthSchema.LENGTH.ordinal()) {
-        logLength = Long.parseLong(split[LogLengthSchema.LENGTH.ordinal()].trim());
+      String logData[] = logLenghtLine.split(logLengthTrigger);
+      if (logData.length >= LogLengthSchema.LENGTH.ordinal() + 1) {
+        logLength = Long.parseLong(logData[LogLengthSchema.LENGTH.ordinal()].replaceAll("[^0-9]", ""));
       }
     } catch (Exception e) {
       logger.error(" Exception parsing log length ", e);
@@ -325,7 +355,7 @@ public class ExceptionFingerprintingSpark implements ExceptionFingerprinting {
         StringBuilder stackTrace = new StringBuilder();
         while (stackTraceLine >= 0 && inputLine != null) {
           int maxLengthRow = Math.min(MAX_LINE_LENGTH_OF_EXCEPTION.getValue(),inputLine.length());
-          stackTrace.append(inputLine.substring(maxLengthRow)).append("\n");
+          stackTrace.append(inputLine.substring(0,maxLengthRow)).append("\n");
           stackTraceLine--;
           inputLine = in.readLine();
         }
