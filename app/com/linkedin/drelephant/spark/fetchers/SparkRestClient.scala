@@ -76,6 +76,7 @@ class SparkRestClient(sparkConf: SparkConf) {
   private val apiTarget: WebTarget = client.property(ClientProperties.CONNECT_TIMEOUT, CONNECTION_TIMEOUT)
     .property(ClientProperties.READ_TIMEOUT, READ_TIMEOUT).target(historyServerUri).path(API_V1_MOUNT_PATH)
 
+
   def fetchData(appId: String, fetchLogs: Boolean = false, fetchFailedTasks: Boolean = true)(
     implicit ec: ExecutionContext
   ): Future[SparkRestDerivedData] = {
@@ -107,7 +108,8 @@ class SparkRestClient(sparkConf: SparkConf) {
         Await.result(futureStageDatas, DEFAULT_TIMEOUT),
         Await.result(futureExecutorSummaries, Duration(5, SECONDS)),
         Await.result(futureFailedTasks, DEFAULT_TIMEOUT),
-        Await.result(futureLogData, Duration(5, SECONDS))
+        Await.result(futureLogData, Duration(5, SECONDS)),
+        attemptTarget.path("stages/failedTasks").getUri.toString
       )
 
     }
@@ -243,6 +245,7 @@ class SparkRestClient(sparkConf: SparkConf) {
 
   private def getStagesWithFailedTasks(attemptTarget: WebTarget): Seq[StageDataImpl] = {
     val target = attemptTarget.path("stages/failedTasks")
+    logger.info(" Quering " + target.getUri + " for failed taks")
     try {
       get(target, SparkRestObjectMapper.readValue[Seq[StageDataImpl]])
     } catch {

@@ -24,7 +24,6 @@ import com.avaje.ebean.SqlQuery;
 import com.avaje.ebean.SqlRow;
 import com.google.common.collect.Lists;
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
@@ -1764,6 +1763,7 @@ public class Web extends Controller {
    * @throws IOException
    */
   public static Result restExceptions() throws  IOException {
+    logger.debug(" Rest query is called "+System.nanoTime());
     DynamicForm form = Form.form().bindFromRequest(request());
     String url = form.get("flow-exec-url");
     JsonObject parent = new JsonObject();
@@ -1795,8 +1795,9 @@ public class Web extends Controller {
         parent.add("workflow-exceptions", new JsonArray());
         return status(500,"Unexpected error occured");
       }
-
+      logger.debug(" Calling for  exceptions detailing from DB "+System.nanoTime());
       JsonObject jobExceptionDetailsJSON = getExceptionDetailsJSON(url);
+      logger.debug(" Fetched detailed about  exceptions detailing from DB "+System.nanoTime());
       if (jobExceptionDetailsJSON != null) {
         return ok(new Gson().toJson(jobExceptionDetailsJSON));
       }
@@ -1858,6 +1859,7 @@ public class Web extends Controller {
 
     if (jobsExceptionDetailsList != null) {
       for (JobsExceptionFingerPrinting jobException : jobsExceptionDetailsList) {
+        long startTime = System.nanoTime();
         JsonObject job = new JsonObject();
         job.addProperty(JsonKeys.NAME, jobException.jobName);
         job.addProperty(JsonKeys.TYPE, jobException.exceptionType);
@@ -1883,6 +1885,8 @@ public class Web extends Controller {
         }
         job.addProperty(JsonKeys.STATUS, "failed");
         jobsArray.add(job);
+        long endTime = System.nanoTime();
+        logger.info(" Processing of  "+ jobException.jobName +" took "+ (endTime - startTime) * 1.0 / (1000000000.0) + "s");
       }
       root.add(JsonKeys.WORKFLOW_EXCEPTIONS, jobsArray);
       return root;
@@ -1890,8 +1894,6 @@ public class Web extends Controller {
       return null;
     }
   }
-
-
 
   /**
    * Maps the sort key to the actual field values
@@ -2038,6 +2040,7 @@ public class Web extends Controller {
   }
 
   private static JsonArray getSparkExceptionDetails(String exceptionLog) {
+    long startTime = System.nanoTime();
     ObjectMapper mapper = new ObjectMapper();
     JsonElement element = null;
     try {
@@ -2046,13 +2049,16 @@ public class Web extends Controller {
       element = gson.toJsonTree(Arrays.asList(exceptionInfos), new TypeToken<List<ExceptionInfo>>() {
       }.getType());
     } catch (IOException e) {
-      logger.error("Unable to parse exception ", e);
+      logger.error("Unable to parse exception "+exceptionLog, e);
     }
+    long endTime = System.nanoTime();
+    logger.info(" Deserialization of Exceptions to JSON Array Started "+ (endTime - startTime) * 1.0 / (1000000000.0) + "s");
     if (element != null) {
       return element.getAsJsonArray();
     } else {
       return new JsonArray();
     }
+
   }
 
 

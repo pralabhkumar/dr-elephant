@@ -132,6 +132,7 @@ class ExceptionFingerprintingSparkTest extends FunSpec with Matchers {
         "ltx1-hcl5294.grid.linkedin.com:8042")
       running(testServer(TEST_SERVER_PORT, fakeApp), new ExceptionFingerprintingRunnerTest(data, analyticJob))
     }
+
     it("check for exception regex ") {
       val dataContainsException = Array("java.io.FileNotFoundException: File /jobs/emailopt/",
         "java.lang.OutOfMemoryError: Java heap space",
@@ -191,6 +192,28 @@ class ExceptionFingerprintingSparkTest extends FunSpec with Matchers {
       rule.logic(exceptionList) should be(Constant.LogClass.USER_ENABLED)
       exceptionList.clear()
     }
+
+    it("check for removal of black listed exceptions") {
+      val stage1 = createStage(1, StageStatus.FAILED, Some("java.lang.OutOfMemoryError: Exception thrown in awaitResult:"), "details")
+      val stage2 =  createStage(2, StageStatus.FAILED, Some("-XX:OnOutOfMemoryError='kill %p'"), "details")
+      val stages = Seq(stage1,stage2)
+      val executors = getExecutorSummary()
+      val properties = getProperties()
+      val data = createSparkApplicationData(stages, executors, Some(properties))
+      val exceptionFingerprinting = ExceptionFingerprintingFactory.getExceptionFingerprinting(ExecutionEngineType.SPARK, data)
+
+      val analyticJob = getAnalyticalJob(false,
+        "http://hostname:8042/node/containerlogs/container_e24_1547063162911_185371_01_000001/dssadmin",
+        "ltx1-hcl5294.grid.linkedin.com:8042")
+      val blackListedPatterns = Array("ABCD")
+      ConfigurationBuilder.BLACK_LISTED_EXCEPTION_PATTERN.setValue(blackListedPatterns)
+      val exceptionInfoList = exceptionFingerprinting.processRawData(analyticJob)
+      exceptionInfoList.size() should be (2)
+      val blackListedPatternsEnhanced = blackListedPatterns :+ "-XX:OnOutOfMemoryError='kill %p'"
+      ConfigurationBuilder.BLACK_LISTED_EXCEPTION_PATTERN.setValue(blackListedPatternsEnhanced)
+      exceptionFingerprinting.processRawData(analyticJob).size() should be (1)
+    }
+
 
     it("check for start index based on log length") {
       val exceptionFingerPrintingSpark = new ExceptionFingerprintingSpark()

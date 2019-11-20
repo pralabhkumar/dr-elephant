@@ -98,6 +98,7 @@ public class ExceptionUtils {
     public static EFConfiguration<Integer> THRESHOLD_LOG_LINE_LENGTH = null;
     public static EFConfiguration<Integer> NUMBER_OF_EXCEPTION_TO_PUT_IN_DB = null;
     public static EFConfiguration<String[]> BLACK_LISTED_EXCEPTION_PATTERN = null;
+    public static EFConfiguration<Integer> MAX_LINE_LENGTH_OF_EXCEPTION = null;
 
 
     private static final String[] DEFAULT_REGEX_FOR_EXCEPTION_IN_LOGS =
@@ -167,9 +168,13 @@ public class ExceptionUtils {
           .setDoc(" Number of exception to put in database for UI");
 
       BLACK_LISTED_EXCEPTION_PATTERN = new com.linkedin.drelephant.exceptions.util.EFConfiguration<String[]>()
-          .setConfigurationName(BLACK_LISTED_EXCEPTION_CONF)
-          .setValue(DEFAULT_BLACK_LISTED_EXCEPTION_PATTERN)
+          .setConfigurationName(BLACK_LISTED_EXCEPTION_CONF_NAME)
+          .setValue(configuration.getStrings(BLACK_LISTED_EXCEPTION_CONF_NAME,DEFAULT_BLACK_LISTED_EXCEPTION_PATTERN))
           .setDoc(" patterns which are blacklisted ");
+
+      MAX_LINE_LENGTH_OF_EXCEPTION = new EFConfiguration<Integer>().setConfigurationName(MAX_LINE_LENGTH_OF_EXCEPTION_NAME)
+          .setValue(configuration.getInt(MAX_LINE_LENGTH_OF_EXCEPTION_NAME, 500))
+          .setDoc(" Maximum length of one line in Stack trace");
 
 
       if (debugEnabled) {

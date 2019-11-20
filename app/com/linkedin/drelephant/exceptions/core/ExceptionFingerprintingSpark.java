@@ -66,6 +66,7 @@ public class ExceptionFingerprintingSpark implements ExceptionFingerprinting {
   private List<StageData> failedStageData;
   private Map<String, String> logSourceInfo ;
   private boolean useRestAPI = true;
+  // This field is describing the importance of each exceptions
   private int globalExceptionsWeight = 0;
 
 
@@ -214,14 +215,14 @@ public class ExceptionFingerprintingSpark implements ExceptionFingerprinting {
     String completeURLToQuery = null;
     BufferedReader in = null;
     HttpURLConnection connection = null;
+    int numberOfLinesRead = 0;
     try {
       connection = intializeHTTPConnection(url);
       in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
       String inputLine;
       long logLength = 0l;
       String logLengthTrigger = LogLengthSchema.LOG_LENGTH.name().replace("_", " ");
-      logger.info(" Log length " + logLengthTrigger);
-      int numberOfLinesRead = 0;
+      logger.debug(" Log length " + logLengthTrigger);
       while ((inputLine = in.readLine()) != null) {
         numberOfLinesRead++;
         if (inputLine.toUpperCase().contains(logLengthTrigger)) {
@@ -235,7 +236,6 @@ public class ExceptionFingerprintingSpark implements ExceptionFingerprinting {
           break;
         }
       }
-      logger.info(" URL build process completed " + numberOfLinesRead);
     } catch (Exception e) {
       logger.error(" Exception while creating complete URL to query ", e);
       return url;
@@ -243,6 +243,7 @@ public class ExceptionFingerprintingSpark implements ExceptionFingerprinting {
       gracefullyCloseConnection(in, connection);
     }
     if (completeURLToQuery == null) {
+      logger.warn(" Complete URL to Query is null . Number of lines read "+numberOfLinesRead);
       return url;
     }
     return completeURLToQuery;
@@ -321,9 +322,10 @@ public class ExceptionFingerprintingSpark implements ExceptionFingerprinting {
         }
         String exceptionName = inputLine;
         int stackTraceLine = NUMBER_OF_STACKTRACE_LINE.getValue();
-        StringBuffer stackTrace = new StringBuffer();
+        StringBuilder stackTrace = new StringBuilder();
         while (stackTraceLine >= 0 && inputLine != null) {
-          stackTrace.append(inputLine.substring(500)).append("\n");
+          int maxLengthRow = Math.min(MAX_LINE_LENGTH_OF_EXCEPTION.getValue(),inputLine.length());
+          stackTrace.append(inputLine.substring(maxLengthRow)).append("\n");
           stackTraceLine--;
           inputLine = in.readLine();
         }
@@ -336,6 +338,12 @@ public class ExceptionFingerprintingSpark implements ExceptionFingerprinting {
     }
   }
 
+  /**
+   * There are some exceptions which are blacklisted by user and of no importance.
+   * These method will remove the black listed exceptions from the final list of exceptions
+   *
+   * @param exceptions : List of exceptions
+   */
   private void processExceptionsFromBlackListingPattern(List<ExceptionInfo> exceptions) {
     List<ExceptionInfo> blackListedException = new ArrayList<>();
     for (ExceptionInfo exceptionInfo : exceptions) {

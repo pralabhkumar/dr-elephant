@@ -27,6 +27,9 @@ public class ExceptionInfo implements Comparable<ExceptionInfo> {
   private String exceptionStackTrace;
   private ExceptionSource exceptionSource;
 
+  /**
+   * Added for serialize and deserialize into JSON
+   */
   public ExceptionInfo(){
 
   }
@@ -50,6 +53,7 @@ public class ExceptionInfo implements Comparable<ExceptionInfo> {
   //TODO: Currently this has not been used . But the idea to have ID of two excpetion same
   //if they are simillar , so that we can remove simillar exception from the exception fingerprinting
   //system
+  // Getter and setters are used by GSON/Jackson for serialize and deserialize into JSON
 
   public int getExceptionID() {
     return exceptionID;
@@ -100,6 +104,11 @@ public class ExceptionInfo implements Comparable<ExceptionInfo> {
         + ", exceptionSource=" + exceptionSource + '}';
   }
 
+  /**
+   * todo: Remove duplicate exceptions
+   * @param
+   * @return
+   */
   @Override
   public boolean equals(Object o) {
     if (this == o) {
