@@ -63,5 +63,7 @@ public final class Constant {
   public static final String THRESHOLD_LOG_LINE_LENGTH_NAME = "ef.log.line.threshold";
   static final String NUMBER_OF_EXCEPTION_TO_PUT_IN_DB_NAME = "ef.number.put.db";
   static final String BLACK_LISTED_EXCEPTION_CONF_NAME = "ef.blacklisted.exception";
-  static final String MAX_LINE_LENGTH_OF_EXCEPTION_NAME= "ef.max.line.length.exception";
+  static final String MAX_LINE_LENGTH_OF_EXCEPTION_NAME = "ef.max.line.length.exception";
+  static final String NUMBER_OF_RETRIES_FOR_FETCHING_DRIVER_LOGS_NAME = "ef.number.retries.fetching.driver.logs";
+  static final String DURATION_FOR_THREAD_SLEEP_FOR_FETCHING_DRIVER_LOGS_NAME = "ef.duration.thread.sleep.ms";
 }

@@ -27,6 +27,8 @@ public class ExceptionInfo implements Comparable<ExceptionInfo> {
   private String exceptionStackTrace;
   private ExceptionSource exceptionSource;
 
+  private String exceptionTrackingURL;
+
   /**
    * Added for serialize and deserialize into JSON
    */
@@ -42,12 +44,13 @@ public class ExceptionInfo implements Comparable<ExceptionInfo> {
   public enum ExceptionSource {DRIVER, EXECUTOR, SCHEDULER}
 
   public ExceptionInfo(int exceptionID, String exceptionName, String exceptionStackTrace,
-      ExceptionSource exceptionSource, int weightOfException) {
+      ExceptionSource exceptionSource, int weightOfException, String exceptionTrackingURL) {
     this.exceptionID = exceptionID;
     this.exceptionName = exceptionName;
     this.exceptionStackTrace = exceptionStackTrace;
     this.exceptionSource = exceptionSource;
     this.weightOfException = weightOfException;
+    this.exceptionTrackingURL = exceptionTrackingURL;
   }
 
   //TODO: Currently this has not been used . But the idea to have ID of two excpetion same
@@ -101,7 +104,7 @@ public class ExceptionInfo implements Comparable<ExceptionInfo> {
   public String toString() {
     return "ExceptionInfo{" + "exceptionID=" + exceptionID + ", weightOfException=" + weightOfException
         + ", exceptionName='" + exceptionName + '\'' + ", exceptionStackTrace='" + exceptionStackTrace + '\''
-        + ", exceptionSource=" + exceptionSource + '}';
+        + ", exceptionSource=" + exceptionSource + ", exceptionTrackingURL='" + exceptionTrackingURL + '\'' + '}';
   }
 
   /**
@@ -124,6 +127,14 @@ public class ExceptionInfo implements Comparable<ExceptionInfo> {
       return false;
     }
     return exceptionStackTrace.equals(that.exceptionStackTrace);
+  }
+
+  public String getExceptionTrackingURL() {
+    return exceptionTrackingURL;
+  }
+
+  public void setExceptionTrackingURL(String exceptionTrackingURL) {
+    this.exceptionTrackingURL = exceptionTrackingURL;
   }
 
   @Override

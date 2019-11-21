@@ -22,6 +22,7 @@ import com.linkedin.drelephant.exceptions.ExceptionFingerprinting;
 import com.linkedin.drelephant.exceptions.HadoopException;
 import com.linkedin.drelephant.exceptions.util.ExceptionInfo;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -99,7 +100,7 @@ public class ExceptionFingerprintingRunner implements Runnable {
     if (exceptionInfoList != null) {
       final String NOT_APPLICABLE = "NA";
 
-      String exceptionsTrace = parseExceptions(exceptionInfoList,true);
+      String exceptionsTrace = parseExceptions(exceptionInfoList, true);
 
       JobsExceptionFingerPrinting jobsExceptionFingerPrinting = new JobsExceptionFingerPrinting();
       jobsExceptionFingerPrinting.appId = NOT_APPLICABLE;
@@ -134,19 +135,40 @@ public class ExceptionFingerprintingRunner implements Runnable {
       logger.debug(" Final String to be saved in dB " + sparkJobException.exceptionLog);
     } catch (PersistenceException pe) {
       logger.error(" Error while storing spark job exception ", pe);
-      List<ExceptionInfo> halfExceptionList = exceptionInfoList.subList(0, exceptionInfoList.size() / 2);
+      List<ExceptionInfo> halfExceptionList = createMixofException(exceptionInfoList, exceptionInfoList.size() / 2);
       sparkJobException.exceptionLog = parseExceptions(halfExceptionList, false);
       try {
         sparkJobException.save();
         logger.debug(" Final String to be saved in dB " + sparkJobException.exceptionLog);
       } catch (PersistenceException pe1) {
-        logger.error(" Error while storing half of the spark job exception ", pe1);
-        List<ExceptionInfo> firstException = exceptionInfoList.subList(0, 0);
+        logger.error(" Error while storing 1/2 of the spark job exception ", pe1);
+        List<ExceptionInfo> firstException = createMixofException(exceptionInfoList, 2);
         sparkJobException.exceptionLog = parseExceptions(firstException, false);
         sparkJobException.save();
         logger.debug(" Final String to be saved in dB " + sparkJobException.exceptionLog);
       }
     }
+  }
+
+  private List<ExceptionInfo> createMixofException(List<ExceptionInfo> exceptionInfoList, int size) {
+    List<ExceptionInfo> mixOfException = new ArrayList<>();
+    List<ExceptionInfo> executorExceptions = new ArrayList<>();
+    for (ExceptionInfo exceptionInfo : exceptionInfoList) {
+      if (exceptionInfo.getExceptionSource().name().equals(ExceptionInfo.ExceptionSource.EXECUTOR.name())) {
+        executorExceptions.add(exceptionInfo);
+      }
+    }
+    logger.info(" Size of executor exceptions "+executorExceptions.size());
+    for (int index = 0; index <= size / 2; index++) {
+      mixOfException.add(exceptionInfoList.get(index));
+    }
+    logger.info(" Size of mix exceptions "+mixOfException.size());
+    int max = Math.min(executorExceptions.size(), size - (size / 2));
+    for (int index = 0; index < max; index++) {
+      mixOfException.add(executorExceptions.get(index));
+    }
+    logger.info(" Size of mix exceptions "+mixOfException.size());
+    return mixOfException;
   }
 
   /**
@@ -163,11 +185,12 @@ public class ExceptionFingerprintingRunner implements Runnable {
     }
     String exceptionInJson = null;
     try {
-      exceptionInJson = Obj.writeValueAsString(
-          exceptionInfoList.subList(0, Math.min(exceptionInfoList.size(), NUMBER_OF_EXCEPTION_TO_PUT_IN_DB.getValue())));
+      exceptionInJson = Obj.writeValueAsString(exceptionInfoList.subList(0,
+          Math.min(exceptionInfoList.size(), NUMBER_OF_EXCEPTION_TO_PUT_IN_DB.getValue())));
     } catch (IOException e) {
       logger.error(" Exception while writing stack trace to DB ", e);
-    } return exceptionInJson;
+    }
+    return exceptionInJson;
   }
 
   private String processLogSourceInformation(Map<String, String> logSourceInformation) {

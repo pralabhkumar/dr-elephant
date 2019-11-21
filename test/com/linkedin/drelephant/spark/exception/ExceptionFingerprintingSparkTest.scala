@@ -76,7 +76,7 @@ class ExceptionFingerprintingSparkTest extends FunSpec with Matchers {
       classificationValue.name() should be("USER_ENABLED")
       logSourceInformation.containsKey("DRIVER") should be(true)
       logSourceInformation.get("DRIVER") should be("http://0.0.0.0:19888/jobhistory/nmlogs/hostname:0" +
-        "/container_e24_1547063162911_185371_01_000001/container_e24_1547063162911_185371_01_000001/dssadmin")
+        "/container_e24_1547063162911_185371_01_000001/container_e24_1547063162911_185371_01_000001/dssadmin/stderr/?start=0")
     }
     it("check for auto tuning  enabled exception") {
       val stage = createStage(1, StageStatus.FAILED, Some("java.lang.OutOfMemoryError: Exception thrown in " +
@@ -149,26 +149,26 @@ class ExceptionFingerprintingSparkTest extends FunSpec with Matchers {
       val exceptionOutOfMemory = new ExceptionInfo(1,
         "java.lang.OutOfMemoryError: Exception thrown in awaitResult:",
         "  at org.apache.spark.util.ThreadUtils$.awaitResult(ThreadUtils.scala:194)",
-        ExceptionInfo.ExceptionSource.EXECUTOR,1)
+        ExceptionInfo.ExceptionSource.EXECUTOR,1, "")
 
       val exceptionVirtualMemory = new ExceptionInfo(1,
         "[pid=116086,containerID=container_1535113754342_0003_01_000002] " +
           "is running beyond virtual memory limits. Current usage: 106.2 MB of 1 GB " +
           "physical memory used; 5.8 GB of 2.1 GB virtual memory used. Killing container",
         "",
-        ExceptionInfo.ExceptionSource.EXECUTOR,1)
+        ExceptionInfo.ExceptionSource.EXECUTOR,1, "")
 
       val exceptionExitCode = new ExceptionInfo(1,
         "Container killed by the ApplicationMaster. " +
           "Container killed on request. Exit code is " +
           "103 Container exited with a non-zero exit code 103",
         "",
-        ExceptionInfo.ExceptionSource.EXECUTOR,1)
+        ExceptionInfo.ExceptionSource.EXECUTOR,1, "")
 
       val exceptionNonAutoTuningFault = new ExceptionInfo(1,
         "java.io.FileNotFoundException: File webhdfs://nn1.grid.example.com:50070/logs/spark/application_1.lz4 does not exist.",
         "at com.linkedin.drelephant.util.SparkUtils$class.com$linkedin$drelephant$util$SparkUtils$$openEventLog(SparkUtils.scala:313)",
-        ExceptionInfo.ExceptionSource.EXECUTOR,1)
+        ExceptionInfo.ExceptionSource.EXECUTOR,1, "")
 
       val exceptionList = new java.util.ArrayList[ExceptionInfo]()
       val rule = new RegexRule()
