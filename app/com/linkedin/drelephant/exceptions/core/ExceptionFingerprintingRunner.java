@@ -150,6 +150,13 @@ public class ExceptionFingerprintingRunner implements Runnable {
     }
   }
 
+  /**
+   * Since we are not able to store all the exceptions in database , this method
+   * will create the mix of exceptions (including Executor and Driver)
+   * @param exceptionInfoList : List of exceptions .
+   * @param size : Maximum size of the list
+   * @return : Mix of exceptions
+   */
   private List<ExceptionInfo> createMixofException(List<ExceptionInfo> exceptionInfoList, int size) {
     List<ExceptionInfo> mixOfException = new ArrayList<>();
     List<ExceptionInfo> executorExceptions = new ArrayList<>();
@@ -187,8 +194,9 @@ public class ExceptionFingerprintingRunner implements Runnable {
     try {
       exceptionInJson = Obj.writeValueAsString(exceptionInfoList.subList(0,
           Math.min(exceptionInfoList.size(), NUMBER_OF_EXCEPTION_TO_PUT_IN_DB.getValue())));
+      logger.info(" Final Size of the exception List , which will be stored in db "+exceptionInJson);
     } catch (IOException e) {
-      logger.error(" Exception while writing stack trace to DB ", e);
+      logger.error(" Exception while searlizing stack tract list to JSON ", e);
     }
     return exceptionInJson;
   }

@@ -80,6 +80,12 @@ public class ExceptionUtils {
     }
   }
 
+  public static void debugLog(String message){
+    if(debugEnabled){
+      logger.debug(message);
+    }
+  }
+
   /**
    * This class used to create configuration required for exception fingerprinting.
    */

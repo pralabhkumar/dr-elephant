@@ -109,14 +109,14 @@ public class ExceptionFingerprintingSpark implements ExceptionFingerprinting {
     List<ExceptionInfo> exceptions = new ArrayList<ExceptionInfo>();
 
     processStageLogs(exceptions);
-    logger.info("Total exception after parsing stages logs "+exceptions.size());
+    logger.info("Total exception after parsing stages logs " + exceptions.size());
     //TODO : If there are enough information from stage log then we should not call
     //driver logs ,to optimize the process .But it can lead to false positivies  in the system,
     //since failure of stage may or may not be the reason for application failure
     processDriverLogs(exceptions);
-    logger.info("Total exception after parsing driver logs "+exceptions.size());
+    logger.info("Total exception after parsing driver logs " + exceptions.size());
     processExceptionsFromBlackListingPattern(exceptions);
-    logger.info("Total exception after removing black listed exceptions  "+exceptions.size());
+    logger.info("Total exception after removing black listed exceptions  " + exceptions.size());
     return exceptions;
   }
 
@@ -191,19 +191,7 @@ public class ExceptionFingerprintingSpark implements ExceptionFingerprinting {
       logger.info(" URL to query for driver logs  " + completeURLToQuery);
       connection = intializeHTTPConnection(completeURLToQuery);
       in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-      String inputLine;
-      try {
-        while ((inputLine = in.readLine()) != null) {
-          if (inputLine.toUpperCase().contains(TRIGGER_FOR_LOG_PARSING)) {
-            logger.debug(" Trigger for parsing logs " + inputLine);
-            driverLogProcessingForException(in, exceptions, urlToQuery + STDERR_URL_CONSTANT + startIndex,
-                (inputLine + "/n").trim().length() - TRIGGER_FOR_LOG_PARSING.length());
-            break;
-          }
-        }
-      } catch (IOException e) {
-        logger.error(" IO Exception while processing driver logs for ", e);
-      }
+      convertInputStreamToExceptionList(in, exceptions, urlToQuery);
     } catch (Exception e) {
       logger.info(" Exception processing  driver logs ", e);
     } finally {
@@ -212,6 +200,32 @@ public class ExceptionFingerprintingSpark implements ExceptionFingerprinting {
     long endTime = System.nanoTime();
     logger.info(" Total exception/error parsed so far - driver " + exceptions.size());
     logger.info(" Time taken for driver logs " + (endTime - startTime) * 1.0 / (1000000000.0) + "s");
+  }
+
+  /**
+   *  Read the stream and convert into exceptionList
+   * @param in : Reader Stream
+   * @param exceptions : list of exceptions
+   * @param urlToQuery : JHS Url to query
+   */
+  public void convertInputStreamToExceptionList(BufferedReader in, List<ExceptionInfo> exceptions, String urlToQuery) {
+    String inputLine;
+    if (in == null || exceptions == null || urlToQuery == null) {
+      logger.error(" Not valid input provided ");
+      return;
+    }
+    try {
+      while ((inputLine = in.readLine()) != null) {
+        if (inputLine.toUpperCase().contains(TRIGGER_FOR_LOG_PARSING)) {
+          debugLog(" Trigger for parsing logs " + inputLine + "\t" + inputLine.length());
+          driverLogProcessingForException(in, exceptions, urlToQuery + STDERR_URL_CONSTANT + startIndex,
+              (inputLine.trim() + "\n").length() - TRIGGER_FOR_LOG_PARSING.length());
+          break;
+        }
+      }
+    } catch (IOException e) {
+      logger.error(" IO Exception while processing driver logs for ", e);
+    }
   }
 
   private String procesForDriverLogURL(String urlToQuery) {
@@ -351,14 +365,10 @@ public class ExceptionFingerprintingSpark implements ExceptionFingerprinting {
       int initialOffset) throws IOException {
     String inputLine;
     long countOfChar = initialOffset;
-    if(debugEnabled) {
-      logger.debug(" Initial offset for log " + countOfChar);
-    }
+    debugLog(" Initial offset for log " + countOfChar);
     while ((inputLine = in.readLine()) != null) {
       countOfChar += inputLine.length() + "\n".length();
-      if(debugEnabled) {
-        logger.debug(inputLine + "\t" + inputLine.length());
-      }
+      debugLog(inputLine + "\t" + (inputLine + "\n").length());
       if (inputLine.length() <= THRESHOLD_LOG_LINE_LENGTH.getValue() && isExceptionContains(inputLine)) {
         String exceptionName = inputLine;
         int stackTraceLine = NUMBER_OF_STACKTRACE_LINE.getValue();
@@ -370,19 +380,16 @@ public class ExceptionFingerprintingSpark implements ExceptionFingerprinting {
           stackTraceLine--;
           inputLine = in.readLine();
           if (inputLine != null) {
+            debugLog("For stack trace " + inputLine + "\t" + (inputLine + "\n").length());
             subCount += inputLine.length() + "\n".length();
           }
         }
-        if(debugEnabled) {
-          logger.debug(" Length of exceptionStackTrace " + subCount);
-        }
+        debugLog(" Length of exceptionStackTrace " + subCount);
         addExceptions((exceptionName + "" + stackTrace).hashCode(), exceptionName, stackTrace.toString(),
             ExceptionInfo.ExceptionSource.DRIVER, exceptions,
-            processDriverLogTrackingURL(queryForJHS, countOfChar - exceptionName.length()));
+            processDriverLogTrackingURL(queryForJHS, countOfChar - (exceptionName + "\n").length()));
         countOfChar += subCount;
-        if(debugEnabled) {
-          logger.debug(" Offset after processing whole stack trace " + countOfChar);
-        }
+        debugLog(" Offset after processing whole stack trace " + countOfChar);
         if (inputLine == null) {
           break;
         }
@@ -392,7 +399,7 @@ public class ExceptionFingerprintingSpark implements ExceptionFingerprinting {
 
   private String processDriverLogTrackingURL(String queryForJHS, long startIndexOfException) {
     long finalStartIndexForException = this.startIndex + startIndexOfException;
-    logger.debug(" Exception starting index " + finalStartIndexForException);
+    debugLog(" Exception starting index " + finalStartIndexForException);
     return queryForJHS.split("=")[0] + "=" + finalStartIndexForException;
   }
 
@@ -407,7 +414,7 @@ public class ExceptionFingerprintingSpark implements ExceptionFingerprinting {
     for (ExceptionInfo exceptionInfo : exceptions) {
       for (String blackListedPattern : BLACK_LISTED_EXCEPTION_PATTERN.getValue()) {
         if (exceptionInfo.getExceptionName().trim().toLowerCase().contains(blackListedPattern.trim().toLowerCase())) {
-          logger.debug(" Blacked listed following exception " + exceptionInfo);
+          debugLog(" Blacked listed following exception " + exceptionInfo);
           blackListedException.add(exceptionInfo);
           break;
         }
