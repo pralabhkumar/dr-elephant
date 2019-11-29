@@ -61,6 +61,9 @@ public class ExceptionFingerprintingSpark implements ExceptionFingerprinting {
   private static final String JOBHISTORY_ADDRESS_FOR_LOG = "http://{0}/jobhistory/nmlogs/{1}";
   private static final String STDERR_URL_CONSTANT = "/stderr/?start=";
   private static final String TRIGGER_FOR_LOG_PARSING = "<PRE>";
+  private static final String NEW_LINE_DELIMITER = "\n";
+  private static final String TAB_DELIMITER = "\t";
+  private static final String REGEX_FOR_NON_DIGIT_CHARACTER = "[^0-9]";
 
   private enum LogLengthSchema {LOG_LENGTH, LENGTH}
 
@@ -214,9 +217,9 @@ public class ExceptionFingerprintingSpark implements ExceptionFingerprinting {
     try {
       while ((inputLine = in.readLine()) != null) {
         if (inputLine.toUpperCase().contains(TRIGGER_FOR_LOG_PARSING)) {
-          debugLog(" Trigger for parsing logs " + inputLine + "\t" + inputLine.length());
+          debugLog(" Trigger for parsing logs " + inputLine + TAB_DELIMITER + inputLine.length());
           driverLogProcessingForException(in, exceptions, urlToQuery + STDERR_URL_CONSTANT + startIndex,
-              (inputLine.trim() + "\n").length() - TRIGGER_FOR_LOG_PARSING.length());
+              (inputLine.trim() + NEW_LINE_DELIMITER).length() - TRIGGER_FOR_LOG_PARSING.length());
           break;
         }
       }
@@ -319,7 +322,8 @@ public class ExceptionFingerprintingSpark implements ExceptionFingerprinting {
     try {
       String logData[] = logLenghtLine.split(logLengthTrigger);
       if (logData.length >= LogLengthSchema.LENGTH.ordinal() + 1) {
-        logLength = Long.parseLong(logData[LogLengthSchema.LENGTH.ordinal()].replaceAll("[^0-9]", ""));
+        logLength =
+            Long.parseLong(logData[LogLengthSchema.LENGTH.ordinal()].replaceAll(REGEX_FOR_NON_DIGIT_CHARACTER, ""));
       }
     } catch (Exception e) {
       logger.error(" Exception parsing log length ", e);
@@ -364,8 +368,8 @@ public class ExceptionFingerprintingSpark implements ExceptionFingerprinting {
     long countOfChar = initialOffset;
     debugLog(" Initial offset for log " + countOfChar);
     while ((inputLine = in.readLine()) != null) {
-      countOfChar += inputLine.length() + "\n".length();
-      debugLog(inputLine + "\t" + (inputLine + "\n").length());
+      countOfChar += inputLine.length() + NEW_LINE_DELIMITER.length();
+      debugLog(inputLine + TAB_DELIMITER + (inputLine + NEW_LINE_DELIMITER).length());
       if (inputLine.length() <= THRESHOLD_LOG_LINE_LENGTH.getValue() && isExceptionContains(inputLine)) {
         String exceptionName = inputLine;
         int stackTraceLine = NUMBER_OF_STACKTRACE_LINE.getValue();
@@ -373,18 +377,18 @@ public class ExceptionFingerprintingSpark implements ExceptionFingerprinting {
         int subCount = 0;
         while (stackTraceLine >= 0 && inputLine != null) {
           int maxLengthRow = Math.min(MAX_LINE_LENGTH_OF_EXCEPTION.getValue(), inputLine.length());
-          stackTrace.append(inputLine.substring(0, maxLengthRow)).append("\n");
+          stackTrace.append(inputLine.substring(0, maxLengthRow)).append(NEW_LINE_DELIMITER);
           stackTraceLine--;
           inputLine = in.readLine();
           if (inputLine != null) {
-            debugLog("For stack trace " + inputLine + "\t" + (inputLine + "\n").length());
-            subCount += inputLine.length() + "\n".length();
+            debugLog("For stack trace " + inputLine + TAB_DELIMITER + (inputLine + NEW_LINE_DELIMITER).length());
+            subCount += inputLine.length() + NEW_LINE_DELIMITER.length();
           }
         }
         debugLog(" Length of exceptionStackTrace " + subCount);
         addExceptions((exceptionName + "" + stackTrace).hashCode(), exceptionName, stackTrace.toString(),
             ExceptionInfo.ExceptionSource.DRIVER, exceptions,
-            processDriverLogTrackingURL(queryForJHS, countOfChar - (exceptionName + "\n").length()));
+            processDriverLogTrackingURL(queryForJHS, countOfChar - (exceptionName + NEW_LINE_DELIMITER).length()));
         countOfChar += subCount;
         debugLog(" Offset after processing whole stack trace " + countOfChar);
         if (inputLine == null) {

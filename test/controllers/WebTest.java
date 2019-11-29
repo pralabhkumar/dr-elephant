@@ -94,7 +94,7 @@ public class WebTest {
             JsonObject applicationJsonObject = element.getAsJsonObject();
             Assert.assertEquals(applicationJsonObject.get(JsonKeys.NAME).getAsString(), ".....");
             Assert.assertEquals(applicationJsonObject.get(JsonKeys.TASKS).getAsJsonArray().size(), 0);
-           Assert.assertEquals(applicationJsonObject.get(JsonKeys.EXCEPTION_SUMMARY).getAsString(), "stack_trace_1");
+            Assert.assertEquals(applicationJsonObject.get(JsonKeys.EXCEPTION_SUMMARY).getAsString(), "stack_trace_1");
           }
         }
       }
