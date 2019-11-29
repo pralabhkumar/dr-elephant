@@ -38,6 +38,7 @@ import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
 
 import static com.linkedin.drelephant.exceptions.util.Constant.*;
+import static com.linkedin.drelephant.exceptions.util.ExceptionUtils.*;
 import static com.linkedin.drelephant.exceptions.util.ExceptionUtils.ConfigurationBuilder.*;
 
 
@@ -132,20 +133,20 @@ public class ExceptionFingerprintingRunner implements Runnable {
       List<ExceptionInfo> exceptionInfoList) {
     try {
       sparkJobException.save();
-      logger.debug(" Final String to be saved in dB " + sparkJobException.exceptionLog);
+      debugLog(" Final String to be saved in dB " + sparkJobException.exceptionLog);
     } catch (PersistenceException pe) {
       logger.error(" Error while storing spark job exception ", pe);
       List<ExceptionInfo> halfExceptionList = createMixofException(exceptionInfoList, exceptionInfoList.size() / 2);
       sparkJobException.exceptionLog = parseExceptions(halfExceptionList, false);
       try {
         sparkJobException.save();
-        logger.debug(" Final String to be saved in dB " + sparkJobException.exceptionLog);
+        debugLog(" Final String to be saved in dB " + sparkJobException.exceptionLog);
       } catch (PersistenceException pe1) {
         logger.error(" Error while storing 1/2 of the spark job exception ", pe1);
         List<ExceptionInfo> firstException = createMixofException(exceptionInfoList, 2);
         sparkJobException.exceptionLog = parseExceptions(firstException, false);
         sparkJobException.save();
-        logger.debug(" Final String to be saved in dB " + sparkJobException.exceptionLog);
+        debugLog(" Final String to be saved in dB " + sparkJobException.exceptionLog);
       }
     }
   }

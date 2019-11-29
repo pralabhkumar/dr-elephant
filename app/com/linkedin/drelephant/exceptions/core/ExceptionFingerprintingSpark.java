@@ -51,7 +51,6 @@ import static com.linkedin.drelephant.exceptions.util.ExceptionUtils.Configurati
 public class ExceptionFingerprintingSpark implements ExceptionFingerprinting {
 
   private static final Logger logger = Logger.getLogger(ExceptionFingerprintingSpark.class);
-  private boolean debugEnabled = logger.isDebugEnabled();
   private static final String JOBHISTORY_WEBAPP_ADDRESS = "mapreduce.jobhistory.webapp.address";
   private static final String NODEMANAGER_ADDRESS = "yarn.nodemanager.address";
   private static final int STARTING_INDEX_FOR_URL = 2;
@@ -125,7 +124,7 @@ public class ExceptionFingerprintingSpark implements ExceptionFingerprinting {
    * @param exceptions
    */
   private void processStageLogs(List<ExceptionInfo> exceptions) {
-    long startTime = System.nanoTime();
+    long startTime = System.currentTimeMillis();
     try {
       if (failedStageData != null && failedStageData.size() > 0) {
         for (StageData stageData : failedStageData) {
@@ -146,7 +145,7 @@ public class ExceptionFingerprintingSpark implements ExceptionFingerprinting {
     } catch (Exception e) {
       logger.error("Error process stages logs ", e);
     }
-    long endTime = System.nanoTime();
+    long endTime = System.currentTimeMillis();
     logger.info(" Total exception/error parsed so far - stage " + exceptions.size());
     logger.info(" Time taken for processing stage logs " + (endTime - startTime) * 1.0 / (1000000000.0) + "s");
   }
@@ -161,9 +160,7 @@ public class ExceptionFingerprintingSpark implements ExceptionFingerprinting {
     ExceptionInfo exceptionInfo =
         new ExceptionInfo(uniqueID, exceptionName, exceptionStackTrace, exceptionSource, globalExceptionsWeight,
             exceptionTrackingURL);
-    if (debugEnabled) {
-      logger.debug(" Exception Information " + exceptionInfo);
-    }
+    debugLog(" Exception Information " + exceptionInfo);
     exceptions.add(exceptionInfo);
   }
 
@@ -176,15 +173,15 @@ public class ExceptionFingerprintingSpark implements ExceptionFingerprinting {
   // This case shouldn't happen in unless there are some changes
   //in JHS APIs
   private void processDriverLogs(List<ExceptionInfo> exceptions) {
-    long startTime = System.nanoTime();
+    long startTime = System.currentTimeMillis();
     HttpURLConnection connection = null;
     BufferedReader in = null;
     try {
       String urlToQuery = buildURLtoQuery();
-      long startTimeForFirstQuery = System.nanoTime();
-      String completeURLToQuery = procesForDriverLogURL(urlToQuery);
+      long startTimeForFirstQuery = System.currentTimeMillis();
+      String completeURLToQuery = processForDriverLogURL(urlToQuery);
       logSourceInfo.put(ExceptionInfo.ExceptionSource.DRIVER.name(), urlToQuery + STDERR_URL_CONSTANT + startIndex);
-      long endTimeForFirstQuery = System.nanoTime();
+      long endTimeForFirstQuery = System.currentTimeMillis();
       logger.info(
           " Time taken for first query " + (endTimeForFirstQuery - startTimeForFirstQuery) * 1.0 / (1000000000.0)
               + "s");
@@ -197,7 +194,7 @@ public class ExceptionFingerprintingSpark implements ExceptionFingerprinting {
     } finally {
       gracefullyCloseConnection(in, connection);
     }
-    long endTime = System.nanoTime();
+    long endTime = System.currentTimeMillis();
     logger.info(" Total exception/error parsed so far - driver " + exceptions.size());
     logger.info(" Time taken for driver logs " + (endTime - startTime) * 1.0 / (1000000000.0) + "s");
   }
@@ -228,7 +225,7 @@ public class ExceptionFingerprintingSpark implements ExceptionFingerprinting {
     }
   }
 
-  private String procesForDriverLogURL(String urlToQuery) {
+  private String processForDriverLogURL(String urlToQuery) {
     String completeQuery = completeURLToQuery(urlToQuery, true);
     if (completeQuery == null) {
       logger.info("Since Logs are not there in JHS trying am container logs ");

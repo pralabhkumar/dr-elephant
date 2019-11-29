@@ -65,7 +65,7 @@ class ExceptionFingerprintingSparkTest extends FunSpec with Matchers {
 
       val analyticJob = getAnalyticalJob(false,
         "http://hostname:8042/node/containerlogs/container_e24_1547063162911_185371_01_000001/dssadmin",
-        "ltx1-hcl5294.grid.linkedin.com:8042")
+        "hostname:8042")
       val exceptionInfoList = exceptionFingerprinting.processRawData(analyticJob)
       val classificationValue = exceptionFingerprinting.classifyException(exceptionInfoList)
       // Test to check for log source Information
@@ -90,7 +90,7 @@ class ExceptionFingerprintingSparkTest extends FunSpec with Matchers {
 
       val analyticJob = getAnalyticalJob(false,
         "http://hostname:8042/node/containerlogs/container_e24_1547063162911_185371_01_000001/dssadmin",
-        "ltx1-hcl5294.grid.linkedin.com:8042")
+        "hostname:8042")
       val exceptionInfoList = exceptionFingerprinting.processRawData(analyticJob)
       val classificationValue = exceptionFingerprinting.classifyException(exceptionInfoList)
       className should be("ExceptionFingerprintingSpark")
@@ -101,7 +101,7 @@ class ExceptionFingerprintingSparkTest extends FunSpec with Matchers {
       val sparkExceptionFingerPrinting = new ExceptionFingerprintingSpark()
       val analyticJob = getAnalyticalJob(false,
         "http://hostname:8042/node/containerlogs/container_e24_1547063162911_185371_01_000001/dssadmin",
-        "ltx1-hcl5294.grid.linkedin.com:8042")
+        "hostname:8042")
       val exceptionInfoList = sparkExceptionFingerPrinting.processRawData(analyticJob)
       val queryURL = sparkExceptionFingerPrinting.buildURLtoQuery()
       queryURL should be("http://0.0.0.0:19888/jobhistory/nmlogs/hostname:0/container_e24_1547063162911_185371_01_000001" +
@@ -110,7 +110,7 @@ class ExceptionFingerprintingSparkTest extends FunSpec with Matchers {
     it("check for eligibilty of applying exception fingerprinting ") {
       val analyticJob = getAnalyticalJob(true,
         "http://hostname:8042/node/containerlogs/container_e24_1547063162911_185371_01_000001/dssadmin",
-        "ltx1-hcl5294.grid.linkedin.com:8042")
+        "hostname:8042")
       analyticJob.getAppType().getName should be("SPARK")
       val isApplicationApplied = analyticJob.applyExceptionFingerprinting(null, null)
       isApplicationApplied should be(false)
@@ -128,7 +128,7 @@ class ExceptionFingerprintingSparkTest extends FunSpec with Matchers {
       val data = createSparkApplicationData(stages, executors, Some(properties))
       val analyticJob = getAnalyticalJob(false,
         "http://hostname:8042/node/containerlogs/container_e24_1547063162911_185371_01_000001/dssadmin",
-        "ltx1-hcl5294.grid.linkedin.com:8042")
+        "hostname:8042")
       running(testServer(TEST_SERVER_PORT, fakeApp), new ExceptionFingerprintingRunnerTest(data, analyticJob))
     }
 
@@ -203,7 +203,7 @@ class ExceptionFingerprintingSparkTest extends FunSpec with Matchers {
 
       val analyticJob = getAnalyticalJob(false,
         "http://hostname:8042/node/containerlogs/container_e24_1547063162911_185371_01_000001/dssadmin",
-        "ltx1-hcl5294.grid.linkedin.com:8042")
+        "hostname:8042")
       val blackListedPatterns = Array("ABCD")
       ConfigurationBuilder.BLACK_LISTED_EXCEPTION_PATTERN.setValue(blackListedPatterns)
       val exceptionInfoList = exceptionFingerprinting.processRawData(analyticJob)

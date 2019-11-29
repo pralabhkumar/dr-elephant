@@ -15,10 +15,11 @@
  */
 
 package com.linkedin.drelephant.exceptions.util;
-
+import lombok.Data;
 /**
  * Class to store exception information
  */
+@Data
 public class ExceptionInfo implements Comparable<ExceptionInfo> {
 
   private int exceptionID;
@@ -58,45 +59,6 @@ public class ExceptionInfo implements Comparable<ExceptionInfo> {
   //system
   // Getter and setters are used by GSON/Jackson for serialize and deserialize into JSON
 
-  public int getExceptionID() {
-    return exceptionID;
-  }
-
-  public void setExceptionID(int exceptionID) {
-    this.exceptionID = exceptionID;
-  }
-
-  public Integer getWeightOfException() {
-    return weightOfException;
-  }
-
-  public void setWeightOfException(Integer weightOfException) {
-    this.weightOfException = weightOfException;
-  }
-
-  public String getExceptionName() {
-    return exceptionName;
-  }
-
-  public void setExceptionName(String exceptionName) {
-    this.exceptionName = exceptionName;
-  }
-
-  public String getExceptionStackTrace() {
-    return exceptionStackTrace;
-  }
-
-  public void setExceptionStackTrace(String exceptionStackTrace) {
-    this.exceptionStackTrace = exceptionStackTrace;
-  }
-
-  public ExceptionSource getExceptionSource() {
-    return exceptionSource;
-  }
-
-  public void setExceptionSource(ExceptionSource exceptionSource) {
-    this.exceptionSource = exceptionSource;
-  }
 
   //TODO : Use exception source to prioritize  the exception
 
