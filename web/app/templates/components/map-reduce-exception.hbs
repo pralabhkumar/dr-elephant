@@ -31,9 +31,19 @@
                     {{/p.toggle}}
 
                     {{#p.body}}
-                        {{#unless (eq application.exceptionSummary "")}}
+                      {{#if (eq job.type "SPARK")}}
+                        {{#each application.exceptionSummary as |exception|}}
+                        <div class="box">
+                          <pre>{{exception.exceptionStackTrace}}</pre>
+                          <pre>{{exception.exceptionTrackingURL}}</pre>
+                        </div>
+                        {{/each}}
+                      {{else}}
+                      {{#unless (eq application.exceptionSummary "")}}
                         <pre>{{application.exceptionSummary}}</pre>
-                        {{/unless}}
+                      {{/unless}}
+                      {{/if}}
+
                         {{#each application.tasks as |task|}}
                             {{#cp-panels class='u-margin-bottom' accordion=true as |panels|}}
                             {{#panels.panel as |taskpanel|}}
@@ -47,6 +57,11 @@
                             {{/panels.panel}}
                             {{/cp-panels}}
                         {{/each}}
+                      {{#if (eq job.type "SPARK")}}
+                        <div class="box">
+                          <pre>{{application.exceptionLogSource}}</pre>
+                        </div>
+                      {{/if}}
                     {{/p.body}}
                 {{/panels.panel}}
 
