@@ -41,7 +41,7 @@ public class ExceptionFingerprintingFactory {
         logger.info(" Spark Exception Fingerprinting is called ");
         SparkApplicationData sparkApplicationData = (SparkApplicationData) data;
         Seq<StageData> stagesWithFailedTasks = sparkApplicationData.stagesWithFailedTasks();
-        String restURLofFailedStagesForEF = sparkApplicationData.targetRestURIForEF();
+        String restURLofFailedStagesForEF = sparkApplicationData.targetRestURIForEF()+"/stages/failedTasks";
 
         if (stagesWithFailedTasks != null && stagesWithFailedTasks.size()>0) {
           logger.info(" Size of stages with failed task " + stagesWithFailedTasks.size());

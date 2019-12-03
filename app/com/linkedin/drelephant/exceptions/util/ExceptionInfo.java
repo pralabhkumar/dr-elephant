@@ -62,12 +62,6 @@ public class ExceptionInfo implements Comparable<ExceptionInfo> {
 
   //TODO : Use exception source to prioritize  the exception
 
-  @Override
-  public String toString() {
-    return "ExceptionInfo{" + "exceptionID=" + exceptionID + ", weightOfException=" + weightOfException
-        + ", exceptionName='" + exceptionName + '\'' + ", exceptionStackTrace='" + exceptionStackTrace + '\''
-        + ", exceptionSource=" + exceptionSource + ", exceptionTrackingURL='" + exceptionTrackingURL + '\'' + '}';
-  }
 
   /**
    * todo: Remove duplicate exceptions
