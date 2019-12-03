@@ -26,6 +26,8 @@ import com.google.common.collect.Lists;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
 import com.google.gson.JsonElement;
 import com.linkedin.drelephant.ElephantContext;
@@ -2041,14 +2043,10 @@ public class Web extends Controller {
 
   private static JsonArray getSparkExceptionDetails(String exceptionLog) {
     long startTime = System.nanoTime();
-    ObjectMapper mapper = new ObjectMapper();
-    JsonElement element = null;
+    JsonElement element = null ;
     try {
-      ExceptionInfo[] exceptionInfos = mapper.readValue(exceptionLog, ExceptionInfo[].class);
-      Gson gson = new Gson();
-      element = gson.toJsonTree(Arrays.asList(exceptionInfos), new TypeToken<List<ExceptionInfo>>() {
-      }.getType());
-    } catch (IOException e) {
+      element = new JsonParser().parse(exceptionLog);
+    } catch (JsonSyntaxException e) {
       logger.error("Unable to parse exception "+exceptionLog, e);
     }
     long endTime = System.nanoTime();
