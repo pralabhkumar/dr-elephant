@@ -150,7 +150,7 @@ public class ExceptionFingerprintingSpark implements ExceptionFingerprinting {
     }
     long endTime = System.currentTimeMillis();
     logger.info(" Total exception/error parsed so far - stage " + exceptions.size());
-    logger.info(" Time taken for processing stage logs " + (endTime - startTime) * 1.0 / (1000000000.0) + "s");
+    debugLog(" Time taken for processing stage logs " + (endTime - startTime) * 1.0 / (1000.0) + "s");
   }
 
   private String processExceptionTrackingURL(int stageID) {
@@ -185,8 +185,8 @@ public class ExceptionFingerprintingSpark implements ExceptionFingerprinting {
       String completeURLToQuery = processForDriverLogURL(urlToQuery);
       logSourceInfo.put(ExceptionInfo.ExceptionSource.DRIVER.name(), urlToQuery + STDERR_URL_CONSTANT + startIndex);
       long endTimeForFirstQuery = System.currentTimeMillis();
-      logger.info(
-          " Time taken for first query " + (endTimeForFirstQuery - startTimeForFirstQuery) * 1.0 / (1000000000.0)
+      debugLog(
+          " Time taken for first query " + (endTimeForFirstQuery - startTimeForFirstQuery) * 1.0 / (1000.0)
               + "s");
       logger.info(" URL to query for driver logs  " + completeURLToQuery);
       connection = intializeHTTPConnection(completeURLToQuery);
@@ -199,7 +199,7 @@ public class ExceptionFingerprintingSpark implements ExceptionFingerprinting {
     }
     long endTime = System.currentTimeMillis();
     logger.info(" Total exception/error parsed so far - driver " + exceptions.size());
-    logger.info(" Time taken for driver logs " + (endTime - startTime) * 1.0 / (1000000000.0) + "s");
+    debugLog(" Time taken for driver logs " + (endTime - startTime) * 1.0 / (1000.0) + "s");
   }
 
   /**
@@ -229,10 +229,10 @@ public class ExceptionFingerprintingSpark implements ExceptionFingerprinting {
   }
 
   private String processForDriverLogURL(String urlToQuery) {
-    String completeQuery = completeURLToQuery(urlToQuery, true);
+    String completeQuery = getCompleteURLToQuery(urlToQuery, true);
     if (completeQuery == null) {
       logger.info("Since Logs are not there in JHS trying am container logs ");
-      completeQuery = completeURLToQuery(analyticJob.getAmContainerLogsURL(), false);
+      completeQuery = getCompleteURLToQuery(analyticJob.getAmContainerLogsURL(), false);
     }
     // This will be in called in very rare cases.
     int numberOfRetries = 0;
@@ -244,7 +244,7 @@ public class ExceptionFingerprintingSpark implements ExceptionFingerprinting {
       } catch (InterruptedException e) {
         logger.warn(" Thread interupted ", e);
       }
-      completeQuery = completeURLToQuery(urlToQuery, true);
+      completeQuery = getCompleteURLToQuery(urlToQuery, true);
     }
     if (completeQuery == null) {
       logger.warn(" Cannot get driver logs for app " + analyticJob.getAppId());
@@ -261,7 +261,7 @@ public class ExceptionFingerprintingSpark implements ExceptionFingerprinting {
    * @param url
    * @return
    */
-  private String completeURLToQuery(String url, boolean isJHS) {
+  private String getCompleteURLToQuery(String url, boolean isJHS) {
     String completeURLToQuery = null;
     BufferedReader in = null;
     HttpURLConnection connection = null;

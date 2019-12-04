@@ -17,7 +17,7 @@
 # --- !Ups
 
 ALTER TABLE exception_fingerprinting ADD COLUMN log_source_information varchar(1000) AFTER exception_log;
-ALTER TABLE exception_fingerprinting ALTER COLUMN exception_log varchar(10000)
+ALTER TABLE exception_fingerprinting MODIFY exception_log varchar(10000);
 
 
 # --- !Downs
