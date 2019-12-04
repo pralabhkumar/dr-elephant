@@ -66,4 +66,5 @@ public final class Constant {
   static final String MAX_LINE_LENGTH_OF_EXCEPTION_NAME = "ef.max.line.length.exception";
   static final String NUMBER_OF_RETRIES_FOR_FETCHING_DRIVER_LOGS_NAME = "ef.number.retries.fetching.driver.logs";
   static final String DURATION_FOR_THREAD_SLEEP_FOR_FETCHING_DRIVER_LOGS_NAME = "ef.duration.thread.sleep.ms";
+  static final String TOTAL_LENGTH_OF_LOG_SAVED_IN_DB_NAME = "ef.loglength.saved.db" ;
 }

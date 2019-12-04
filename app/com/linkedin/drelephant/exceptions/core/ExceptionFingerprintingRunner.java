@@ -132,23 +132,28 @@ public class ExceptionFingerprintingRunner implements Runnable {
   private void saveSparkJobException(JobsExceptionFingerPrinting sparkJobException,
       List<ExceptionInfo> exceptionInfoList) {
     try {
-      sparkJobException.save();
-      debugLog(" Final String to be saved in dB " + sparkJobException.exceptionLog);
-    } catch (PersistenceException pe) {
-      logger.error(" Error while storing spark job exception ", pe);
-      List<ExceptionInfo> halfExceptionList = createMixofException(exceptionInfoList, exceptionInfoList.size() / 2);
-      sparkJobException.exceptionLog = parseExceptions(halfExceptionList, false);
-      try {
+      if (sparkJobException.exceptionLog.length() < TOTAL_LENGTH_OF_LOG_SAVED_IN_DB.getValue()) {
+        logger.info("Saving complete logs into db ");
         sparkJobException.save();
-        debugLog(" Final String to be saved in dB " + sparkJobException.exceptionLog);
-      } catch (PersistenceException pe1) {
-        logger.error(" Error while storing 1/2 of the spark job exception ", pe1);
-        List<ExceptionInfo> firstException = createMixofException(exceptionInfoList, 2);
-        sparkJobException.exceptionLog = parseExceptions(firstException, false);
-        sparkJobException.save();
-        debugLog(" Final String to be saved in dB " + sparkJobException.exceptionLog);
+      } else {
+        logger.info(
+            "Complete logs cannot be stored in db , hence creating mix of exceptions with half of original length");
+        List<ExceptionInfo> halfExceptionList = createMixofException(exceptionInfoList, exceptionInfoList.size() / 2);
+        sparkJobException.exceptionLog = parseExceptions(halfExceptionList, false);
+        if (sparkJobException.exceptionLog.length() < TOTAL_LENGTH_OF_LOG_SAVED_IN_DB.getValue()) {
+          sparkJobException.save();
+        } else {
+          logger.info("Since half of the mix logs are not stored , only storing two exceptions ");
+          List<ExceptionInfo> firstException = createMixofException(exceptionInfoList, 2);
+          sparkJobException.exceptionLog = parseExceptions(firstException, false);
+          sparkJobException.save();
+        }
       }
+      debugLog("Final exception saved in db " + sparkJobException.exceptionLog);
     }
+    catch(PersistenceException pe){
+      logger.error(" Exception stack trace cannot be saved for "+_appResult.id,pe);
+      }
   }
 
   /**
@@ -166,16 +171,16 @@ public class ExceptionFingerprintingRunner implements Runnable {
         executorExceptions.add(exceptionInfo);
       }
     }
-    logger.info(" Size of executor exceptions "+executorExceptions.size());
+    logger.info(" Size of executor exceptions " + executorExceptions.size());
     for (int index = 0; index <= size / 2; index++) {
       mixOfException.add(exceptionInfoList.get(index));
     }
-    logger.info(" Size of mix exceptions "+mixOfException.size());
+    logger.info(" Size of mix exceptions " + mixOfException.size());
     int max = Math.min(executorExceptions.size(), size - (size / 2));
     for (int index = 0; index < max; index++) {
       mixOfException.add(executorExceptions.get(index));
     }
-    logger.info(" Size of mix exceptions "+mixOfException.size());
+    logger.info(" Size of mix exceptions " + mixOfException.size());
     return mixOfException;
   }
 
@@ -195,7 +200,7 @@ public class ExceptionFingerprintingRunner implements Runnable {
     try {
       exceptionInJson = Obj.writeValueAsString(exceptionInfoList.subList(0,
           Math.min(exceptionInfoList.size(), NUMBER_OF_EXCEPTION_TO_PUT_IN_DB.getValue())));
-      logger.info(" Final Size of the exception List , which will be stored in db "+exceptionInJson);
+      logger.info(" Final Size of the exception List , which will be stored in db " + exceptionInJson);
     } catch (IOException e) {
       logger.error(" Exception while searlizing stack tract list to JSON ", e);
     }

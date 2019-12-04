@@ -80,8 +80,8 @@ public class ExceptionUtils {
     }
   }
 
-  public static void debugLog(String message){
-    if(debugEnabled){
+  public static void debugLog(String message) {
+    if (debugEnabled) {
       logger.debug(message);
     }
   }
@@ -105,6 +105,7 @@ public class ExceptionUtils {
     public static EFConfiguration<Integer> MAX_LINE_LENGTH_OF_EXCEPTION = null;
     public static EFConfiguration<Integer> NUMBER_OF_RETRIES_FOR_FETCHING_DRIVER_LOGS = null;
     public static EFConfiguration<Integer> DURATION_FOR_THREAD_SLEEP_FOR_FETCHING_DRIVER_LOGS = null;
+    public static EFConfiguration<Integer> TOTAL_LENGTH_OF_LOG_SAVED_IN_DB = null;
 
     private static final String[] DEFAULT_REGEX_FOR_EXCEPTION_IN_LOGS =
         {"^.+Exception.*", "^.+Error.*", ".*Container\\s+killed.*"};
@@ -207,6 +208,12 @@ public class ExceptionUtils {
           new EFConfiguration<Integer>().setConfigurationName(DURATION_FOR_THREAD_SLEEP_FOR_FETCHING_DRIVER_LOGS_NAME)
               .setValue(configuration.getInt(DURATION_FOR_THREAD_SLEEP_FOR_FETCHING_DRIVER_LOGS_NAME, 60000))
               .setDoc(" Duration for which Thread sleeps for fetching driver logs ");
+
+      TOTAL_LENGTH_OF_LOG_SAVED_IN_DB =
+          new EFConfiguration<Integer>().setConfigurationName(TOTAL_LENGTH_OF_LOG_SAVED_IN_DB_NAME)
+              .setValue(configuration.getInt(TOTAL_LENGTH_OF_LOG_SAVED_IN_DB_NAME, 9500))
+              .setDoc(" Length of logs saved in db . Buffer size is 500 . It means string of length of "
+                  + "this configuration will be stored in db which have size TOTAL_LENGTH_OF_LOG_SAVED_IN_DB+ 500");
 
       if (debugEnabled) {
         logger.debug(" Exception Fingerprinting configurations ");
