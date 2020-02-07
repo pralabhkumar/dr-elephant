@@ -48,14 +48,27 @@ public class ExceptionUtils {
     }
   }
 
+  /**
+   *
+   * @param data : log line
+   * @return Whether the line container valid exception , for which we are interested
+   * Assumption is that new valid exception line will start with indentation = 0,
+   * `caused by` is the corner case for this ,but its ok to appear caused by
+   * as seperate exception .
+   * todo: Improve exception detection process by having better regex.
+   */
   public static boolean isExceptionContains(String data) {
-    for (Pattern pattern : patterns) {
-      Matcher matcher = pattern.matcher(data);
-      if (matcher.find()) {
-        return true;
+    boolean isValidExceptionLine = false;
+    if (!data.startsWith("\t")) {
+      for (Pattern pattern : patterns) {
+        Matcher matcher = pattern.matcher(data);
+        if (matcher.find()) {
+          isValidExceptionLine = true;
+          break;
+        }
       }
     }
-    return false;
+    return isValidExceptionLine;
   }
 
   public static HttpURLConnection intializeHTTPConnection(String url) throws IOException {

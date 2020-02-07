@@ -215,35 +215,69 @@ class ExceptionFingerprintingSparkTest extends FunSpec with Matchers {
 
     it("check for driver log processing for Exception fingerprinting spark") {
       val exceptionFingerPrintingSpark = new ExceptionFingerprintingSpark()
+
       var driverLogs = " Showing 50000 bytes of 77821039 total. Click \n            <a href=\"/jobhistory/logs/" +
         "ltx1-hcl11887.grid.linkedin.com:8041/container_e99_1574361432315_150107_01_000005" +
         "/container_e99_1574361432315_150107_01_000005/metrics/stderr/?start=0\">" +
         "here</a>\n             for the full log.\n          <pre>re\n\n)\n19/11/22 05:21:40 INFO scheduler." +
-        "TaskSetManager: Task 0.0 in stage 7.3 (TID 12717) failed, but the task will not be re-executed " +
-        "(either because the task failed with a shuffle data fetch failure, so the previous " +
-        "stage needs to be re-run, or because a different copy of the task has already succeeded).\n19/11/22 05:21:40 INFO " +
-        "cluster.YarnClusterScheduler: Removed TaskSet 7.3, whose tasks have all completed, from pool \n19/11/22 05:21:40 " +
-        "INFO scheduler.DAGScheduler: Marking ResultStage 7 (count at LearningSessionVideo.scala:75) " +
-        "as failed due to a fetch failure from ShuffleMapStage 6 " +
-        "(count at LearningSessionVideo.scala:75)\n19/11/22 05:21:40 INFO scheduler.DAGScheduler: " +
-        "ResultStage 7 (count at LearningSessionVideo.scala:75) failed in 125.587 s due to " +
-        "org.apache.spark.shuffle.FetchFailedException: java.util.concurrent.TimeoutException: Timeout " +
-        "waiting for task.\n\tat org.apache.spark.storage.ShuffleBlockFetcherIterator.throwFetchFailedException" +
-        "(ShuffleBlockFetcherIterator.scala:519)\n\tat org.apache.spark.storage.ShuffleBlockFetcherIterator.next" +
-        "(ShuffleBlockFetcherIterator.scala:450)\n\tat org.apache.spark.storage.ShuffleBlockFetcherIterator.next" +
-        "(ShuffleBlockFetcherIterator.scala:61)\n\tat scala.collection.Iterator$$anon$12.nextCur" +
-        "(Iterator.scala:434)\n\tat scala.collection.Iterator$$anon$12.hasNext(Iterator.scala:440)\n\tat " +
-        "scala.collection.Iterator$$anon$11.hasNext(Iterator.scala:408)"
+      "\n20/02/07 06:10:23 ERROR yarn.ApplicationMaster: User class threw exception: org.apa" +
+        "che.spark.sql.AnalysisException: cannot resolve '`src_session_tokenized`' given " +
+        "input columns: [value, id, target, count];;\n'Project [value#6, id#8L, target#34, count#35L, " +
+        "rank() windowspecdefinition('src_session_tokenized, count#35L DESC NULLS LAST, " +
+        "specifiedwindowframe(RowFrame, unboundedpreceding$(), currentrow$())) AS rank#61]\n+- AnalysisBarrier\n      " +
+        "+- Project [value#6, id#8L, suggestionInfo#27._1 AS target#34, suggestionInfo#27._2 AS count#35L]\n         +- " +
+        "Project [value#6, id#8L, src_session_tokenized#0, suggestions#1, counts#2, suggestionInfo#27]\n            +- " +
+        "Generate explode(UDF(suggestions#1, counts#2)), false, [suggestionInfo#27]\n               +- Join Inner, " +
+        "(src_session_tokenized#0 = value#6)\n                  :- Project [value#6, monotonically_" +
+        "increasing_id() AS id#8L]\n                  :  +- Relation[value#6] text\n                  +- " +
+        "Relation[src_session_tokenized#0,suggestions#1,counts#2] avro\n\norg.apache.spark.sql." +
+        "AnalysisException: cannot resolve '`src_session_tokenized`' given input columns: " +
+        "[value, id, target, count];;\n'Project [value#6, id#8L, target#34, count#35L, rank() " +
+        "windowspecdefinition('src_session_tokenized, count#35L DESC NULLS LAST, " +
+        "specifiedwindowframe(RowFrame, unboundedpreceding$(), currentrow$())) AS rank#61]\n+- AnalysisBarrier\n      +- " +
+        "Project [value#6, id#8L, suggestionInfo#27._1 AS target#34, suggestionInfo#27._2 AS count#35L]\n         +- Project " +
+        "[value#6, id#8L, src_session_tokenized#0, suggestions#1, counts#2, suggestionInfo#27]\n            +- Generate " +
+        "explode(UDF(suggestions#1, counts#2)), false, [suggestionInfo#27]\n               +- Join " +
+        "Inner, (src_session_tokenized#0 = value#6)\n                  :- Project " +
+        "[value#6, monotonically_increasing_id() AS id#8L]\n                  :  +- Relation[value#6] " +
+        "text\n                  +- Relation[src_session_tokenized#0,suggestions#1,counts#2] avro\n\n\tat " +
+        "org.apache.spark.sql.catalyst.analysis.package$AnalysisErrorAt.failAnalysis(package.scala:42)\n\tat " +
+        "org.apache.spark.sql.catalyst.analysis.CheckAnalysis$$anonfun$checkAnalysis$1$$anonfun$apply$2." +
+        "applyOrElse(CheckAnalysis.scala:88)\n\tat org.apache.spark.sql.catalyst.analysis." +
+        "CheckAnalysis$$anonfun$checkAnalysis$1$$anonfun$apply$2.applyOrElse(CheckAnalysis.scala:85)\n\tat " +
+        "org.apache.spark.sql.catalyst.trees.TreeNode$$anonfun$transformUp$1.apply(TreeNode.scala:289)\n\tat " +
+        "org.apache.spark.sql.catalyst.trees.TreeNode$$anonfun$transformUp$1.apply(TreeNode.scala:289)\n\tat " +
+        "org.apache.spark.sql.catalyst.trees.CurrentOrigin$.withOrigin(TreeNode.scala:70)\n\tat " +
+        "org.apache.spark.sql.catalyst.trees.TreeNode.transformUp(TreeNode.scala:288)\n\tat " +
+        "org.apache.spark.sql.catalyst.trees.TreeNode$$anonfun$3.apply(TreeNode.scala:286)\n\tat " +
+        "org.apache.spark.sql.catalyst.trees.TreeNode$$anonfun$3.apply(TreeNode.scala:286)\n\tat " +
+        "org.apache.spark.sql.catalyst.trees.TreeNode$$anonfun$4$$anonfun$apply$11.apply(TreeNode.scala:335)\n\tat " +
+        "scala.collection.TraversableLike$$anonfun$map$1.apply(TraversableLike.scala:234)\n\tat " +
+        "scala.collection.TraversableLike$$anonfun$map$1.apply(TraversableLike.scala:234)\n\tat " +
+        "scala.collection.mutable.ResizableArray$class.foreach(ResizableArray.scala:59)\n\tat " +
+        "scala.collection.mutable.ArrayBuffer.foreach(ArrayBuffer.scala:48)\n\tat " +
+        "scala.collection.TraversableLike$class.map(TraversableLike.scala:234)\n\tat " +
+        "scala.collection.AbstractTraversable.map(Traversable.scala:104)"
       val exceptionInfo = new util.ArrayList[ExceptionInfo]();
       var reader = new BufferedReader(new StringReader(driverLogs))
       exceptionFingerPrintingSpark.convertInputStreamToExceptionList(reader, exceptionInfo, "http://localhost/metrics/stderr/?start=77771039")
-      exceptionInfo.size() should be(1)
+      exceptionInfo.size() should be(2)
       val exception = exceptionInfo.get(0)
-      exception.getExceptionName should be("19/11/22 05:21:40 INFO scheduler.DAGScheduler: ResultStage 7 (count at LearningSessionVideo.scala:75) failed " +
-        "in 125.587 s due to org.apache.spark.shuffle.FetchFailedException: java.util.concurrent.TimeoutException: Timeout waiting for task.")
-      exception.getExceptionTrackingURL should be("http://localhost/metrics/stderr/?start=631")
-      exception.getWeightOfException should be(1)
+      exceptionInfo.get(1).getExceptionName should be("org.apache.spark.sql.AnalysisException: " +
+        "cannot resolve '`src_session_tokenized`' given input columns: [value, id, target, count];;")
+      exceptionInfo.get(0).getExceptionName should be("20/02/07 06:10:23 ERROR yarn.ApplicationMaster: " +
+        "User class threw exception: org.apache.spark.sql.AnalysisException: cannot resolve '`src_session_tokenized`' given input columns: [value, id, target, count];;")
+
+      exceptionInfo.get(1).getExceptionStackTrace should startWith("org.apache.spark.sql.AnalysisException: cannot resolve")
+      exceptionInfo.get(0).getExceptionStackTrace should startWith("20/02/07 06:10:23 ERROR yarn.ApplicationMaster")
+      exceptionInfo.get(0).getExceptionTrackingURL should be("http://localhost/metrics/stderr/?start=40")
+      exceptionInfo.get(1).getExceptionTrackingURL should be("http://localhost/metrics/stderr/?start=1051")
+
+      exceptionInfo.get(1).getWeightOfException should be(2)
       reader.close()
+
+
+
       driverLogs = "exception"
       reader = new BufferedReader(new StringReader(driverLogs))
       exceptionInfo.clear()
